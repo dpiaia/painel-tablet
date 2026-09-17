@@ -251,6 +251,21 @@ function linhaAgenda(e) {
 // Arquivos nomeados pelo que MOSTRAM, não pelo estado que representam. Assim
 // trocar qual bichinho vai em qual estado é mudar uma linha aqui embaixo, sem
 // renomear arquivo nenhum — e dá para ver de relance o que já existe.
+/* As cinco cores do cartão de recado.
+ *
+ * Cada uma traz o próprio texto, não só o fundo: amarelo claro com o cinza do
+ * tema escuro seria ilegível, e o recado é justamente o cartão que existe para
+ * ser lido de longe. O tom do texto é uma versão bem escura da mesma cor, que
+ * combina com o fundo e ainda passa longe do limite de contraste.
+ */
+var CORES_RECADO = {
+  amarelo: { fundo: '#fde68a', borda: '#f0c74a', texto: '#422006', fraco: '#7c5312' },
+  verde:   { fundo: '#bbf7d0', borda: '#7fd6a0', texto: '#052e16', fraco: '#16603a' },
+  azul:    { fundo: '#bfdbfe', borda: '#89b8f5', texto: '#0c2a4d', fraco: '#1d4f86' },
+  rosa:    { fundo: '#fbcfe8', borda: '#f0a3ce', texto: '#500724', fraco: '#8d1447' },
+  lilas:   { fundo: '#ddd6fe', borda: '#b6a8f7', texto: '#2e1065', fraco: '#5b32b0' }
+};
+
 var GIFS = {
   picareta:  'claude/picareta.gif',   // bichinho cavando com picareta
   fogos:     'claude/fogos.gif',      // bichinho em pé, fogos na cabeça
@@ -973,10 +988,38 @@ function aplicarAjustes() {
   }
 
   // --- recado
+  //
+  // As cores do cartão são escritas como VARIÁVEIS no próprio elemento, e não
+  // como `color` em cada pedaço. Variável é herdada, então o título, o traço
+  // do ícone e o texto seguem sozinhos — eles já leem --texto e --ciano. Uma
+  // linha aqui alcança tudo lá dentro, e um pedaço novo no cartão nasce com a
+  // cor certa sem que ninguém precise lembrar disso.
   var r = a.recado || {};
   var t = $('recado-titulo'), x = $('recado-texto');
   if (t) t.textContent = (r.titulo || 'RECADO');
   if (x) x.textContent = r.texto || '';
+
+  var cartaoRecado = document.querySelector('[data-cartao="recado"]');
+  if (cartaoRecado) {
+    var paleta = CORES_RECADO[r.cor] || null;
+    var est = cartaoRecado.style;
+    if (paleta) {
+      est.background = paleta.fundo;
+      est.borderColor = paleta.borda;
+      est.setProperty('--texto', paleta.texto);
+      est.setProperty('--apagado', paleta.fraco);
+      est.setProperty('--ciano', paleta.texto);
+    } else {
+      // Volta ao tema: remover é diferente de escrever o valor padrão. Se eu
+      // escrevesse, o cartão ficaria preso naquela cor quando você trocasse
+      // de tema, enquanto todos os outros mudariam.
+      est.background = '';
+      est.borderColor = '';
+      est.removeProperty('--texto');
+      est.removeProperty('--apagado');
+      est.removeProperty('--ciano');
+    }
+  }
 
   // Tempos novos podem mudar o que já está desenhado (uma sessão que passa a
   // caber, um slide que some): força o redesenho na próxima passada.

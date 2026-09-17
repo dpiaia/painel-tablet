@@ -310,6 +310,18 @@ function resetCores() {
 }
 
 /* --------------------------------------------------------------- recado */
+// As mesmas cinco do app.js, com o texto que cada uma leva junto. Ficam
+// duplicadas de propósito: aqui elas só pintam a amostra do botão, e o painel
+// nunca precisa saber por que a combinação é aquela.
+const CORES_RECADO = [
+  ['',        'Padrão',  '',        'var(--texto)'],
+  ['amarelo', 'Amarelo', '#fde68a', '#422006'],
+  ['verde',   'Verde',   '#bbf7d0', '#052e16'],
+  ['azul',    'Azul',    '#bfdbfe', '#0c2a4d'],
+  ['rosa',    'Rosa',    '#fbcfe8', '#500724'],
+  ['lilas',   'Lilás',   '#ddd6fe', '#2e1065'],
+];
+
 function desenharRecado() {
   const alvo = document.getElementById('recado');
   alvo.innerHTML = '';
@@ -325,6 +337,28 @@ function desenharRecado() {
     campo.appendChild(inp);
     alvo.appendChild(campo);
   });
+
+  // A cor do cartão. Cada amostra já mostra o texto na cor que vai valer, para
+  // a escolha ser pelo resultado e não pelo nome.
+  const campo = document.createElement('div');
+  campo.className = 'campo';
+  campo.innerHTML = '<label><b>Cor do cartão</b>' +
+                    '<span>o texto acompanha</span></label>';
+  const linha = document.createElement('div');
+  linha.className = 'temas';
+  const atual = (painel.recado || {}).cor || '';
+
+  CORES_RECADO.forEach(([id, nome, fundo, texto]) => {
+    const b = document.createElement('button');
+    b.className = 'tema' + (atual === id ? ' ativo' : '');
+    b.innerHTML = '<span class="amostra-recado" style="background:' +
+                  (fundo || 'var(--alto)') + ';color:' + texto + '">Aa</span>' + nome;
+    b.onclick = () => { salvar('recado', 'cor', id); desenharRecado(); };
+    linha.appendChild(b);
+  });
+
+  campo.appendChild(linha);
+  alvo.appendChild(campo);
 }
 
 /* ---------------------------------------------------------- diagnóstico */
