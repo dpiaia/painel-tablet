@@ -32,6 +32,8 @@ const TEMPOS = [
   ['tela',    'Tela de detalhe volta', 's',   'depois do toque'],
   ['festa',   'Cena de conclusão',     's',   'o Clawd quando uma tarefa termina'],
   ['cenagit', 'Cena do GitHub',        's',   'PR novo, status ou CI'],
+  ['cenaagenda',   'Cena de compromisso', 's',   'quando a reunião vai começar'],
+  ['antecedencia', 'Avisar com',          'min', 'de antecedência da reunião'],
   ['bichos',  'Sessões no cartão',     'un.', 'o resto vai pro rodapé'],
   ['contas',  'Contas por slide',      'un.', 'no cartão de mensagens'],
 ];

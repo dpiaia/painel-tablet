@@ -977,6 +977,9 @@ body { display: flex; flex-direction: column; }
   100% { transform: scale(1); }
 }
 
+/* ------------------------------------------------------ relógio da agenda */
+.festa-relogio { width: 19vw; height: 19vw; flex: none; }
+
 /* ------------------------------------------------------------------ texto */
 .festa-texto {
   text-align: center;

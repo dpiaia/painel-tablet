@@ -46,6 +46,11 @@ function tique() {
   $('data').textContent = dia.charAt(0).toUpperCase() + dia.slice(1) + ', ' +
                           d.getDate() + ' de ' + MESES[d.getMonth()];
 
+  // O aviso de compromisso depende do relógio andar, não de o servidor mandar
+  // coisa nova — por isso mora aqui, no tique, e não em conferirCenas.
+  conferirAgenda();
+  proximaCena();
+
   var mudo = Date.now() - ultimoSinal > LIMITE_SILENCIO;
   var selo = $('selo');
   selo.className = mudo ? 'selo off' : 'selo';
@@ -265,6 +270,8 @@ var T = {
   tela: 45,      // até a tela de detalhe voltar sozinha
   festa: 5,      // a cena de conclusão do Claude, em cima de tudo
   cenagit: 4,    // a cena de pull request
+  cenaagenda: 8, // a cena de compromisso começando
+  antecedencia: 3, // MINUTOS de aviso antes do compromisso
   bichos: 3,     // sessões visíveis no cartão
   contas: 3      // contas de e-mail por slide
 };
@@ -1116,6 +1123,73 @@ function conferirGit() {
   vistosGit = agora;
 }
 
+/* -------------------------------------------------------- gatilho: agenda */
+/* Este é o único gatilho que não vem de um fato novo no servidor: nada muda
+ * no estado, é o relógio que anda. Por isso ele roda no tique de cada
+ * segundo, e não na chegada do SSE.
+ *
+ * O que já foi avisado fica no localStorage, não só na memória. Com a página
+ * se recarregando sozinha quando o código muda, guardar só em memória faria
+ * a tela avisar de novo da mesma reunião — e a janela de 3 minutos é
+ * justamente quando isso mais atrapalharia.
+ */
+var avisados = null;
+
+function chaveEvento(e) { return (e.inicio || '') + '|' + (e.titulo || ''); }
+
+function lerAvisados() {
+  try { return JSON.parse(localStorage.getItem('painel-avisados') || '{}'); }
+  catch (e) { return {}; }          // navegação privada, cota cheia, WebView sem storage
+}
+
+function gravarAvisados(mapa) {
+  try { localStorage.setItem('painel-avisados', JSON.stringify(mapa)); }
+  catch (e) {}                      // sem storage o aviso ainda funciona, só não sobrevive ao reload
+}
+
+function conferirAgenda() {
+  var itens = ((estado.agenda || {}).itens) || [];
+  if (!itens.length) return;
+  if (avisados === null) avisados = lerAvisados();
+
+  var agora = agoraS();
+  var janela = Math.max(1, T.antecedencia) * 60;
+  var mudou = false;
+
+  for (var i = 0; i < itens.length; i++) {
+    var e = itens[i];
+    // Evento de dia inteiro não "começa" numa hora: avisar dele seria avisar
+    // à meia-noite de uma coisa que dura o dia.
+    if (e.dia_inteiro || !e.inicio_ts) continue;
+
+    var falta = e.inicio_ts - agora;
+    if (falta <= 0 || falta > janela) continue;
+
+    var k = chaveEvento(e);
+    if (avisados[k]) continue;
+    avisados[k] = agora;
+    mudou = true;
+
+    var min = Math.max(1, Math.round(falta / 60));
+    enfileirar({
+      cor: '#5e35b1',
+      figura: 'relogio',
+      rotulo: 'COMEÇA EM ' + min + (min === 1 ? ' MINUTO' : ' MINUTOS'),
+      nome: e.titulo || 'Compromisso',
+      hora_ts: e.inicio_ts,
+      intro: 700,
+      espera: T.cenaagenda
+    });
+  }
+
+  // Poda: sem isso o localStorage cresceria para sempre. Meio dia é folgado
+  // para qualquer compromisso já ter acontecido.
+  for (var k2 in avisados) {
+    if (agora - avisados[k2] > 43200) { delete avisados[k2]; mudou = true; }
+  }
+  if (mudou) gravarAvisados(avisados);
+}
+
 function conferirCenas() {
   conferirFesta();
   conferirGit();
@@ -1186,18 +1260,32 @@ function proximaCena() {
   var texto = $('festa-texto');
   var clawd = document.querySelector('.festa-clawd');
   var git = $('festa-git');
+  var relogio = $('festa-relogio');
 
   el.style.background = c.cor;
   $('festa-nome').textContent = c.nome;
   $('festa-rot').textContent = c.rotulo;
-  var invertido = c.figura === 'git' ? ' invertido' : '';
+  var invertido = c.figura === 'clawd' ? '' : ' invertido';
   texto.className = 'festa-texto' + invertido;
 
   var ehClawd = c.figura === 'clawd';
   clawd.style.display = ehClawd ? '' : 'none';
   git.removeAttribute('hidden');
-  git.style.display = ehClawd ? 'none' : '';
+  git.style.display = c.figura === 'git' ? '' : 'none';
+  relogio.removeAttribute('hidden');
+  relogio.style.display = c.figura === 'relogio' ? '' : 'none';
   $('festa-confete').style.display = ehClawd ? '' : 'none';
+
+  // Os ponteiros marcam a hora da reunião. 30 graus por hora, 6 por minuto, e
+  // o das horas anda junto com os minutos — senão às 10h55 ele apontaria o 10
+  // cravado, que é errado e a gente percebe sem saber por quê.
+  if (c.figura === 'relogio' && c.hora_ts) {
+    var d2 = new Date(c.hora_ts * 1000);
+    var m = d2.getMinutes();
+    $('ponteiro-h').setAttribute('transform',
+      'rotate(' + ((d2.getHours() % 12) * 30 + m * 0.5) + ' 24 24)');
+    $('ponteiro-m').setAttribute('transform', 'rotate(' + (m * 6) + ' 24 24)');
+  }
 
   if (ehClawd) { montarConfete(); fase('frente'); }
 
