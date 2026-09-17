@@ -64,7 +64,7 @@ _estado = {
 # Fontes que a extensão do navegador tem permissão de escrever. Lista fechada
 # de propósito: um POST não pode inventar chave nova no estado.
 FONTES_EXTERNAS = ("email", "chat", "whatsapp")
-PADRAO_PAINEL = ("cartoes", "tempos", "cores", "recado", "ordem")
+PADRAO_PAINEL = ("cartoes", "tempos", "cores", "recado", "ordem", "tema")
 
 # Chaves do topo do config que o painel de controle pode mudar. Lista fechada
 # de propósito: um POST não encosta em token, caminho de binário nem porta.
@@ -314,7 +314,7 @@ def versao_web():
     que o código mudou e se recarrega.
     """
     marcas = []
-    for nome in ("index.html", "app.js", "style.css"):
+    for nome in ("index.html", "app.js", "style.css", "temas.css"):
         try:
             st = os.stat(os.path.join(WEB_DIR, nome))
             marcas.append("%d-%d" % (st.st_mtime, st.st_size))
@@ -567,7 +567,7 @@ class Handler(BaseHTTPRequestHandler):
         except OSError:
             return self.send_error(404)
 
-        for arquivo in ("style.css", "app.js"):
+        for arquivo in ("style.css", "temas.css", "app.js"):
             try:
                 versao = int(os.path.getmtime(os.path.join(WEB_DIR, arquivo)))
             except OSError:

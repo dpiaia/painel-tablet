@@ -1,0 +1,223 @@
+/* Temas: forma, fonte e ícone. A cor não mora aqui.
+
+   O painel de controle grava as 12 cores e o app.js as escreve como variáveis
+   em <html style>. Estilo inline ganha de qualquer seletor, então se um tema
+   também mexesse em cor, a cor escolhida à mão seria ignorada. A divisão é
+   essa: o tema veste, as variáveis pintam. Trocar de tema não apaga um ajuste
+   fino de cor, e mexer numa cor não desmancha a forma.
+
+   Sobre fonte no tablet: o Android 7 do Tab E só tem Roboto, Noto Serif e
+   Droid Sans Mono. Tahoma, Verdana e MS Sans Serif não existem lá — ficam na
+   pilha porque no Mac fazem diferença, mas no tablet caem em Roboto. Onde o
+   tema precisa mesmo soar antigo, uso `monospace`, que o aparelho tem de
+   verdade.
+
+   Chrome 64: linear-gradient, box-shadow inset, text-shadow e seletor de
+   atributo funcionam. Nada aqui depende de coisa mais nova. */
+
+
+/* ==================================================================== Apple
+   Cantos generosos, moldura quase invisível, sombra no lugar da borda. Peso
+   menor nos títulos e a entrelinha apertada do texto grande. */
+[data-tema="apple"] {
+  --raio: 2vw;
+  --sans: -apple-system, "SF Pro Text", "Helvetica Neue", Roboto, sans-serif;
+}
+[data-tema="apple"] .cartao {
+  border-color: transparent;
+  box-shadow: 0 0.15vw 0.5vw rgba(0,0,0,0.06), 0 0.03vw 0.1vw rgba(0,0,0,0.04);
+}
+[data-tema="apple"] .cartao h2 {
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  font-size: 1vw;
+}
+[data-tema="apple"] .hora { font-weight: 600; letter-spacing: -0.04em; }
+[data-tema="apple"] .marca { font-weight: 600; letter-spacing: -0.03em; }
+[data-tema="apple"] .ic { stroke-width: 1.5; }
+[data-tema="apple"] .etq,
+[data-tema="apple"] .pilula,
+[data-tema="apple"] .chip { border-radius: 10vw; }
+
+
+/* =================================================================== Orkut
+   Módulo de perfil: caixa branca, borda azul fina e a faixa de título azul
+   com o texto branco. O rosa das comunidades entra pelo --ciano. */
+[data-tema="orkut"] {
+  --raio: 0.5vw;
+  --sans: Verdana, Geneva, Roboto, sans-serif;
+}
+[data-tema="orkut"] .cartao {
+  border: 1px solid var(--azul);
+  overflow: hidden;
+}
+/* A faixa do Orkut era clara com o título em azul escuro e um filete embaixo,
+   não uma tarja cheia — e o azul dele (#6699cc) é claro demais para segurar
+   texto branco. Assim fica legível e mais parecido com o módulo original. */
+[data-tema="orkut"] .cartao > header {
+  margin: -1.3vw -1.5vw 1.1vw;
+  padding: 0.55vw 1.5vw;
+  background: var(--dentro);
+  border-bottom: 2px solid var(--azul);
+}
+[data-tema="orkut"] .cartao h2 {
+  color: var(--texto);
+  letter-spacing: 0.02em;
+  font-size: 1.05vw;
+  font-weight: 700;
+}
+[data-tema="orkut"] .cartao > header .ic { stroke: var(--ciano); }
+[data-tema="orkut"] .ic { stroke-width: 2; }
+[data-tema="orkut"] .marca { letter-spacing: -0.04em; }
+[data-tema="orkut"] .etq,
+[data-tema="orkut"] .pilula,
+[data-tema="orkut"] .chip { border-radius: 0.3vw; }
+
+
+/* ================================================================ Facebook
+   O de 2008: #3b5998 na faixa, canto quase reto, tudo mais compacto. */
+[data-tema="facebook"] {
+  --raio: 0.25vw;
+  --sans: "Lucida Grande", Tahoma, Verdana, Roboto, sans-serif;
+}
+[data-tema="facebook"] .cartao {
+  border: 1px solid var(--borda);
+  overflow: hidden;
+}
+[data-tema="facebook"] .cartao > header {
+  margin: -1.3vw -1.5vw 1.1vw;
+  padding: 0.45vw 1.5vw;
+  background: var(--ciano);
+}
+[data-tema="facebook"] .cartao h2,
+[data-tema="facebook"] .cartao > header .etq,
+[data-tema="facebook"] .cartao > header .canto { color: #fff; }
+[data-tema="facebook"] .cartao > header .ic { stroke: #fff; }
+[data-tema="facebook"] .cartao h2 { letter-spacing: 0.01em; font-weight: 700; }
+[data-tema="facebook"] .hora { font-weight: 700; letter-spacing: -0.03em; }
+[data-tema="facebook"] .ic { stroke-width: 2; }
+[data-tema="facebook"] .etq,
+[data-tema="facebook"] .pilula,
+[data-tema="facebook"] .chip { border-radius: 0.2vw; }
+
+
+/* ============================================================== Windows XP
+   Cada cartão é uma janela do Luna: moldura azul de 3px, barra de título com
+   o degradê e o texto branco com sombra. Canto arredondado só em cima, como
+   era. */
+[data-tema="xp"] {
+  --raio: 0.65vw;
+  --sans: Tahoma, Verdana, Roboto, sans-serif;
+}
+[data-tema="xp"] .cartao {
+  border: 3px solid var(--azul);
+  border-radius: 0.65vw 0.65vw 0.2vw 0.2vw;
+  overflow: hidden;
+}
+[data-tema="xp"] .cartao > header {
+  margin: -1.3vw -1.5vw 1.1vw;
+  padding: 0.5vw 1.2vw;
+  background: linear-gradient(to bottom,
+              rgba(255,255,255,0.35) 0%, rgba(255,255,255,0.05) 45%,
+              rgba(0,0,0,0.10) 55%, rgba(0,0,0,0.20) 100%), var(--azul);
+}
+[data-tema="xp"] .cartao h2,
+[data-tema="xp"] .cartao > header .etq,
+[data-tema="xp"] .cartao > header .canto {
+  color: #fff;
+  text-shadow: 1px 1px 1px rgba(0,0,0,0.45);
+}
+[data-tema="xp"] .cartao > header .ic { stroke: #fff; }
+[data-tema="xp"] .ic { stroke-width: 2; }
+[data-tema="xp"] .etq,
+[data-tema="xp"] .pilula,
+[data-tema="xp"] .chip { border-radius: 0.6vw; }
+[data-tema="xp"] .marca { letter-spacing: -0.03em; }
+
+
+/* ============================================================== Windows 95
+   Sem canto e sem borda: o relevo é a sombra interna clássica — claro em
+   cima e à esquerda, escuro embaixo e à direita, em duas camadas. A barra de
+   título vai em monoespaçada, que é a fonte antiga que o tablet realmente
+   tem. Ícone de traço grosso e canto vivo, sem ponta arredondada. */
+[data-tema="win95"] {
+  --raio: 0;
+  --sans: "MS Sans Serif", Tahoma, Verdana, Roboto, sans-serif;
+}
+[data-tema="win95"] .cartao {
+  border: none;
+  box-shadow: inset -1px -1px 0 #000000, inset 1px 1px 0 #ffffff,
+              inset -2px -2px 0 #808080, inset 2px 2px 0 #dfdfdf;
+  padding: 0.5vw 0.6vw 1.1vw;
+}
+[data-tema="win95"] .cartao > header {
+  margin: 0 0 1vw;
+  padding: 0.35vw 0.6vw;
+  background: var(--azul);
+}
+[data-tema="win95"] .cartao h2,
+[data-tema="win95"] .cartao > header .etq,
+[data-tema="win95"] .cartao > header .canto {
+  color: #ffffff;
+  font-family: var(--mono);
+  letter-spacing: 0.06em;
+}
+[data-tema="win95"] .cartao > header .ic { stroke: #ffffff; }
+[data-tema="win95"] .ic {
+  stroke-width: 2.4;
+  stroke-linecap: butt;
+  stroke-linejoin: miter;
+}
+[data-tema="win95"] .hora { letter-spacing: -0.01em; }
+[data-tema="win95"] .marca { font-family: var(--mono); letter-spacing: 0; }
+[data-tema="win95"] .etq,
+[data-tema="win95"] .pilula,
+[data-tema="win95"] .chip,
+[data-tema="win95"] .selo {
+  border-radius: 0;
+  font-family: var(--mono);
+}
+[data-tema="win95"] .selo i { border-radius: 0; }
+[data-tema="win95"] .chip {
+  border: none;
+  box-shadow: inset 1px 1px 0 #808080, inset -1px -1px 0 #ffffff;
+}
+/* A barra de progresso do monitor vira a de instalação do 95: blocos. */
+[data-tema="win95"] .barra,
+[data-tema="win95"] .trilho { border-radius: 0; }
+
+
+/* ============================== fora do cartão, nos temas de área de trabalho
+   Windows XP e 95 invertem a lógica dos outros: a janela é clara e a área de
+   trabalho atrás dela é escura. Como --texto é calibrado para dentro do
+   cartão, o relógio e a barra do topo — que ficam por fora — sumiam contra o
+   teal e o azul. Aqui eles viram texto de área de trabalho, branco, que é
+   como o sistema de verdade sempre escreveu por cima do papel de parede.
+
+   Isto não é cor de tema: são duas superfícies com necessidades opostas, e as
+   variáveis só dão conta de uma. O resto da paleta continua vindo do painel
+   de controle. */
+[data-tema="xp"] .relogio,
+[data-tema="xp"] .marca,
+[data-tema="win95"] .relogio,
+[data-tema="win95"] .marca { color: #ffffff; }
+
+[data-tema="xp"] .data,
+[data-tema="win95"] .data { color: rgba(255,255,255,0.72); }
+
+[data-tema="xp"] .sist,
+[data-tema="win95"] .sist { color: rgba(255,255,255,0.72); }
+[data-tema="xp"] .sist b,
+[data-tema="win95"] .sist b { color: #ffffff; }
+[data-tema="xp"] .sist .div,
+[data-tema="win95"] .sist .div { color: rgba(255,255,255,0.35); }
+
+/* A marca e o selo ganham o relevo da barra de tarefas no 95. */
+[data-tema="win95"] .selo {
+  background: var(--cartao);
+  box-shadow: inset 1px 1px 0 #808080, inset -1px -1px 0 #ffffff;
+}
+
+/* O selo verde do topo se apagava contra o azul da área de trabalho do XP. */
+[data-tema="xp"] .selo { background: rgba(255,255,255,0.18); color: #ffffff; }
+[data-tema="xp"] .selo.off { background: rgba(255,255,255,0.18); color: #ffd7d7; }

@@ -895,6 +895,12 @@ function aplicarAjustes() {
     }
   }
 
+  // --- tema: veste a folha (canto, moldura, fonte, traço do ícone). A cor
+  //     não vem daqui — vem logo abaixo, como estilo inline, que ganha de
+  //     qualquer seletor. Assim trocar de tema não apaga uma cor escolhida a
+  //     dedo, e mexer numa cor não desmancha a forma.
+  document.documentElement.setAttribute('data-tema', a.tema || 'escuro');
+
   // --- cores: a folha inteira usa variáveis, então trocar a variável troca
   //     tudo que depende dela. Nenhum seletor precisa saber disso.
   if (a.cores) {
