@@ -74,6 +74,9 @@ def main():
 
     print("\n%d baixados, %d já existiam, %d falharam" % (baixados, pulados, falhas))
     print("em %s" % DESTINO)
+    print("\nmetade delas vem com fundo branco, que aparece como um selo")
+    print("retangular nas cenas de tela cheia. Para tirar:")
+    print("  python3 ferramentas/limpar_octodex.py")
     if falhas:
         return 1
     return 0

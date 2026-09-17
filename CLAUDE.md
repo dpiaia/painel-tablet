@@ -95,6 +95,11 @@ trademark license". Trazê-las para dentro de um repositório MIT seria
 republicar arte de terceiros sob uma licença que não é nossa para dar. Por
 isso o repositório traz o script e cada um busca na fonte.
 
+Metade delas vem com fundo branco, que numa cena de tela cheia aparece como
+um selo retangular colado por cima. `ferramentas/limpar_octodex.py` tira — por
+preenchimento a partir da borda, não por cor: nessas imagens o branco é de 40 a
+75% do total, porque também é a armadura do stormtrooper e a camisa do Link.
+
 Sem a pasta nada quebra: o painel volta ao mascote próprio.
 
 ### 7. O serviço

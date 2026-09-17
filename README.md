@@ -685,6 +685,15 @@ que só depende do Mac e da rede de casa. E são 1,8 MB que o tablet buscaria de
 novo a cada limpeza de cache — o cache do quiosque já custou três rodadas de
 depuração neste projeto.
 
+`ferramentas/limpar_octodex.py` tira o fundo branco de metade delas, que numa
+cena de tela cheia apareceria como um selo retangular. O detalhe que faz a
+diferença: não dá para apagar "todo pixel branco" — nessas imagens o branco é de
+40 a 75% do total, porque também é a armadura do stormtrooper, a camisa do Link
+e as listras do Waldo. O que funciona é preencher **a partir das bordas**, de
+modo que só some o branco ligado ao lado de fora. Uma segunda passada desfaz a
+franja da antisserrilha, e o GIF animado é regravado com paleta única para a cor
+não derivar entre os quadros.
+
 No cartão entram **só os estáticos**. Um gif animado custa cerca de um terço de
 um núcleo neste tablet (a medição está mais acima); numa cena de quatro
 segundos isso não se sente, num cartão que fica o dia inteiro na tela seria um
