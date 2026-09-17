@@ -172,7 +172,35 @@ function coletar() {
   }
 
   itens.sort(function (a, b) { return a.inicio_ts - b.inicio_ts; });
-  return { itens: itens, cru: cru, blocos: blocos.length, sem_data: semData };
+
+  /* Janela de hoje até oito dias à frente.
+   *
+   * Isto não é economia de dados — é a proteção que falta nesta fonte. A
+   * extensão lê o que está DESENHADO, e a aba pode estar em qualquer lugar do
+   * calendário: você abre março para conferir uma coisa e esquece ali. Sem
+   * janela, o painel mostraria março como se fosse esta semana, com cara de
+   * verdade.
+   *
+   * Com a janela, uma aba fora de lugar devolve lista vazia, e o servidor
+   * prefere a agenda do adb. Vazio é honesto; mês errado não é.
+   */
+  const inicioHoje = new Date();
+  inicioHoje.setHours(0, 0, 0, 0);
+  const limite = inicioHoje.getTime() / 1000 + 8 * 86400;
+  const piso = inicioHoje.getTime() / 1000;
+
+  const naJanela = itens.filter(function (i) {
+    return i.fim_ts > piso && i.inicio_ts < limite;
+  });
+
+  // Até onde a aba deixou ver: o painel usa para saber que a agenda desta
+  // fonte termina no fim da semana visível, e não porque o dia está livre.
+  const alcance = naJanela.length
+    ? naJanela[naJanela.length - 1].inicio.slice(0, 10) : null;
+
+  return { itens: naJanela, cru: cru, blocos: blocos.length,
+           sem_data: semData, descartados: itens.length - naJanela.length,
+           alcance: alcance };
 }
 
 function dois(n) { return n < 10 ? '0' + n : '' + n; }

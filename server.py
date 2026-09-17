@@ -247,8 +247,8 @@ def diagnostico(cfg):
             linha("agenda", "Agenda", "aviso",
                   "adb fora; extensão viu %d eventos em %d blocos%s" % (
                       len(web["itens"]), web.get("blocos", 0),
-                      "" if not web.get("sem_data")
-                      else " (%d sem data)" % web["sem_data"]),
+                      "" if not web.get("alcance")
+                      else ", até %s" % web["alcance"]),
                   idade(web.get("atualizado_em")))
         else:
             linha("agenda", "Agenda", "ruim", str(ag["erro"])[:60],
