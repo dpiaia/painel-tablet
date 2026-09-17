@@ -2,7 +2,17 @@
 <html lang="pt-BR">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no, viewport-fit=cover">
+
+<!-- iPad: "Adicionar à Tela de Início" abre sem a barra do Safari, em tela
+     cheia, e o Acesso Guiado tranca ali. É o equivalente do Fully Kiosk no
+     iOS, sem instalar nada. No Android estas linhas não fazem mal nenhum. -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="PIAIA OS">
+<link rel="apple-touch-icon" href="icone.png">
+<link rel="icon" href="icone.png">
 <title>Painel</title>
 <link rel="stylesheet" href="style.css">
 <link rel="stylesheet" href="temas.css">
