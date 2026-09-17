@@ -95,11 +95,57 @@
      tarefa do Claude termina. Fica fora do .painel de propósito — é uma
      camada por cima de tudo, inclusive da tela de detalhe. -->
 <div class="festa" id="festa" hidden>
-  <div class="festa-meio">
-    <img class="festa-bicho" id="festa-bicho" alt="">
-    <div class="festa-rot">TAREFA CONCLUÍDA</div>
+
+  <!-- Confete: quadradinhos caindo, para combinar com o pixel art. São
+       criados uma vez pelo app.js e só animam translate3d — o compositor dá
+       conta, o que não seria verdade se cada um repintasse área. -->
+  <div class="festa-confete" id="festa-confete"></div>
+
+  <!-- Um SVG só, com o corpo desenhado uma vez e os olhos trocando por cima.
+       Quatro arquivos separados fariam o bichinho piscar e saltar entre os
+       quadros, porque cada troca é uma imagem nova para carregar e medir. -->
+  <!-- viewBox cortado no desenho (o topo do ícone original é 37% de vazio):
+       sem isso o bichinho desce na tela e o nome encosta nas pernas. -->
+  <svg class="festa-clawd" viewBox="0 17 48 31">
+    <g class="corpo">
+      <rect x="6" y="18" width="36" height="24"/>
+      <rect x="9" y="39" width="3" height="9"/>
+      <rect x="15" y="39" width="3" height="9"/>
+      <rect x="30" y="39" width="3" height="9"/>
+      <rect x="36" y="39" width="3" height="9"/>
+      <rect x="0" y="33" width="7.5" height="6"/>
+      <rect x="40.25" y="33" width="7.5" height="6"/>
+    </g>
+    <g class="olhos" data-fase="frente">
+      <rect x="16.5" y="24" width="3" height="6"/>
+      <rect x="28.5" y="24" width="3" height="6"/>
+    </g>
+    <g class="olhos" data-fase="esquerda">
+      <rect x="9"  y="24" width="3" height="6"/>
+      <rect x="21" y="24" width="3" height="6"/>
+    </g>
+    <g class="olhos" data-fase="direita">
+      <rect x="24" y="24" width="3" height="6"/>
+      <rect x="36" y="24" width="3" height="6"/>
+    </g>
+    <g class="olhos" data-fase="pisca">
+      <rect x="16.5" y="24"   width="3"   height="6"/>
+      <rect x="28.5" y="25.5" width="7.5" height="3"/>
+    </g>
+    <g class="olhos" data-fase="oculos">
+      <rect x="12" y="24" width="9" height="9"/>
+      <rect x="27" y="24" width="9" height="9"/>
+      <rect x="21" y="24" width="6" height="3"/>
+      <rect x="6"  y="24" width="7" height="3"/>
+      <rect x="35" y="24" width="7" height="3"/>
+    </g>
+  </svg>
+
+  <div class="festa-texto" id="festa-texto">
     <div class="festa-nome" id="festa-nome"></div>
+    <div class="festa-rot">FINALIZADO</div>
   </div>
+
 </div>
 
 <div class="tela" id="tela" hidden>

@@ -1025,6 +1025,52 @@ function conferirFesta() {
   proximaFesta();
 }
 
+/* O roteiro. Tempos em milissegundos desde o começo.
+ *
+ * Corte seco entre os olhares: é pixel art, e transição suave entre dois
+ * olhos vira borrão. O texto só entra depois dos óculos — antes disso a cena
+ * é do bichinho, e nome de projeto competindo com ele estraga as duas coisas.
+ */
+var ROTEIRO = [
+  [0,    'frente'],
+  [700,  'esquerda'],
+  [1300, 'direita'],
+  [1900, 'frente'],
+  [2350, 'pisca'],
+  [2800, 'frente'],
+  [3050, 'oculos']
+];
+var ENTRA_TEXTO = 3300;
+
+var relogiosFesta = [];
+
+function fase(nome) {
+  var gs = document.querySelectorAll('.festa-clawd .olhos');
+  for (var i = 0; i < gs.length; i++) {
+    gs[i].setAttribute('class',
+      'olhos' + (gs[i].getAttribute('data-fase') === nome ? ' ativa' : ''));
+  }
+}
+
+// O confete é montado uma vez e fica guardado: recriar 22 nós a cada festa
+// custaria layout justo no quadro em que a tela acende.
+function montarConfete() {
+  var caixa = $('festa-confete');
+  if (caixa.childNodes.length) return;
+  var html = '';
+  for (var i = 0; i < 22; i++) {
+    var lado = (0.5 + Math.random() * 0.7).toFixed(2);       // vw
+    var dur = (2.6 + Math.random() * 2.2).toFixed(2);
+    var atraso = (-Math.random() * dur).toFixed(2);          // já caindo ao abrir
+    html += '<i style="left:' + (Math.random() * 100).toFixed(1) + '%;' +
+            'width:' + lado + 'vw;height:' + lado + 'vw;' +
+            'animation:cair ' + dur + 's linear ' + atraso + 's infinite;' +
+            '-webkit-animation:cair ' + dur + 's linear ' + atraso + 's infinite;' +
+            '"></i>';
+  }
+  caixa.innerHTML = html;
+}
+
 function proximaFesta() {
   // Uma de cada vez: duas tarefas terminando juntas viram duas festas em fila,
   // não uma sobre a outra.
@@ -1032,24 +1078,39 @@ function proximaFesta() {
   var s = filaFesta.shift();
   festaAtiva = true;
 
+  for (var i = 0; i < relogiosFesta.length; i++) clearTimeout(relogiosFesta[i]);
+  relogiosFesta = [];
+
   var el = $('festa');
+  var texto = $('festa-texto');
   $('festa-nome').textContent = s.rotulo || s.projeto || 'Tarefa concluída';
-  // Reatribuir o src reinicia o gif do primeiro quadro: escondido ele continua
-  // rodando, e sem isso a festa começaria no meio dos fogos.
-  $('festa-bicho').src = GIFS.fogos;
+  texto.className = 'festa-texto';
+  montarConfete();
+  fase('frente');
 
   el.hidden = false;
   void el.offsetWidth;          // força o layout: sem isso a transição não roda
   el.className = 'festa ver';
 
-  setTimeout(function () {
+  ROTEIRO.forEach(function (passo) {
+    if (!passo[0]) return;
+    relogiosFesta.push(setTimeout(function () { fase(passo[1]); }, passo[0]));
+  });
+
+  relogiosFesta.push(setTimeout(function () {
+    texto.className = 'festa-texto ver';
+  }, ENTRA_TEXTO));
+
+  // T.festa conta a partir da cena final, como você pediu: o nome aparece e
+  // fica parado esses segundos. O teatro antes dele não entra na conta.
+  relogiosFesta.push(setTimeout(function () {
     el.className = 'festa';
-    setTimeout(function () {
+    relogiosFesta.push(setTimeout(function () {
       el.hidden = true;
       festaAtiva = false;
       proximaFesta();
-    }, 400);
-  }, Math.max(1, T.festa) * 1000);
+    }, 420));
+  }, ENTRA_TEXTO + Math.max(1, T.festa) * 1000));
 }
 
 
