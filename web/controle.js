@@ -88,6 +88,12 @@ const TEMAS = [
 
 let painel = null, fontes = {}, pendente = null;
 
+// O que está esperando para ser enviado. Precisa ACUMULAR, e não ser
+// substituído: duas gravações seguidas (o tema grava cores e slug) caíam no
+// mesmo debounce, e a segunda cancelava a primeira. O tema chegava ao servidor
+// sem as cores dele, sem erro nenhum para explicar.
+let acumulado = {};
+
 /* -------------------------------------------------------------- gravação */
 function piscarSalvo() {
   const s = document.getElementById('salvo');
@@ -98,10 +104,15 @@ function piscarSalvo() {
 // Junta as mexidas em rajada num POST só: arrastar um seletor de cor dispara
 // dezenas de eventos por segundo.
 function enviar(corpo, depois) {
+  // Junta as seções em vez de trocar. O debounce continua valendo para quem
+  // digita num campo de texto, mas nenhuma seção se perde pelo caminho.
+  Object.assign(acumulado, corpo);
   clearTimeout(pendente);
   pendente = setTimeout(async () => {
+    const carga = acumulado;
+    acumulado = {};
     const r = await fetch('/ajustes', {method:'POST',
-      headers:{'Content-Type':'application/json'}, body: JSON.stringify(corpo)});
+      headers:{'Content-Type':'application/json'}, body: JSON.stringify(carga)});
     const d = await r.json();
     if (d.fontes) fontes = d.fontes;
     piscarSalvo();

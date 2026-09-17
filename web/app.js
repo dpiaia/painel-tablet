@@ -480,18 +480,21 @@ function slidePRs(titulo, lista, mostrarRepo, vazio, eu, erro) {
   var ordenada = lista.slice().sort(function (a, b) {
     return prioridade(a, eu) - prioridade(b, eu) || b.numero - a.numero;
   });
-  var MOSTRA = 3;   // com o texto maior, mais que isso não cabe no cartão
+  // Todas as linhas são desenhadas; quantas ficam visíveis é decidido depois,
+  // MEDINDO o cartão. Ver ajustarListas.
   // Lista vazia com contato: não há nada pendente, e isso é uma boa notícia —
   // vale mostrar com cara de boa notícia. SEM contato é outra coisa: aí a lista
   // está vazia porque estamos cegos, e dizer "tudo ok" seria justamente o tipo
   // de mentira tranquilizadora que este painel evita em todo lugar.
   var corpo = ordenada.length
-    ? ordenada.slice(0, MOSTRA).map(function (p) { return linhaPR(p, mostrarRepo, eu); }).join('')
+    ? ordenada.map(function (p) { return linhaPR(p, mostrarRepo, eu); }).join('')
     : (erro ? '<div class="pr-vazio">' + vazio + '</div>'
             : '<div class="tudo-ok"><img src="' +
               (octocatDoCartao() || 'tudo-ok.svg') + '" alt="">' +
               '<p>Tudo ok por aqui</p></div>');
-  corpo += rodapeMais(ordenada.length - MOSTRA, 'pull request', 'pull requests');
+  // O rodapé nasce vazio e escondido: só ajustarListas sabe se sobrou alguma
+  // coisa de fora, porque só ele mediu.
+  if (ordenada.length) corpo += '<div class="rodape-mais" hidden></div>';
   return { classe: 'lista-slide', titulo: titulo, icone: ICONE_GITHUB,
            selo: erro ? 'SEM CONTATO' : 'ONLINE', html: corpo };
 }
@@ -601,6 +604,43 @@ function desenharMaquina() {
    quando o cartão do Claude também precisou girar. O DOM só é reconstruído
    quando o conteúdo muda de verdade — refazer o innerHTML a cada ciclo
    cortaria a transição no meio. */
+/* Mostra quantos couberem, e avisa só quando algo ficou de fora.
+ *
+ * O corte é MEDIDO, não estimado. A altura útil do cartão muda com o tema (o
+ * Windows 95 tem relevo no lugar da borda, o Apple tem canto largo), com o
+ * tamanho da tela e com a quantidade de texto de cada linha. Qualquer número
+ * fixo acerta numa combinação e erra nas outras: três era o que cabia no Tab
+ * E, e num iPad de 768px de altura deixava um vão embaixo.
+ *
+ * Esconde em vez de remover: na próxima medição tudo volta a aparecer e a
+ * conta é refeita do zero, sem precisar redesenhar o cartão inteiro.
+ */
+function ajustarListas(idPalco) {
+  var slides = $(idPalco).querySelectorAll('.slide');
+  for (var s = 0; s < slides.length; s++) {
+    var el = slides[s];
+    var rodape = el.querySelector('.rodape-mais');
+    var linhas = el.querySelectorAll('.pr');
+    if (!rodape || !linhas.length) continue;
+
+    for (var i = 0; i < linhas.length; i++) linhas[i].hidden = false;
+    rodape.hidden = true;
+
+    var fora = 0;
+    // Uma linha sempre fica: cartão só com o aviso não informa nada.
+    while (fora < linhas.length - 1 && el.scrollHeight > el.clientHeight + 1) {
+      linhas[linhas.length - 1 - fora].hidden = true;
+      fora++;
+      // O aviso entra já na medição seguinte. Ele também ocupa altura, e
+      // ignorar isso faria a última linha transbordar de volta.
+      rodape.hidden = false;
+      rodape.textContent = 'Mais ' + fora + ' pull request' +
+                           (fora === 1 ? '' : 's') + '. Toque para ver detalhes';
+    }
+    if (!fora) rodape.hidden = true;
+  }
+}
+
 function Slider(idPalco, idPontos) {
   this.palco = idPalco;
   this.pontos = idPontos;
@@ -623,6 +663,9 @@ Slider.prototype.atualizar = function (slides) {
     return '<div class="slide ' + cls + '" data-classe="' + cls + '">' + html + '</div>';
   }).join('');
   $(this.pontos).innerHTML = slides.map(function () { return '<i></i>'; }).join('');
+  // Os slides inativos são invisíveis por opacidade, não por display — então
+  // têm altura medível e todos podem ser ajustados de uma vez, aqui.
+  ajustarListas(this.palco);
   this.slides = slides;
   if (this.atual >= slides.length) this.atual = 0;
   this.mostrar(this.atual);
@@ -931,6 +974,10 @@ function aplicarAjustes() {
   //     qualquer seletor. Assim trocar de tema não apaga uma cor escolhida a
   //     dedo, e mexer numa cor não desmancha a forma.
   document.documentElement.setAttribute('data-tema', a.tema || 'escuro');
+  // O tema muda a altura útil do cartão (o 95 troca borda por relevo, o Apple
+  // tem canto largo), então a conta de quantas linhas cabem tem que ser
+  // refeita — e ela não roda sozinha, porque o conteúdo não mudou.
+  setTimeout(function () { ajustarListas('palco-claude'); ajustarListas('palco'); }, 60);
 
   // --- cores: a folha inteira usa variáveis, então trocar a variável troca
   //     tudo que depende dela. Nenhum seletor precisa saber disso.
@@ -1479,6 +1526,13 @@ function conectar() {
     $('selo').className = 'selo off';   // o EventSource reconecta sozinho
   };
 }
+
+// Virar o tablet, mudar a janela no Mac: a altura do cartão muda e a conta de
+// quantas linhas cabem precisa ser refeita.
+window.addEventListener('resize', function () {
+  ajustarListas('palco-claude');
+  ajustarListas('palco');
+});
 
 ultimoSinal = Date.now();
 conectar();
