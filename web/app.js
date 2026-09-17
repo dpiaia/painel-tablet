@@ -466,9 +466,15 @@ function slidePRs(titulo, lista, mostrarRepo, vazio, eu, erro) {
     return prioridade(a, eu) - prioridade(b, eu) || b.numero - a.numero;
   });
   var MOSTRA = 3;   // com o texto maior, mais que isso não cabe no cartão
+  // Lista vazia com contato: não há nada pendente, e isso é uma boa notícia —
+  // vale mostrar com cara de boa notícia. SEM contato é outra coisa: aí a lista
+  // está vazia porque estamos cegos, e dizer "tudo ok" seria justamente o tipo
+  // de mentira tranquilizadora que este painel evita em todo lugar.
   var corpo = ordenada.length
     ? ordenada.slice(0, MOSTRA).map(function (p) { return linhaPR(p, mostrarRepo, eu); }).join('')
-    : '<div class="pr-vazio">' + vazio + '</div>';
+    : (erro ? '<div class="pr-vazio">' + vazio + '</div>'
+            : '<div class="tudo-ok"><img src="tudo-ok.svg" alt="">' +
+              '<p>Tudo ok por aqui</p></div>');
   corpo += rodapeMais(ordenada.length - MOSTRA, 'pull request', 'pull requests');
   return { classe: 'lista-slide', titulo: titulo, icone: ICONE_GITHUB,
            selo: erro ? 'SEM CONTATO' : 'ONLINE', html: corpo };

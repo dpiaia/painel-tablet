@@ -739,6 +739,40 @@ body { display: flex; flex-direction: column; }
 
 .pr-vazio { color: var(--fraco); font-size: 1vw; margin-top: .5vw; }
 
+/* Nada pendente no GitHub. O bichinho flutua devagar: só translateY, que o
+   compositor resolve sem repintar — e como é <img>, o SVG de 76 traçados é
+   rasterizado uma vez e não a cada quadro. Inline seria o contrário. */
+.tudo-ok {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 0.5vw 0 1vw;
+}
+.tudo-ok img {
+  display: block;
+  width: 9.5vw;
+  height: auto;
+  -webkit-animation: flutuar 3.6s ease-in-out infinite;
+          animation: flutuar 3.6s ease-in-out infinite;
+}
+.tudo-ok p {
+  margin-top: 0.9vw;
+  font-size: 1.15vw;
+  color: var(--apagado);
+}
+
+@-webkit-keyframes flutuar {
+  0%, 100% { -webkit-transform: translateY(0); }
+  50%      { -webkit-transform: translateY(-0.8vw); }
+}
+@keyframes flutuar {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-0.8vw); }
+}
+
 /* =================================== tela dividida: Claude | GitHub */
 .dividido { display: flex; height: 100%; }
 .dividido > * { flex: 1; min-width: 0; display: flex; flex-direction: column; }
