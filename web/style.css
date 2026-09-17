@@ -1011,6 +1011,16 @@ body { display: flex; flex-direction: column; }
   100% { transform: scale(1); }
 }
 
+/* -------------------------------------------------- octocat na cena cheia */
+.festa-foto {
+  display: block;
+  width: 22vw;
+  height: 22vw;
+  flex: none;
+  object-fit: contain;
+  border-radius: 1.2vw;
+}
+
 /* ------------------------------------------------------ relógio da agenda */
 .festa-relogio { width: 19vw; height: 19vw; flex: none; }
 

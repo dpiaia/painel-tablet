@@ -473,7 +473,8 @@ function slidePRs(titulo, lista, mostrarRepo, vazio, eu, erro) {
   var corpo = ordenada.length
     ? ordenada.slice(0, MOSTRA).map(function (p) { return linhaPR(p, mostrarRepo, eu); }).join('')
     : (erro ? '<div class="pr-vazio">' + vazio + '</div>'
-            : '<div class="tudo-ok"><img src="tudo-ok.svg" alt="">' +
+            : '<div class="tudo-ok"><img src="' +
+              (octocatDoCartao() || 'tudo-ok.svg') + '" alt="">' +
               '<p>Tudo ok por aqui</p></div>');
   corpo += rodapeMais(ordenada.length - MOSTRA, 'pull request', 'pull requests');
   return { classe: 'lista-slide', titulo: titulo, icone: ICONE_GITHUB,
@@ -1070,12 +1071,52 @@ var vistosMerge = null;
 
 function chavePR(p) { return p.repo + '#' + p.numero; }
 
+/* ------------------------------------------------------ octocats do Octodex
+ *
+ * A pasta web/octodex/ é opcional (fica fora do git: é arte da GitHub). O
+ * servidor manda a lista do que existe; sem nada, tudo abaixo devolve '' e o
+ * painel volta ao mascote próprio, sem quebrar.
+ *
+ * O cartão e a cena seguem regras diferentes, e a diferença é medida: um gif
+ * animado custa cerca de um terço de um núcleo neste tablet. Na cena, que dura
+ * quatro segundos, isso não se sente. No cartão, que fica a tela inteira do
+ * dia, seria um terço de núcleo queimando para sempre — por isso ali só entram
+ * os estáticos.
+ */
+function listaOctodex(comAnimados) {
+  var todos = estado.octodex || [];
+  if (comAnimados) return todos;
+  var estaticos = [];
+  for (var i = 0; i < todos.length; i++) {
+    if (!/\.gif$/i.test(todos[i])) estaticos.push(todos[i]);
+  }
+  return estaticos;
+}
+
+// Estável entre redesenhos, e troca a cada meia hora. Sortear aqui faria a
+// figura piscar várias vezes por minuto, porque o cartão se redesenha a cada
+// mensagem do SSE.
+function octocatDoCartao() {
+  var lista = listaOctodex(false);
+  if (!lista.length) return '';
+  var fatia = Math.floor((Date.now() + deslocamento) / 1800000);
+  return 'octodex/' + lista[fatia % lista.length];
+}
+
+// Aqui sim, sorteio a cada cena: é o que faz valer a brincadeira.
+function octocatDaCena() {
+  var lista = listaOctodex(true);
+  if (!lista.length) return '';
+  return 'octodex/' + lista[Math.floor(Math.random() * lista.length)];
+}
+
 function cenaGit(cor, rotulo, p) {
   enfileirar({
     cor: COR_GIT[cor] || COR_GIT.azul,
     figura: 'git',
     rotulo: rotulo,
     nome: '#' + p.numero + ' ' + p.titulo,
+    foto: octocatDaCena(),
     intro: 700,          // o gato não tem roteiro; o texto entra quase junto
     espera: T.cenagit
   });
@@ -1293,6 +1334,7 @@ function proximaCena() {
   var clawd = document.querySelector('.festa-clawd');
   var git = $('festa-git');
   var relogio = $('festa-relogio');
+  var foto = $('festa-foto');
 
   el.style.background = c.cor;
   $('festa-nome').textContent = c.nome;
@@ -1302,8 +1344,14 @@ function proximaCena() {
 
   var ehClawd = c.figura === 'clawd';
   clawd.style.display = ehClawd ? '' : 'none';
+  // Com octocat baixado ele entra no lugar da marca; sem, a marca fica.
+  var comFoto = c.figura === 'git' && c.foto;
+  foto.removeAttribute('hidden');
+  foto.style.display = comFoto ? '' : 'none';
+  if (comFoto) foto.src = c.foto;
+
   git.removeAttribute('hidden');
-  git.style.display = c.figura === 'git' ? '' : 'none';
+  git.style.display = (c.figura === 'git' && !comFoto) ? '' : 'none';
   relogio.removeAttribute('hidden');
   relogio.style.display = c.figura === 'relogio' ? '' : 'none';
   $('festa-confete').style.display = ehClawd ? '' : 'none';

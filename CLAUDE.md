@@ -79,6 +79,24 @@ Carregue `extensao/` sem empacotar, em qualquer navegador Chromium (Chrome,
 Opera, Edge, Brave). Ela lê o **título** das abas de Gmail, Chat e WhatsApp e
 nunca clica em nada.
 
+### 6b. Octocats (opcional, e com uma regra de licença)
+
+```
+python3 ferramentas/baixar_octodex.py
+```
+
+Baixa os octocats do Octodex para `web/octodex/`, que o painel usa no cartão
+do GitHub vazio e nas cenas de pull request.
+
+**Nunca commite essa pasta.** As imagens são obra da GitHub. O FAQ deles
+permite usá-las para *se referir à GitHub* — que é exatamente o que o painel
+faz — mas elas continuam sendo "official GitHub artwork under GitHub's
+trademark license". Trazê-las para dentro de um repositório MIT seria
+republicar arte de terceiros sob uma licença que não é nossa para dar. Por
+isso o repositório traz o script e cada um busca na fonte.
+
+Sem a pasta nada quebra: o painel volta ao mascote próprio.
+
 ### 7. O serviço
 
 Um LaunchAgent com `KeepAlive`, para o painel subir sozinho e sobreviver a

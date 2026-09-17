@@ -318,6 +318,37 @@ def carregar_config():
     return cfg
 
 
+_octodex_cache = (0, [])
+
+
+def octodex():
+    """Os octocats que existem em web/octodex/, se alguém os baixou.
+
+    A pasta é opcional e fica fora do git (arte da GitHub). Sem ela o painel
+    usa o mascote próprio e nada quebra — por isso a lista é lida do disco em
+    vez de ser fixa no código: baixar mais ou apagar todos passa a valer sem
+    tocar em nada.
+
+    Cache pela mtime da pasta: isto é chamado a cada publicação, e uma ida ao
+    disco por segundo para uma lista que muda uma vez por ano é desperdício.
+    """
+    global _octodex_cache
+    pasta = os.path.join(WEB_DIR, "octodex")
+    try:
+        marca = os.stat(pasta).st_mtime
+    except OSError:
+        return []
+    if marca == _octodex_cache[0]:
+        return _octodex_cache[1]
+    try:
+        nomes = sorted(n for n in os.listdir(pasta)
+                       if n.lower().endswith((".png", ".jpg", ".jpeg", ".gif")))
+    except OSError:
+        nomes = []
+    _octodex_cache = (marca, nomes)
+    return nomes
+
+
 def versao_web():
     """Impressão digital dos arquivos que o tablet carrega.
 
@@ -343,6 +374,7 @@ def retrato():
     # e o do Mac é o que manda nos horários da agenda.
     dados["servidor_ts"] = time.time()
     dados["versao_web"] = versao_web()
+    dados["octodex"] = octodex()
     return dados
 
 

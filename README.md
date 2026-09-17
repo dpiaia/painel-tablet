@@ -665,6 +665,31 @@ PR antigo volta ao topo só porque alguém comentou nele. Por isso o `mergedAt`
 também tem que ser da última hora — sem isso, comentário em PR de semana
 passada viraria comemoração de merge.
 
+### Os octocats ficam fora do repositório
+
+`ferramentas/baixar_octodex.py` traz os octocats do Octodex para
+`web/octodex/`, usados no cartão vazio e nas cenas de pull request. A pasta
+está no `.gitignore`, de propósito.
+
+O FAQ do Octodex permite usar as imagens para **se referir à GitHub** — que é
+exatamente o que o painel faz, já que elas só aparecem em contexto de GitHub.
+Mas o mesmo FAQ diz que tudo ali é "official GitHub artwork and is under
+GitHub's trademark license". Commitar as imagens aqui seria republicar arte de
+terceiros sob a licença MIT deste repositório, que não é nossa para dar. O
+script resolve os dois lados: o código circula, e cada um busca as imagens na
+fonte.
+
+Elas também ficam **locais** em vez de apontar para `octodex.github.com`. O
+painel é local primeiro: internet caída não pode apagar um mascote de uma tela
+que só depende do Mac e da rede de casa. E são 1,8 MB que o tablet buscaria de
+novo a cada limpeza de cache — o cache do quiosque já custou três rodadas de
+depuração neste projeto.
+
+No cartão entram **só os estáticos**. Um gif animado custa cerca de um terço de
+um núcleo neste tablet (a medição está mais acima); numa cena de quatro
+segundos isso não se sente, num cartão que fica o dia inteiro na tela seria um
+terço de núcleo queimando para sempre.
+
 ### Por que pelo `gh` e não pela API
 
 O `gh` já está autenticado na máquina, com o token no chaveiro do macOS.
