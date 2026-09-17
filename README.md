@@ -1,11 +1,43 @@
 # Painel do tablet
 
-Transforma um Samsung Galaxy Tab E parado num painel de trabalho: hora, agenda,
-clima, e-mail, Google Chat e o estado do Claude Code, numa tela só.
+Transforma um tablet Android velho — aqui um **Samsung Galaxy Tab E (SM-T560,
+de 2015)** — num painel de trabalho de mesa: hora, agenda, clima, e-mails não
+lidos, Google Chat, WhatsApp, pull requests e o estado das sessões do Claude
+Code, tudo numa tela só.
 
-O Mac é o cérebro e o tablet é só vidro. Todas as chamadas externas acontecem no
-Mac; o tablet abre uma página HTTP na rede local e escuta atualizações. Nenhuma
-credencial chega perto do aparelho.
+## Como as peças se encaixam
+
+```
+   Mac (roda tudo)                        Tablet (só mostra)
+┌──────────────────────────┐           ┌──────────────────────┐
+│  servidor Python         │           │                      │
+│   ├ clima, agenda, PRs   │──HTTP────▶│  navegador em tela   │
+│   ├ CPU/memória do Mac   │   + SSE   │  cheia, sem interface│
+│   └ hooks do Claude Code │           │                      │
+│                          │           └──────────────────────┘
+│  extensão do navegador   │                  rede local
+│   └ conta não lidos ─────┘
+└──────────────────────────┘
+```
+
+**O processamento é todo no Mac; o tablet é só vidro.** Ele não fala com a
+internet, não guarda credencial e não roda lógica nenhuma — abre uma página na
+rede local e desenha o que chega. Um aparelho de 2015 dá conta porque não
+pedimos nada dele além de pintar pixels.
+
+Três peças:
+
+1. **O servidor** (Python, no Mac) coleta tudo e serve a página. Roda como
+   serviço do `launchd`: sobe no login e reinicia sozinho.
+2. **A extensão do navegador** (Chrome, Opera, Edge, Brave — qualquer um da
+   família Chromium) fica ligada no seu navegador de trabalho e conta os não
+   lidos de Gmail, Google Chat e WhatsApp Web pelo **título da aba**. Não raspa
+   DOM e não precisa de API: o número já está ali, e isso sobrevive a
+   redesenho de interface.
+3. **Os hooks do Claude Code** avisam o servidor quando uma sessão começa a
+   trabalhar, pede algo ou termina.
+
+Nenhuma credencial chega perto do tablet, e nenhuma API paga é usada.
 
 ## Instalar
 

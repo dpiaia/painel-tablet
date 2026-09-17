@@ -866,3 +866,31 @@ body { display: flex; flex-direction: column; }
    `display` do autor ganha dele. Como .cartao é flex, desligar um cartão não
    escondia nada. Isto resolve de uma vez para todos. */
 [hidden] { display: none !important; }
+
+/* Clima e recado dividem a linha. Com um dos dois desligado, o outro toma a
+   largura inteira sozinho — é só o flex fazendo o trabalho, sem regra extra. */
+/* O clima abraça o próprio conteúdo (a temperatura tem largura previsível) e
+   o recado fica com todo o resto — texto é o que mais precisa de espaço.
+   Com o recado desligado, o clima volta a esticar sozinho. */
+.dupla.topo { flex: none; align-items: stretch; }
+.dupla.topo > [data-cartao="clima"]  { flex: 0 0 auto; }
+.dupla.topo > [data-cartao="recado"] { flex: 1; min-width: 0; }
+.dupla.topo > [data-cartao="clima"]:only-child { flex: 1; }
+.dupla.topo .recado-corpo p { font-size: 1.35vw; }
+
+/* Clima dividindo a linha com o recado: os detalhes descem para uma faixa
+   embaixo, como era antes do redesenho. Na metade da largura não há espaço
+   para a coluna da direita — ela sobrepunha a temperatura. */
+.cartao.estreito .clima-corpo { display: block; }
+.cartao.estreito .clima-esq { width: 100%; }
+.cartao.estreito .clima-temp { font-size: 3.4vw; }
+.cartao.estreito .clima-txt { font-size: 1.15vw; }
+.cartao.estreito .clima-esq svg.tempo { width: 4.2vw; height: 4.2vw; }
+
+/* Sensação, extremas e chuva somem: em meia largura eles viravam letrinha
+   ilegível, e o que importa de relance é a temperatura e a condição. O
+   detalhe continua a um toque de distância, na tela da semana. */
+.cartao.estreito .clima-dir { display: none; }
+.cartao.estreito .clima-corpo { display: flex; align-items: center; }
+.cartao.estreito .clima-temp { font-size: 4vw; }
+.cartao.estreito .clima-txt { font-size: 1.3vw; }

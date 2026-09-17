@@ -14,8 +14,10 @@ import mimetypes
 import os
 import queue
 import socket
+import subprocess
 import threading
 import time
+import urllib.parse
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 import agenda
@@ -122,6 +124,60 @@ def carregar_claude():
 _trava = threading.Lock()
 _inscritos = set()
 _trava_inscritos = threading.Lock()
+
+
+def recarregar_tablet(cfg):
+    """Recarrega a página no tablet, contando cada passo.
+
+    O adb cai sozinho o tempo todo (o tablet dorme, o Wi-Fi oscila), e antes
+    isto falhava em silêncio: o botão piscava e nada acontecia. Agora ele
+    reconecta quando precisa e devolve o que fez, passo a passo — se falhar,
+    você lê por quê em vez de ficar apertando de novo.
+    """
+    adb = cfg.get("adb", "")
+    serial = cfg.get("tablet", "")
+    url = "http://%s:%d" % (ip_local(), int(cfg.get("porta", 8766)))
+    passos = []
+
+    def rodar(args, limite=15):
+        return subprocess.run([adb] + args, capture_output=True, text=True, timeout=limite)
+
+    if not (adb and serial):
+        return {"ok": False, "passos": ["falta 'adb' ou 'tablet' no config"]}
+
+    try:
+        ligado = ("%s\tdevice" % serial) in rodar(["devices"], 10).stdout
+        if not ligado:
+            passos.append("adb estava fora — reconectando")
+            rodar(["disconnect", serial], 10)
+            rodar(["connect", serial], 12)
+            ligado = ("%s\tdevice" % serial) in rodar(["devices"], 10).stdout
+            if not ligado:
+                passos.append("não respondeu: o tablet está ligado e na rede?")
+                return {"ok": False, "passos": passos}
+            passos.append("reconectado")
+
+        rodar(["-s", serial, "shell", "input", "keyevent", "KEYCODE_WAKEUP"], 10)
+        r = rodar(["-s", serial, "shell", "am", "start",
+                   "-a", "android.intent.action.VIEW", "-d", url,
+                   "-n", "de.ozerov.fully/.MainActivity"], 20)
+        if r.returncode != 0 or "Error" in (r.stderr or ""):
+            # Fully Kiosk pode não estar instalado; tenta o navegador padrão
+            passos.append("Fully Kiosk não respondeu — tentando o navegador padrão")
+            r = rodar(["-s", serial, "shell", "am", "start",
+                       "-a", "android.intent.action.VIEW", "-d", url], 20)
+            if r.returncode != 0:
+                passos.append((r.stderr or "falhou").strip()[:80])
+                return {"ok": False, "passos": passos}
+
+        passos.append("página recarregada")
+        return {"ok": True, "passos": passos}
+    except subprocess.TimeoutExpired:
+        passos.append("o adb travou — tablet dormindo ou fora da rede")
+        return {"ok": False, "passos": passos}
+    except Exception as erro:
+        passos.append(str(erro)[:90])
+        return {"ok": False, "passos": passos}
 
 
 def diagnostico(cfg):
@@ -249,12 +305,31 @@ def carregar_config():
     return cfg
 
 
+def versao_web():
+    """Impressão digital dos arquivos que o tablet carrega.
+
+    Ajuste de cor viaja pelo SSE e vale na hora; mudança de HTML ou CSS, não —
+    o tablet fica com a versão velha até alguém recarregar, e alguém precisa
+    estar na frente dele. Com esta marca no estado, a própria página percebe
+    que o código mudou e se recarrega.
+    """
+    marcas = []
+    for nome in ("index.html", "app.js", "style.css"):
+        try:
+            st = os.stat(os.path.join(WEB_DIR, nome))
+            marcas.append("%d-%d" % (st.st_mtime, st.st_size))
+        except OSError:
+            marcas.append("?")
+    return "|".join(marcas)
+
+
 def retrato():
     with _trava:
         dados = dict(_estado)
     # O tablet acerta o relógio por aqui: o relógio dele pode estar errado,
     # e o do Mac é o que manda nos horários da agenda.
     dados["servidor_ts"] = time.time()
+    dados["versao_web"] = versao_web()
     return dados
 
 
@@ -362,8 +437,11 @@ class Handler(BaseHTTPRequestHandler):
         # "fontes" mexe no topo do config (cidade, repo, intervalos), não na
         # seção do painel — por isso sai antes do laço.
         for chave, valor in (novos.pop("fontes", None) or {}).items():
-            if chave in FONTES_EDITAVEIS:
-                cfg[chave] = valor
+            if chave not in FONTES_EDITAVEIS:
+                continue
+            # Guarda "org/repo" mesmo quando colaram a URL inteira: o resto do
+            # código espera o formato curto.
+            cfg[chave] = github.normalizar(valor) if chave == "repo_design" else valor
 
         for secao, valores in novos.items():
             if secao not in PADRAO_PAINEL:
@@ -386,17 +464,7 @@ class Handler(BaseHTTPRequestHandler):
         cfg = carregar_config()
 
         if nome == "recarregar":
-            # Manda o Fully Kiosk abrir a URL de novo. Vai por adb porque a
-            # administração remota do app está desligada (era recurso pago).
-            try:
-                subprocess.run([cfg.get("adb", ""), "-s", cfg.get("tablet", ""),
-                                "shell", "am", "start", "-a", "android.intent.action.VIEW",
-                                "-d", "http://%s:%d" % (ip_local(), int(cfg.get("porta", 8766))),
-                                "-n", "de.ozerov.fully/.MainActivity"],
-                               capture_output=True, timeout=15)
-                return self._json({"ok": True})
-            except Exception as erro:
-                return self._json({"ok": False, "erro": str(erro)[:120]})
+            return self._json(recarregar_tablet(cfg))
 
         return self.send_error(400, "acao desconhecida")
 
@@ -447,6 +515,16 @@ class Handler(BaseHTTPRequestHandler):
             if not eh_local(self):
                 return self.send_error(403, "o controle so abre no proprio Mac")
             return self._arquivo("controle.html")
+        if rota == "/verificar-repo":
+            if not eh_local(self):
+                return self.send_error(403)
+            alvo = urllib.parse.parse_qs(
+                urllib.parse.urlparse(self.path).query).get("url", [""])[0]
+            cfg = carregar_config()
+            try:
+                return self._json(github.verificar(cfg.get("gh", ""), alvo))
+            except Exception as erro:
+                return self._json({"ok": False, "repo": "", "motivo": str(erro)[:90]})
         if rota == "/diagnostico":
             if not eh_local(self):
                 return self.send_error(403)

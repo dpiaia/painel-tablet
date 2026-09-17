@@ -48,6 +48,7 @@
     },
     "ordem": [
       "clima",
+      "recado",
       "claude",
       "agenda",
       "mensagens",

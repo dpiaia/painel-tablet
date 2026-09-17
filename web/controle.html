@@ -3,99 +3,188 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Controle do Painel</title>
 <style>
-/* Esta página roda no Mac, não no tablet: aqui pode usar CSS moderno à
-   vontade. A camisa de força do Chrome 64 vale só para o index.html. */
-:root{ --bg:#0b0d10; --card:#14171d; --linha:#232833; --txt:#e8edf3;
-       --mudo:#8b94a0; --ciano:#22d3ee; --verde:#22c55e; --laranja:#f59e0b;
-       --vermelho:#ef4444; --mono:"SF Mono",Menlo,monospace }
+/* Esta página roda no Mac, em navegador moderno: aqui pode usar CSS à vontade.
+   A camisa de força do Chrome 64 vale só para o index.html, que é o que abre
+   no tablet. */
+:root{
+  --bg:#0a0c0f; --painel:#12151b; --alto:#181c24; --linha:#232833;
+  --txt:#e9eef4; --mudo:#8e97a3; --fraco:#5b6470;
+  --ciano:#22d3ee; --verde:#22c55e; --laranja:#f59e0b; --vermelho:#ef4444;
+  --mono:ui-monospace,"SF Mono",Menlo,monospace;
+  --r:10px;
+}
 *{box-sizing:border-box;margin:0}
-body{background:var(--bg);color:var(--txt);font:15px/1.5 system-ui,sans-serif;padding:28px}
-header{display:flex;align-items:baseline;gap:14px;margin-bottom:24px}
-h1{font-size:20px;font-weight:700;letter-spacing:-.01em}
-.sub{color:var(--mudo);font:12px var(--mono);letter-spacing:.1em}
-#salvo{margin-left:auto;font:12px var(--mono);color:var(--verde);opacity:0;transition:opacity .25s}
+body{background:var(--bg);color:var(--txt);
+     font:15px/1.5 system-ui,-apple-system,sans-serif;
+     display:grid;grid-template-columns:320px minmax(0,1fr);
+     gap:20px;padding:20px;min-height:100vh;align-items:start}
+
+/* ----------------------------------------------------------- cabeçalho */
+.topo{grid-column:1/-1;display:flex;align-items:baseline;gap:12px;
+      padding-bottom:14px;border-bottom:1px solid var(--linha)}
+h1{font-size:19px;font-weight:650;letter-spacing:-.01em}
+.selo{font:11px var(--mono);letter-spacing:.14em;color:var(--fraco);
+      border:1px solid var(--linha);border-radius:99px;padding:2px 9px}
+#salvo{margin-left:auto;font:12px var(--mono);color:var(--verde);
+       opacity:0;transition:opacity .2s}
 #salvo.ver{opacity:1}
 
-.grade{display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:16px;align-items:start}
-section{background:var(--card);border:1px solid var(--linha);border-radius:12px;padding:18px}
-h2{font:600 11px var(--mono);letter-spacing:.16em;color:var(--mudo);margin-bottom:14px}
+/* --------------------------------------------------------- coluna fixa */
+aside{position:sticky;top:20px;background:var(--painel);
+      border:1px solid var(--linha);border-radius:var(--r);padding:16px}
 
-.linha{display:flex;align-items:center;gap:12px;padding:7px 0;border-top:1px solid var(--linha)}
+/* ------------------------------------------------------------- seções */
+main{display:flex;flex-direction:column;gap:20px}
+section{background:var(--painel);border:1px solid var(--linha);
+        border-radius:var(--r);padding:18px 20px}
+h2{font:600 11px var(--mono);letter-spacing:.18em;color:var(--mudo);
+   margin-bottom:4px}
+.sobre{font-size:13px;color:var(--fraco);margin-bottom:14px}
+
+/* ---------------------------------------------------------- linha base */
+.linha{display:flex;align-items:center;gap:14px;padding:10px 0;
+       border-top:1px solid var(--linha)}
 .linha:first-of-type{border-top:0}
-.linha label{flex:1;min-width:0}
-.linha .dica,.empilha .dica{display:block;font-size:12px;color:var(--mudo)}
+.rot{flex:1;min-width:0}
+.rot b{font-weight:500}
+.rot span{display:block;font-size:12.5px;color:var(--fraco);margin-top:1px}
 
-input[type=number],input[type=text],select{
-  background:#0b0d12;border:1px solid var(--linha);color:var(--txt);
-  border-radius:7px;padding:6px 9px;font:13px var(--mono);width:84px;text-align:right}
-input[type=text]{width:100%;text-align:left}
-input[type=color]{width:38px;height:28px;padding:0;border:1px solid var(--linha);
-  border-radius:7px;background:none;cursor:pointer}
-input:focus,select:focus{outline:none;border-color:var(--ciano)}
+input[type=number]{width:78px;text-align:right}
+input[type=number],input[type=text]{
+  background:#0a0c11;border:1px solid var(--linha);color:var(--txt);
+  border-radius:8px;padding:7px 10px;font:13px var(--mono)}
+input[type=text]{width:100%}
+input:focus{outline:none;border-color:var(--ciano)}
+.unidade{font:12px var(--mono);color:var(--fraco);width:24px}
 
-/* interruptor */
-.chave{position:relative;width:42px;height:24px;flex:none;cursor:pointer}
-.chave input{opacity:0;width:0;height:0;position:absolute}
-.chave i{position:absolute;inset:0;background:#2a3040;border-radius:99px;transition:background .18s}
-.chave i::after{content:"";position:absolute;top:3px;left:3px;width:18px;height:18px;
-  background:#8b94a0;border-radius:50%;transition:transform .18s,background .18s}
-.chave input:checked + i{background:rgba(34,211,238,.25)}
-.chave input:checked + i::after{transform:translateX(18px);background:var(--ciano)}
+/* ---------------------------------------------------------- interruptor */
+.chave{position:relative;width:40px;height:23px;flex:none;cursor:pointer}
+.chave input{position:absolute;opacity:0;width:0;height:0}
+.chave i{position:absolute;inset:0;background:#2a3140;border-radius:99px;
+         transition:background .16s}
+.chave i::after{content:"";position:absolute;top:3px;left:3px;width:17px;
+  height:17px;background:#8e97a3;border-radius:50%;
+  transition:transform .16s,background .16s}
+.chave input:checked + i{background:rgba(34,211,238,.22)}
+.chave input:checked + i::after{transform:translateX(17px);background:var(--ciano)}
 
-.cores{display:grid;grid-template-columns:repeat(2,1fr);gap:8px 14px}
-.cor{display:flex;align-items:center;gap:9px}
-.cor span{font:11px var(--mono);color:var(--mudo)}
+/* ------------------------------------------------------- cartões+ordem */
+.mover{display:flex;gap:4px;flex:none}
+.mover button{width:26px;height:26px;padding:0;font:13px var(--mono);
+              display:grid;place-items:center}
+.linha.off .rot{opacity:.4}
 
-/* diagnóstico */
-.diag{display:flex;align-items:center;gap:10px;padding:8px 0;border-top:1px solid var(--linha)}
+/* ------------------------------------------------------------- campos */
+.campo{padding:12px 0;border-top:1px solid var(--linha)}
+.campo:first-of-type{border-top:0}
+.campo label{display:block;margin-bottom:6px}
+.campo label b{font-weight:500}
+.campo label span{display:block;font-size:12.5px;color:var(--fraco)}
+.aviso{margin-top:7px;font:12px var(--mono);display:flex;align-items:center;gap:7px}
+.aviso.ok{color:var(--verde)} .aviso.ruim{color:var(--vermelho)}
+.aviso.indo{color:var(--fraco)}
+
+/* -------------------------------------------------------------- cores */
+.grupo-cor{margin-bottom:16px}
+.grupo-cor:last-child{margin-bottom:0}
+.grupo-cor h3{font:600 10px var(--mono);letter-spacing:.16em;
+              color:var(--fraco);margin-bottom:9px}
+.cores{display:grid;grid-template-columns:repeat(auto-fill,minmax(132px,1fr));
+       gap:9px}
+.cor{display:flex;align-items:center;gap:9px;background:var(--alto);
+     border:1px solid var(--linha);border-radius:8px;padding:6px 9px}
+.cor input{width:26px;height:26px;padding:0;border:1px solid var(--linha);
+           border-radius:6px;background:none;cursor:pointer;flex:none}
+.cor span{font:11.5px var(--mono);color:var(--mudo);overflow:hidden;
+          text-overflow:ellipsis;white-space:nowrap}
+
+/* --------------------------------------------------------------- temas */
+.temas{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:18px}
+.tema{display:flex;align-items:center;gap:8px;background:var(--alto);
+      border:1px solid var(--linha);border-radius:99px;padding:5px 12px 5px 6px;
+      cursor:pointer;font:13px system-ui;color:var(--txt)}
+.tema:hover{border-color:var(--ciano)}
+.amostra{display:flex;border-radius:99px;overflow:hidden;flex:none}
+.amostra i{width:9px;height:18px}
+
+/* ------------------------------------------------------ passos da ação */
+#passos{margin-top:10px;font:12px var(--mono);color:var(--mudo)}
+#passos div{padding:2px 0;display:flex;gap:6px}
+#passos div::before{content:"·";color:var(--fraco)}
+#passos.ok div:last-child{color:var(--verde)}
+#passos.ruim div:last-child{color:var(--vermelho)}
+
+/* --------------------------------------------------------- diagnóstico */
+.diag{display:flex;align-items:baseline;gap:9px;padding:7px 0;
+      border-top:1px solid var(--linha)}
 .diag:first-of-type{border-top:0}
-.bola{width:9px;height:9px;border-radius:50%;flex:none}
+.bola{width:8px;height:8px;border-radius:50%;flex:none;position:relative;top:4px}
 .bola.ok{background:var(--verde)} .bola.aviso{background:var(--laranja)}
 .bola.ruim{background:var(--vermelho)}
-.diag .nome{flex:none;width:150px}
-.diag .txt{color:var(--mudo);font-size:13px;flex:1;min-width:0;
-  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.diag .quando{font:11px var(--mono);color:#5a6170;flex:none}
+.diag .nome{flex:none;width:108px;font-size:13.5px}
+.diag .txt{flex:1;min-width:0;font-size:12.5px;color:var(--mudo);
+           overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.diag .quando{font:11px var(--mono);color:var(--fraco);flex:none}
 
-button{background:#1b2029;border:1px solid var(--linha);color:var(--txt);
-  border-radius:8px;padding:8px 14px;font:13px system-ui;cursor:pointer}
-button:hover{border-color:var(--ciano);color:var(--ciano)}
-.acoes{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px}
-
-.empilha{padding:8px 0;border-top:1px solid var(--linha)}
-.empilha:first-child{border-top:0}
-.empilha label{display:block;margin-bottom:5px}
-
-.ordem li{display:flex;align-items:center;gap:10px;padding:7px 0;
-  border-top:1px solid var(--linha);list-style:none}
-.ordem li:first-child{border-top:0}
-.ordem .nome{flex:1}
-.ordem button{padding:3px 9px;font:12px var(--mono)}
+button{background:var(--alto);border:1px solid var(--linha);color:var(--txt);
+       border-radius:8px;padding:7px 13px;font:13px system-ui;cursor:pointer;
+       transition:border-color .15s,color .15s}
+button:hover:not(:disabled){border-color:var(--ciano);color:var(--ciano)}
+button:disabled{opacity:.3;cursor:default}
+.acoes{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px;
+       padding-top:14px;border-top:1px solid var(--linha)}
 </style></head><body>
 
-<header>
+<div class="topo">
   <h1>Controle do Painel</h1>
-  <span class="sub">SÓ NESTE MAC</span>
+  <span class="selo">SÓ NESTE MAC</span>
   <span id="salvo">salvo</span>
-</header>
+</div>
 
-<div class="grade">
-  <section><h2>DIAGNÓSTICO</h2><div id="diag"></div>
-    <div class="acoes">
-      <button onclick="verDiag()">Atualizar</button>
-      <button onclick="acao('recarregar')">Recarregar o tablet</button>
-    </div>
+<aside>
+  <h2>ESTADO</h2>
+  <p class="sobre">Atualiza sozinho a cada 15s.</p>
+  <div id="diag"></div>
+  <div class="acoes">
+    <button onclick="verDiag()">Atualizar</button>
+    <button id="btRecarregar" onclick="recarregar()">Recarregar o tablet</button>
+  </div>
+  <div id="passos"></div>
+</aside>
+
+<main>
+  <section>
+    <h2>O QUE APARECE</h2>
+    <p class="sobre">Ligue, desligue e reordene. Muda no tablet na hora.</p>
+    <div id="cartoes"></div>
   </section>
 
-  <section><h2>FONTES</h2><div id="fontes"></div></section>
-  <section><h2>CARTÕES NA TELA</h2><div id="cartoes"></div></section>
-  <section><h2>ORDEM DOS CARTÕES</h2><ul class="ordem" id="ordem"></ul></section>
-  <section><h2>TEMPOS</h2><div id="tempos"></div></section>
-  <section><h2>CORES</h2><div class="cores" id="cores"></div>
+  <section>
+    <h2>FONTES DE DADOS</h2>
+    <p class="sobre">De onde vem o conteúdo e de quanto em quanto tempo.</p>
+    <div id="fontes"></div>
+  </section>
+
+  <section>
+    <h2>RECADO</h2>
+    <p class="sobre">Um texto seu na tela. Ligue o cartão "Recado" acima.</p>
+    <div id="recado"></div>
+  </section>
+
+  <section>
+    <h2>RITMO</h2>
+    <p class="sobre">Quanto tempo cada coisa fica antes de mudar.</p>
+    <div id="tempos"></div>
+  </section>
+
+  <section>
+    <h2>CORES</h2>
+    <p class="sobre">A folha de estilo inteira usa estas variáveis.</p>
+    <div id="temas" class="temas"></div>
+    <div id="cores"></div>
     <div class="acoes"><button onclick="resetCores()">Voltar ao padrão</button></div>
   </section>
-  <section><h2>RECADO NA TELA</h2><div id="recado"></div></section>
-</div>
+</main>
 
 <script src="controle.js"></script>
 </body></html>

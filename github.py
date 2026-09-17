@@ -9,6 +9,7 @@ Uma consulta só traz as três listas (minhas, do repo de design, e as que pedem
 revisão minha): três buscas separadas seriam três idas à rede.
 """
 import json
+import re
 import subprocess
 
 CAMPOS = """
@@ -49,6 +50,49 @@ def _limpar(no, pedidos_ids):
         "ci": rollup.get("state"),
         "meu_review": no.get("number") in pedidos_ids,
     }
+
+
+def normalizar(texto):
+    """Aceita o que a pessoa colar e devolve 'org/repo'.
+
+    Ninguém decora 'org/repo'; todo mundo copia a URL da barra do navegador.
+    Aceita https://github.com/org/repo, com ou sem .git, com ou sem barra no
+    fim, e também o formato curto já correto.
+    """
+    t = (texto or "").strip()
+    # O protocolo é opcional: muita gente cola "github.com/org/repo" sem ele.
+    t = re.sub(r"^(https?://)?(www\.)?github\.com/", "", t)
+    t = re.sub(r"^git@github\.com:", "", t)
+    t = re.sub(r"\.git$", "", t)
+    t = t.strip("/")
+    partes = [p for p in t.split("/") if p]
+    return "/".join(partes[:2]) if len(partes) >= 2 else ""
+
+
+def verificar(gh, texto, timeout=20):
+    """Diz se dá para vigiar esse repositório — e por que não, quando não dá."""
+    repo = normalizar(texto)
+    if not repo:
+        return {"ok": False, "repo": "", "motivo": "não parece um repositório do GitHub"}
+
+    r = subprocess.run([gh, "api", "repos/" + repo, "--jq",
+                        ".full_name + \"|\" + (.private|tostring) + \"|\" + (.permissions.pull|tostring)"],
+                       capture_output=True, text=True, timeout=timeout)
+    if r.returncode != 0:
+        erro = (r.stderr or "").lower()
+        if "404" in erro or "not found" in erro:
+            # 404 no GitHub também é a resposta para "existe mas você não vê"
+            return {"ok": False, "repo": repo,
+                    "motivo": "não existe, ou existe e a sua conta não tem acesso"}
+        if "401" in erro or "403" in erro:
+            return {"ok": False, "repo": repo, "motivo": "sem permissão nesta conta"}
+        return {"ok": False, "repo": repo, "motivo": (r.stderr or "falhou").strip()[:90]}
+
+    nome, privado, leitura = (r.stdout.strip().split("|") + ["", ""])[:3]
+    if leitura == "false":
+        return {"ok": False, "repo": nome, "motivo": "a sua conta não pode ler este repositório"}
+    return {"ok": True, "repo": nome,
+            "motivo": "privado, com acesso" if privado == "true" else "público"}
 
 
 def ler(gh, repo_design, timeout=45):

@@ -13,6 +13,7 @@ var estado = {};
 var deslocamento = 0;      // relógio do Mac menos o do tablet, em ms
 var ultimoSinal = 0;
 var ultimoMinuto = -1;
+var versaoWeb = '';
 var LIMITE_SILENCIO = 40000;
 
 var DIAS = ['domingo', 'segunda-feira', 'terça-feira', 'quarta-feira',
@@ -139,10 +140,12 @@ function desenharClima() {
     '<div class="clima-txt">' + escapar(c.texto) + '</div></div>';
 
   var chuva = (c.chuva === null || c.chuva === undefined) ? '—' : c.chuva + '%';
+  // Cada par embrulhado: em coluna eles empilham, na faixa estreita viram três
+  // blocos lado a lado. Um <span> solto não daria para posicionar nos dois.
   $('clima-dir').innerHTML =
-    '<span class="rot">SENSAÇÃO</span><span class="val">' + c.sensacao + '°C</span>' +
-    '<span class="rot">EXTREMAS</span><span class="val">' + c.min + '° · ' + c.max + '°</span>' +
-    '<span class="rot">CHUVA</span><span class="val chuva">' + chuva + '</span>';
+    '<div><span class="rot">SENSAÇÃO</span><span class="val">' + c.sensacao + '°C</span></div>' +
+    '<div><span class="rot">EXTREMAS</span><span class="val">' + c.min + '° · ' + c.max + '°</span></div>' +
+    '<div><span class="rot">CHUVA</span><span class="val chuva">' + chuva + '</span></div>';
 }
 
 /* ================================================================= agenda */
@@ -936,6 +939,17 @@ function aplicarAjustes() {
     }
   }
 
+  // --- clima em meia largura quando divide a linha com o recado
+  //
+  // Sem container queries (Chrome 64 não tem), quem sabe que o cartão ficou
+  // estreito é o JS: se os dois estão ligados, o clima muda de arranjo e os
+  // detalhes descem para uma faixa embaixo em vez de disputar a direita.
+  var clima = document.querySelector('[data-cartao="clima"]');
+  if (clima) {
+    var dividindo = cartoes.clima !== false && cartoes.recado !== false;
+    clima.className = clima.className.replace(/ ?estreito/, '') + (dividindo ? ' estreito' : '');
+  }
+
   // --- recado
   var r = a.recado || {};
   var t = $('recado-titulo'), x = $('recado-texto');
@@ -968,6 +982,17 @@ function conectar() {
   fonte.onmessage = function (ev) {
     ultimoSinal = Date.now();
     try { estado = JSON.parse(ev.data); } catch (e) { return; }
+
+    // O código mudou no Mac: a própria página se recarrega.
+    //
+    // Ajuste de cor ou de tempo viaja pelo SSE e vale na hora, mas mudança de
+    // HTML ou CSS não — o tablet ficava com a versão velha até alguém ir até
+    // lá e recarregar. Isto fecha o buraco: não precisa de adb, nem da API do
+    // quiosque, nem de encostar no aparelho.
+    if (estado.versao_web) {
+      if (!versaoWeb) versaoWeb = estado.versao_web;
+      else if (versaoWeb !== estado.versao_web) { location.reload(); return; }
+    }
     if (estado.servidor_ts) deslocamento = estado.servidor_ts * 1000 - Date.now();
     ultimoMinuto = -1;
     desenhar();
