@@ -263,6 +263,7 @@ var T = {
   sono: 600,     // até o Clawd dormir
   mascote: 30,   // troca entre picareta e faíscas
   tela: 45,      // até a tela de detalhe voltar sozinha
+  festa: 5,      // a tela de conclusão em cima de tudo
   bichos: 3,     // sessões visíveis no cartão
   contas: 3      // contas de e-mail por slide
 };
@@ -982,6 +983,76 @@ function desenhar() {
 }
 
 /* ================================================================ conexão */
+/* ------------------------------------------------------- festa de conclusão
+ *
+ * Quando uma sessão passa para "pronto", a tela inteira vira laranja com o
+ * mascote grande e o nome da tarefa, por T.festa segundos.
+ *
+ * Duas regras evitam que isto vire ruído:
+ *
+ *  - na primeira mensagem do SSE só se ANOTA o que já estava concluído, sem
+ *    festejar. Sem isso a tela comemoraria a cada recarregamento — e a página
+ *    agora recarrega sozinha quando o código muda no Mac.
+ *
+ *  - conclusão com mais de 30 s não festeja. Reconexão, servidor reiniciado ou
+ *    tablet que acabou de acordar trazem o mesmo "pronto" de volta, e uma
+ *    festa atrasada faria você procurar na tela uma coisa que já passou.
+ */
+var festejadas = null;
+var filaFesta = [];
+var festaAtiva = false;
+
+function chaveSessao(s) { return s.transcricao || s.rotulo || s.projeto || '?'; }
+
+function conferirFesta() {
+  var lista = ((estado.claude || {}).sessoes) || [];
+  var concluidas = {};
+  for (var i = 0; i < lista.length; i++) {
+    if (lista[i].estado === 'pronto') concluidas[chaveSessao(lista[i])] = lista[i].em;
+  }
+
+  if (festejadas === null) { festejadas = concluidas; return; }
+
+  for (var i = 0; i < lista.length; i++) {
+    var s = lista[i];
+    if (s.estado !== 'pronto') continue;
+    var k = chaveSessao(s);
+    if (festejadas[k] === s.em) continue;          // já vista, mesma conclusão
+    if ((agoraS() - s.em) > 30) continue;          // velha demais para comemorar
+    filaFesta.push(s);
+  }
+  festejadas = concluidas;
+  proximaFesta();
+}
+
+function proximaFesta() {
+  // Uma de cada vez: duas tarefas terminando juntas viram duas festas em fila,
+  // não uma sobre a outra.
+  if (festaAtiva || !filaFesta.length) return;
+  var s = filaFesta.shift();
+  festaAtiva = true;
+
+  var el = $('festa');
+  $('festa-nome').textContent = s.rotulo || s.projeto || 'Tarefa concluída';
+  // Reatribuir o src reinicia o gif do primeiro quadro: escondido ele continua
+  // rodando, e sem isso a festa começaria no meio dos fogos.
+  $('festa-bicho').src = GIFS.fogos;
+
+  el.hidden = false;
+  void el.offsetWidth;          // força o layout: sem isso a transição não roda
+  el.className = 'festa ver';
+
+  setTimeout(function () {
+    el.className = 'festa';
+    setTimeout(function () {
+      el.hidden = true;
+      festaAtiva = false;
+      proximaFesta();
+    }, 400);
+  }, Math.max(1, T.festa) * 1000);
+}
+
+
 function conectar() {
   var fonte = new EventSource('/events');
 
@@ -1003,6 +1074,7 @@ function conectar() {
     ultimoMinuto = -1;
     desenhar();
     tique();
+    conferirFesta();
   };
 
   // Batimento: não traz dado, só prova que o Mac continua respirando.

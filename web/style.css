@@ -906,3 +906,71 @@ body { display: flex; flex-direction: column; }
 .cartao.estreito .clima-corpo { display: flex; align-items: center; }
 .cartao.estreito .clima-temp { font-size: 4vw; }
 .cartao.estreito .clima-txt { font-size: 1.3vw; }
+
+
+/* ============================================================ festa de conclusão
+   A tela inteira vira laranja por alguns segundos quando uma tarefa termina.
+
+   Só opacity e transform se movem. Num Mali-400, animar a cor de uma área
+   deste tamanho seria repaint de tela cheia a cada quadro — o painel inteiro
+   engasgaria justo no momento que deveria comemorar.
+
+   O laranja é fixo, não o --laranja do tema: no tema Claro aquele token é um
+   âmbar escuro feito para texto miúdo sobre branco (#b45309), e tela cheia
+   dele dá marrom. Aqui a cor é o recado, então ela é escolhida para isso.
+
+   E o Clawd é terracota (#d97757), quase a mesma luminância do laranja — sem
+   ajuda ele desapareceria no fundo. O contorno branco resolve: o mascote é
+   pixel art de borda dura, e o halo acompanha a silhueta. */
+.festa {
+  position: fixed;
+  left: 0; top: 0; right: 0; bottom: 0;
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #ea580c;
+  opacity: 0;
+  transition: opacity 0.28s ease;
+  will-change: opacity;
+}
+.festa.ver { opacity: 1; }
+
+.festa-meio {
+  text-align: center;
+  transform: scale(0.86);
+  transition: transform 0.36s cubic-bezier(0.2, 0.9, 0.3, 1.25);
+  will-change: transform;
+}
+.festa.ver .festa-meio { transform: scale(1); }
+
+.festa-bicho {
+  display: block;
+  width: 26vw;
+  height: 22vw;
+  margin: 0 auto 2vw;
+  object-fit: contain;
+  image-rendering: pixelated;
+  -webkit-filter: drop-shadow(0 0 0.12vw #fff) drop-shadow(0 0 0.12vw #fff)
+                  drop-shadow(0 0 0.9vw rgba(255,255,255,0.55));
+  filter: drop-shadow(0 0 0.12vw #fff) drop-shadow(0 0 0.12vw #fff)
+          drop-shadow(0 0 0.9vw rgba(255,255,255,0.55));
+}
+
+.festa-rot {
+  font-family: var(--mono);
+  font-size: 1.5vw;
+  letter-spacing: 0.3em;
+  color: rgba(255,255,255,0.75);
+  margin-bottom: 0.8vw;
+}
+
+.festa-nome {
+  font-size: 3.6vw;
+  font-weight: 700;
+  line-height: 1.15;
+  color: #ffffff;
+  max-width: 76vw;
+  margin: 0 auto;
+  text-shadow: 0 0.12vw 0.3vw rgba(0,0,0,0.35);
+}

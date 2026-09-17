@@ -63,7 +63,9 @@ _estado = {
 
 # Fontes que a extensão do navegador tem permissão de escrever. Lista fechada
 # de propósito: um POST não pode inventar chave nova no estado.
-FONTES_EXTERNAS = ("email", "chat", "whatsapp")
+# "agenda_web" é a reserva: quando o adb não alcança o tablet, a extensão lê a
+# agenda da aba do Google Agenda aberta no Opera e manda por aqui.
+FONTES_EXTERNAS = ("email", "chat", "whatsapp", "agenda_web")
 PADRAO_PAINEL = ("cartoes", "tempos", "cores", "recado", "ordem", "tema")
 
 # Chaves do topo do config que o painel de controle pode mudar. Lista fechada
@@ -231,7 +233,10 @@ def diagnostico(cfg):
     if ag.get("erro"):
         linha("agenda", "Agenda", "ruim", str(ag["erro"])[:60], idade(ag.get("atualizado_em")))
     else:
-        linha("agenda", "Agenda", "ok", "%d eventos na semana" % len(ag.get("itens") or []),
+        linha("agenda", "Agenda", "ok",
+              "%d eventos na semana%s" % (
+                  len(ag.get("itens") or []),
+                  "" if ag.get("origem") != "navegador" else " (pela extensão: o adb caiu)"),
               idade(ag.get("atualizado_em")))
 
     # --- github
@@ -663,13 +668,27 @@ def laco_agenda(cfg):
         try:
             ultimos = agenda.eventos(adb, serial, dias=7)
             ultimo_ts = time.time()
-            publicar(agenda={"itens": ultimos, "atualizado_em": ultimo_ts, "erro": None})
+            publicar(agenda={"itens": ultimos, "atualizado_em": ultimo_ts,
+                             "origem": "adb", "erro": None})
         except Exception as erro:
             print("agenda falhou: %s" % erro)
-            # Mantém o último resultado bom e marca como velho. Apagar a agenda
-            # da tela seria pior: você olharia e acharia que o dia está livre.
-            publicar(agenda={"itens": ultimos, "atualizado_em": ultimo_ts,
-                             "erro": str(erro)})
+            # O adb caiu. Antes de mostrar agenda velha, tenta a reserva: a
+            # extensão lê o que está na tela do Google Agenda no Opera. Ela só
+            # serve se for recente — uma leitura de ontem mentiria tanto quanto
+            # a agenda velha do adb, e sem avisar.
+            reserva = _estado.get("agenda_web") or {}
+            itens_web = reserva.get("itens") or []
+            idade = time.time() - (reserva.get("atualizado_em") or 0)
+            if itens_web and idade < 600:
+                publicar(agenda={"itens": itens_web,
+                                 "atualizado_em": reserva.get("atualizado_em"),
+                                 "origem": "navegador", "erro": None})
+            else:
+                # Sem reserva: mantém o último resultado bom e marca como
+                # velho. Apagar a agenda da tela seria pior — você olharia e
+                # acharia que o dia está livre.
+                publicar(agenda={"itens": ultimos, "atualizado_em": ultimo_ts,
+                                 "origem": "adb", "erro": str(erro)})
         esperar(intervalo)
 
 
