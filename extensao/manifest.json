@@ -5,11 +5,13 @@
   "description": "Lê os contadores de Gmail, Google Chat e WhatsApp e a agenda da aba do Google Agenda, e envia para o painel do tablet.",
   "permissions": [
     "tabs",
-    "alarms"
+    "alarms",
+    "scripting"
   ],
   "host_permissions": [
     "http://127.0.0.1/*",
-    "http://localhost/*"
+    "http://localhost/*",
+    "https://calendar.google.com/*"
   ],
   "background": {
     "service_worker": "background.js"

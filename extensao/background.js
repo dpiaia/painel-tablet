@@ -125,6 +125,38 @@ chrome.tabs.onCreated.addListener(agendar);
 chrome.alarms.create('batimento', { periodInMinutes: 1 });
 chrome.alarms.onAlarm.addListener(enviar);
 
+/* Injeta o leitor de agenda nas abas do Calendar que JÁ estão abertas.
+ *
+ * O Manifest V3 só injeta content script quando a aba carrega. Recarregar a
+ * extensão com o Calendar aberto não faz nada — a aba continua sem o script, e
+ * a agenda simplesmente não chega, sem erro nenhum para explicar. Custou uma
+ * rodada de "recarreguei e não veio".
+ *
+ * Injetar de novo numa aba que já tem o script é inofensivo: o de antes para de
+ * existir junto com a página, e dois timers na mesma aba só mandariam o mesmo
+ * dado duas vezes.
+ */
+async function injetarAgenda() {
+  try {
+    const abas = await chrome.tabs.query({ url: 'https://calendar.google.com/*' });
+    for (const t of abas) {
+      try {
+        await chrome.scripting.executeScript({ target: { tabId: t.id },
+                                               files: ['agenda.js'] });
+      } catch (e) {
+        // Aba descartada pelo navegador, ou sem permissão ainda concedida.
+      }
+    }
+  } catch (e) {
+    // Navegador sem a API de scripting: a injeção normal do manifesto continua
+    // valendo quando a aba recarregar.
+  }
+}
+
+chrome.runtime.onStartup.addListener(injetarAgenda);
+chrome.runtime.onInstalled.addListener(injetarAgenda);
+injetarAgenda();
+
 chrome.runtime.onStartup.addListener(enviar);
 chrome.runtime.onInstalled.addListener(enviar);
 enviar();
