@@ -3,7 +3,7 @@
   "porta": 8766,
   "clima_intervalo_s": 600,
   "adb": "/opt/homebrew/bin/adb",
-  "tablet": "192.168.0.23:5555",
+  "tablet": "192.168.0.20:5555",
   "agenda_intervalo_s": 120,
   "maquina_intervalo_s": 15,
   "gh": "/opt/homebrew/bin/gh",

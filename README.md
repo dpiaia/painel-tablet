@@ -5,6 +5,11 @@ de 2015)** — num painel de trabalho de mesa: hora, agenda, clima, e-mails não
 lidos, Google Chat, WhatsApp, pull requests e o estado das sessões do Claude
 Code, tudo numa tela só.
 
+> **Acabou de clonar?** Abra o Claude Code na pasta e peça para ele instalar.
+> O `CLAUDE.md` traz o roteiro: ele pergunta em que aparelho o painel vai
+> aparecer, de onde vem a agenda, gera a configuração e o token, e fecha pelo
+> diagnóstico em vez de "parece que funcionou".
+
 ## Como as peças se encaixam
 
 ```
@@ -39,10 +44,32 @@ Três peças:
 
 Nenhuma credencial chega perto do tablet, e nenhuma API paga é usada.
 
+## Não precisa ser um tablet Android
+
+O alvo aqui é um Tab E, e é dele que vêm todas as restrições — mas o painel é
+uma página numa rede local, e **a restrição porta para cima de graça**: a folha
+foi escrita para o WebView 64 de 2018, que é subconjunto de qualquer navegador
+mais novo.
+
+Num **iPad** (testado no layout de 1024x768, o 4:3 do Air 2) nada quebra, só
+sobra ar no rodapé dos cartões. O modo quiosque é nativo: Safari → Compartilhar
+→ Adicionar à Tela de Início abre em tela cheia sem barra nenhuma, e o Acesso
+Guiado tranca ali — sem instalar aplicativo e sem marca d'água.
+
+Duas coisas não atravessam, porque vêm do `adb`:
+
+- **Bateria e Wi-Fi do aparelho** não existem no iOS. O cartão some sozinho em
+  vez de mostrar valor velho.
+- **A agenda** precisa de outra fonte: o Calendar do macOS, a extensão lendo a
+  aba do Google Agenda, ou a URL iCal do calendário.
+
+O botão de recarregar, que usa `adb`, deixa de ser necessário — a página se
+recarrega sozinha quando o código muda no Mac.
+
 ## Instalar
 
 Precisa de macOS (os coletores usam `vm_stat`, `sysctl` e `launchd`), Python 3.9+
-e um tablet Android na mesma rede. `adb` e `gh` são opcionais — sem eles a
+e um aparelho na mesma rede. `adb` e `gh` são opcionais — sem eles a
 agenda e o cartão do GitHub ficam vazios, o resto funciona.
 
 ```bash

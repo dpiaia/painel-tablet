@@ -42,7 +42,7 @@ PADRAO = {
     # Caminho absoluto de propósito: o LaunchAgent roda com um PATH mínimo e
     # não acha o adb sozinho.
     "adb": "/opt/homebrew/bin/adb",
-    "tablet": "192.168.0.23:5555",
+    "tablet": "192.168.0.20:5555",
     "agenda_intervalo_s": 120,
 }
 

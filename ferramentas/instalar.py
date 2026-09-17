@@ -44,7 +44,7 @@ def main():
         print("Criando config.json a partir do exemplo.\n")
 
     cfg["cidade"] = perguntar("Cidade do clima", cfg.get("cidade", "São Paulo, SP"))
-    cfg["tablet"] = perguntar("Tablet no adb (ip:porta)", cfg.get("tablet", "192.168.0.23:5555"))
+    cfg["tablet"] = perguntar("Tablet no adb (ip:porta)", cfg.get("tablet", "192.168.0.20:5555"))
     cfg["repo_design"] = perguntar("Repositório a vigiar (org/repo, ou vazio)",
                                    cfg.get("repo_design", ""))
     cfg["adb"] = caminho_de("adb", ["/opt/homebrew/bin/adb", "/usr/local/bin/adb"])

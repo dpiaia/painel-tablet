@@ -44,4 +44,4 @@ def ler(adb, serial, timeout=20):
 
 
 if __name__ == "__main__":
-    print(ler("/opt/homebrew/bin/adb", "192.168.0.23:5555"))
+    print(ler("/opt/homebrew/bin/adb", "192.168.0.20:5555"))

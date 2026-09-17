@@ -117,4 +117,4 @@ if __name__ == "__main__":
     import json
     import sys
     print(json.dumps(eventos(sys.argv[1] if len(sys.argv) > 1 else "/opt/homebrew/bin/adb",
-                             "192.168.0.23:5555"), ensure_ascii=False, indent=2))
+                             "192.168.0.20:5555"), ensure_ascii=False, indent=2))
