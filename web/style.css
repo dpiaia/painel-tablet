@@ -872,11 +872,22 @@ body { display: flex; flex-direction: column; }
 /* O clima abraça o próprio conteúdo (a temperatura tem largura previsível) e
    o recado fica com todo o resto — texto é o que mais precisa de espaço.
    Com o recado desligado, o clima volta a esticar sozinho. */
-.dupla.topo { flex: none; align-items: stretch; }
-.dupla.topo > [data-cartao="clima"]  { flex: 0 0 auto; }
-.dupla.topo > [data-cartao="recado"] { flex: 1; min-width: 0; }
-.dupla.topo > [data-cartao="clima"]:only-child { flex: 1; }
-.dupla.topo .recado-corpo p { font-size: 1.35vw; }
+/* O nome era `dupla topo` e caía na mesma regra da barra do topo da tela —
+   herdava o padding dela, e por isso a linha nascia deslocada e sobrando
+   espaço à direita. Nome próprio resolve, e some a ambiguidade do
+   querySelector('.topo') lá no app.js. */
+.dupla.abertura { flex: none; align-items: stretch; }
+.dupla.abertura > [data-cartao="clima"]  { flex: 0 0 auto; min-width: 15vw; }
+.dupla.abertura > [data-cartao="recado"] { flex: 1; min-width: 0; }
+.dupla.abertura > [data-cartao="clima"]:only-child { flex: 1; }
+.dupla.abertura .recado-corpo p { font-size: 1.35vw; }
+
+/* O corpo do recado parava na altura do texto e deixava um vão embaixo: o
+   cartão tinha 128px e a frase ocupava 21. Esticando o corpo, o texto se
+   centraliza no espaço que sobra do cabeçalho — igual ao clima, que já fazia
+   isso. É o que faz os dois ocuparem a linha inteira, e não flutuarem nela. */
+.dupla.abertura .recado-corpo,
+.dupla.abertura .clima-corpo { flex: 1; min-height: 0; }
 
 /* Clima dividindo a linha com o recado: os detalhes descem para uma faixa
    embaixo, como era antes do redesenho. Na metade da largura não há espaço
@@ -891,6 +902,7 @@ body { display: flex; flex-direction: column; }
    ilegível, e o que importa de relance é a temperatura e a condição. O
    detalhe continua a um toque de distância, na tela da semana. */
 .cartao.estreito .clima-dir { display: none; }
+.cartao.estreito .clima-esq { justify-content: center; }
 .cartao.estreito .clima-corpo { display: flex; align-items: center; }
 .cartao.estreito .clima-temp { font-size: 4vw; }
 .cartao.estreito .clima-txt { font-size: 1.3vw; }
