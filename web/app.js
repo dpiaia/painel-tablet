@@ -263,7 +263,8 @@ var T = {
   sono: 600,     // até o Clawd dormir
   mascote: 30,   // troca entre picareta e faíscas
   tela: 45,      // até a tela de detalhe voltar sozinha
-  festa: 5,      // a tela de conclusão em cima de tudo
+  festa: 5,      // a cena de conclusão do Claude, em cima de tudo
+  cenagit: 4,    // a cena de pull request
   bichos: 3,     // sessões visíveis no cartão
   contas: 3      // contas de e-mail por slide
 };
@@ -983,24 +984,43 @@ function desenhar() {
 }
 
 /* ================================================================ conexão */
-/* ------------------------------------------------------- festa de conclusão
+/* ------------------------------------------------------------------ cenas
  *
- * Quando uma sessão passa para "pronto", a tela inteira vira laranja com o
- * mascote grande e o nome da tarefa, por T.festa segundos.
+ * A tela inteira por alguns segundos, quando acontece algo que vale
+ * interromper: uma tarefa do Claude terminou, chegou um pull request para
+ * revisar, o status de um PR seu mudou, o CI virou.
  *
- * Duas regras evitam que isto vire ruído:
+ * Três regras evitam que isto vire ruído — e as três já foram necessárias:
  *
- *  - na primeira mensagem do SSE só se ANOTA o que já estava concluído, sem
- *    festejar. Sem isso a tela comemoraria a cada recarregamento — e a página
- *    agora recarrega sozinha quando o código muda no Mac.
+ *  - na primeira mensagem do SSE só se ANOTA o que já existe, sem encenar.
+ *    Sem isso a tela encenaria tudo a cada recarregamento, e ela recarrega
+ *    sozinha quando o código muda no Mac.
  *
- *  - conclusão com mais de 30 s não festeja. Reconexão, servidor reiniciado ou
- *    tablet que acabou de acordar trazem o mesmo "pronto" de volta, e uma
- *    festa atrasada faria você procurar na tela uma coisa que já passou.
+ *  - fato com mais de 30 s não vira cena. Reconexão, servidor reiniciado ou
+ *    tablet que acabou de acordar trazem o mesmo estado de volta, e uma cena
+ *    atrasada faz você procurar na tela uma coisa que já passou.
+ *
+ *  - no máximo 3 na fila. Se a busca do GitHub falhar e voltar, tudo parece
+ *    novo de uma vez; sem teto, a tela ficaria minutos sequestrada.
  */
+var TETO_FILA = 3;
+var filaCena = [];
+var cenaAtiva = false;
+var relogiosCena = [];
+
+// As cores semânticas do próprio GitHub, e não os tokens do tema. O --laranja
+// do tema Escuro é um âmbar claro: ótimo para um selo de 10px, ilegível como
+// fundo de tela cheia com texto branco. Estas cinco seguram texto branco.
+var COR_GIT = {
+  azul:     '#1f6feb',
+  verde:    '#1a7f37',
+  vermelho: '#cf222e',
+  amarelo:  '#9a6700',
+  cinza:    '#57606a'
+};
+
+/* ---------------------------------------------------- gatilho: Claude Code */
 var festejadas = null;
-var filaFesta = [];
-var festaAtiva = false;
 
 function chaveSessao(s) { return s.transcricao || s.rotulo || s.projeto || '?'; }
 
@@ -1018,14 +1038,92 @@ function conferirFesta() {
     if (s.estado !== 'pronto') continue;
     var k = chaveSessao(s);
     if (festejadas[k] === s.em) continue;          // já vista, mesma conclusão
-    if ((agoraS() - s.em) > 30) continue;          // velha demais para comemorar
-    filaFesta.push(s);
+    if ((agoraS() - s.em) > 30) continue;          // velha demais para encenar
+    enfileirar({
+      cor: '#d97757',
+      figura: 'clawd',
+      rotulo: 'FINALIZADO',
+      nome: s.rotulo || s.projeto || 'Tarefa concluída',
+      intro: ENTRA_TEXTO,
+      espera: T.festa
+    });
   }
   festejadas = concluidas;
-  proximaFesta();
 }
 
-/* O roteiro. Tempos em milissegundos desde o começo.
+/* --------------------------------------------------------- gatilho: GitHub */
+var vistosGit = null;
+
+function chavePR(p) { return p.repo + '#' + p.numero; }
+
+function cenaGit(cor, rotulo, p) {
+  enfileirar({
+    cor: COR_GIT[cor] || COR_GIT.azul,
+    figura: 'git',
+    rotulo: rotulo,
+    nome: '#' + p.numero + ' ' + p.titulo,
+    intro: 700,          // o gato não tem roteiro; o texto entra quase junto
+    espera: T.cenagit
+  });
+}
+
+function conferirGit() {
+  var g = estado.git || {};
+  var meus = g.meus || [];
+  var design = g.design || [];
+
+  // Busca falhando devolve listas vazias. Se eu anotasse esse vazio como
+  // baseline, tudo pareceria novo quando ela voltasse.
+  if (g.erro || (!meus.length && !design.length)) return;
+
+  var agora = {};
+  var i;
+  for (i = 0; i < meus.length; i++) {
+    agora[chavePR(meus[i])] = { revisao: meus[i].revisao, ci: meus[i].ci, meu: true };
+  }
+  for (i = 0; i < design.length; i++) {
+    var k = chavePR(design[i]);
+    if (!agora[k]) agora[k] = { revisao: design[i].revisao, ci: design[i].ci, meu: false };
+  }
+
+  if (vistosGit === null) { vistosGit = agora; return; }
+
+  // PR novo no repositório de design, de outra pessoa, esperando revisão.
+  for (i = 0; i < design.length; i++) {
+    var d = design[i];
+    if (vistosGit[chavePR(d)]) continue;
+    if (d.autor === g.eu || d.rascunho || d.revisao === 'APPROVED') continue;
+    cenaGit('azul', 'A REVISAR', d);
+  }
+
+  // Meus PRs: mudança de status e virada do CI. Só os meus — um PR alheio
+  // mudando de status é assunto de outra pessoa.
+  for (i = 0; i < meus.length; i++) {
+    var p = meus[i];
+    var antes = vistosGit[chavePR(p)];
+    if (!antes) continue;                      // PR recém-aberto por mim não é notícia
+
+    if (antes.revisao !== p.revisao) {
+      var r = rotuloRevisao(p, true);
+      cenaGit(r.cor, r.txt, p);
+    }
+    if (antes.ci !== p.ci) {
+      if (p.ci === 'SUCCESS') cenaGit('verde', 'CI PASSOU', p);
+      else if (p.ci === 'FAILURE' || p.ci === 'ERROR') cenaGit('vermelho', 'CI QUEBROU', p);
+    }
+  }
+
+  vistosGit = agora;
+}
+
+function conferirCenas() {
+  conferirFesta();
+  conferirGit();
+  proximaCena();
+}
+
+/* ------------------------------------------------------------ encenação */
+/* O roteiro do Clawd. Tempos em milissegundos desde o começo.
  *
  * Corte seco entre os olhares: é pixel art, e transição suave entre dois
  * olhos vira borrão. O texto só entra depois dos óculos — antes disso a cena
@@ -1042,8 +1140,6 @@ var ROTEIRO = [
 ];
 var ENTRA_TEXTO = 3300;
 
-var relogiosFesta = [];
-
 function fase(nome) {
   var gs = document.querySelectorAll('.festa-clawd .olhos');
   for (var i = 0; i < gs.length; i++) {
@@ -1052,7 +1148,7 @@ function fase(nome) {
   }
 }
 
-// O confete é montado uma vez e fica guardado: recriar 22 nós a cada festa
+// O confete é montado uma vez e fica guardado: recriar 22 nós a cada cena
 // custaria layout justo no quadro em que a tela acende.
 function montarConfete() {
   var caixa = $('festa-confete');
@@ -1071,46 +1167,65 @@ function montarConfete() {
   caixa.innerHTML = html;
 }
 
-function proximaFesta() {
-  // Uma de cada vez: duas tarefas terminando juntas viram duas festas em fila,
-  // não uma sobre a outra.
-  if (festaAtiva || !filaFesta.length) return;
-  var s = filaFesta.shift();
-  festaAtiva = true;
+function enfileirar(cena) {
+  if (filaCena.length >= TETO_FILA) return;
+  filaCena.push(cena);
+}
 
-  for (var i = 0; i < relogiosFesta.length; i++) clearTimeout(relogiosFesta[i]);
-  relogiosFesta = [];
+function proximaCena() {
+  // Uma de cada vez: dois fatos juntos viram duas cenas em fila, não uma
+  // sobre a outra.
+  if (cenaAtiva || !filaCena.length) return;
+  var c = filaCena.shift();
+  cenaAtiva = true;
+
+  for (var i = 0; i < relogiosCena.length; i++) clearTimeout(relogiosCena[i]);
+  relogiosCena = [];
 
   var el = $('festa');
   var texto = $('festa-texto');
-  $('festa-nome').textContent = s.rotulo || s.projeto || 'Tarefa concluída';
-  texto.className = 'festa-texto';
-  montarConfete();
-  fase('frente');
+  var clawd = document.querySelector('.festa-clawd');
+  var git = $('festa-git');
+
+  el.style.background = c.cor;
+  $('festa-nome').textContent = c.nome;
+  $('festa-rot').textContent = c.rotulo;
+  var invertido = c.figura === 'git' ? ' invertido' : '';
+  texto.className = 'festa-texto' + invertido;
+
+  var ehClawd = c.figura === 'clawd';
+  clawd.style.display = ehClawd ? '' : 'none';
+  git.removeAttribute('hidden');
+  git.style.display = ehClawd ? 'none' : '';
+  $('festa-confete').style.display = ehClawd ? '' : 'none';
+
+  if (ehClawd) { montarConfete(); fase('frente'); }
 
   el.hidden = false;
   void el.offsetWidth;          // força o layout: sem isso a transição não roda
   el.className = 'festa ver';
 
-  ROTEIRO.forEach(function (passo) {
-    if (!passo[0]) return;
-    relogiosFesta.push(setTimeout(function () { fase(passo[1]); }, passo[0]));
-  });
+  if (ehClawd) {
+    ROTEIRO.forEach(function (passo) {
+      if (!passo[0]) return;
+      relogiosCena.push(setTimeout(function () { fase(passo[1]); }, passo[0]));
+    });
+  }
 
-  relogiosFesta.push(setTimeout(function () {
-    texto.className = 'festa-texto ver';
-  }, ENTRA_TEXTO));
+  relogiosCena.push(setTimeout(function () {
+    texto.className = 'festa-texto ver' + invertido;
+  }, c.intro));
 
-  // T.festa conta a partir da cena final, como você pediu: o nome aparece e
-  // fica parado esses segundos. O teatro antes dele não entra na conta.
-  relogiosFesta.push(setTimeout(function () {
+  // A espera conta a partir da cena final: o nome aparece e fica parado esses
+  // segundos. O teatro antes dele não entra na conta.
+  relogiosCena.push(setTimeout(function () {
     el.className = 'festa';
-    relogiosFesta.push(setTimeout(function () {
+    relogiosCena.push(setTimeout(function () {
       el.hidden = true;
-      festaAtiva = false;
-      proximaFesta();
+      cenaAtiva = false;
+      proximaCena();
     }, 420));
-  }, ENTRA_TEXTO + Math.max(1, T.festa) * 1000));
+  }, c.intro + Math.max(1, c.espera) * 1000));
 }
 
 
@@ -1143,7 +1258,7 @@ function conectar() {
     ultimoMinuto = -1;
     desenhar();
     tique();
-    conferirFesta();
+    conferirCenas();
   };
 
   // Batimento: não traz dado, só prova que o Mac continua respirando.

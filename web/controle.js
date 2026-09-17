@@ -30,7 +30,8 @@ const TEMPOS = [
   ['pronto',  'Concluído some após',   's',   'libera vaga pro que está rodando'],
   ['sono',    'Clawd dorme após',      's',   'sem nada acontecendo'],
   ['tela',    'Tela de detalhe volta', 's',   'depois do toque'],
-  ['festa',   'Festa de conclusão',    's',   'a tela laranja quando termina'],
+  ['festa',   'Cena de conclusão',     's',   'o Clawd quando uma tarefa termina'],
+  ['cenagit', 'Cena do GitHub',        's',   'PR novo, status ou CI'],
   ['bichos',  'Sessões no cartão',     'un.', 'o resto vai pro rodapé'],
   ['contas',  'Contas por slide',      'un.', 'no cartão de mensagens'],
 ];
