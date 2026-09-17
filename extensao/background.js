@@ -78,13 +78,29 @@ async function coletar() {
 
 let pendente = null;
 
+// A agenda vem do content script, não daqui: só ele enxerga o DOM da aba. O
+// service worker do MV3 morre ocioso, então o último envio fica guardado e
+// segue junto com o próximo ciclo normal, em vez de abrir uma conexão só para
+// ele.
+let agenda = null;
+
+chrome.runtime.onMessage.addListener((msg) => {
+  if (msg && msg.tipo === 'agenda' && msg.dados) {
+    agenda = msg.dados;
+    agendar();
+  }
+});
+
 async function enviar() {
   try {
     const fontes = await coletar();
     await fetch(PAINEL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ token: TOKEN, fontes }),
+      body: JSON.stringify({
+        token: TOKEN,
+        fontes: agenda ? Object.assign({}, fontes, { agenda_web: agenda }) : fontes,
+      }),
     });
   } catch (e) {
     // Painel fora do ar (Mac dormindo, serviço parado). Não é erro: o próximo

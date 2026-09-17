@@ -2,8 +2,27 @@
   "manifest_version": 3,
   "name": "Sensor do Painel",
   "version": "1.0",
-  "description": "Lê os contadores de Gmail, Google Chat e WhatsApp Web e envia para o painel do tablet.",
-  "permissions": ["tabs", "alarms"],
-  "host_permissions": ["http://127.0.0.1/*", "http://localhost/*"],
-  "background": { "service_worker": "background.js" }
+  "description": "Lê os contadores de Gmail, Google Chat e WhatsApp e a agenda da aba do Google Agenda, e envia para o painel do tablet.",
+  "permissions": [
+    "tabs",
+    "alarms"
+  ],
+  "host_permissions": [
+    "http://127.0.0.1/*",
+    "http://localhost/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://calendar.google.com/*"
+      ],
+      "js": [
+        "agenda.js"
+      ],
+      "run_at": "document_idle"
+    }
+  ]
 }

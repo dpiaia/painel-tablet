@@ -239,7 +239,18 @@ def diagnostico(cfg):
     # --- agenda (depende do adb)
     ag = fotos.get("agenda") or {}
     if ag.get("erro"):
-        linha("agenda", "Agenda", "ruim", str(ag["erro"])[:60], idade(ag.get("atualizado_em")))
+        # Quando o adb cai, o diagnóstico passa a mostrar o que a extensão
+        # conseguiu ler — inclusive as amostras cruas do rótulo, que é como se
+        # descobre se o formato do Google mudou sem precisar ir na aba.
+        web = _estado.get("agenda_web") or {}
+        if web.get("itens"):
+            linha("agenda", "Agenda", "aviso",
+                  "adb fora; extensão viu %d eventos em %d blocos" % (
+                      len(web["itens"]), web.get("blocos", 0)),
+                  idade(web.get("atualizado_em")))
+        else:
+            linha("agenda", "Agenda", "ruim", str(ag["erro"])[:60],
+                  idade(ag.get("atualizado_em")))
     else:
         linha("agenda", "Agenda", "ok",
               "%d eventos na semana%s" % (
