@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="pt-BR"><head><meta charset="utf-8"><title>Vitrine</title>
+<style>
+:root{--pele:#d87050}
+*{box-sizing:border-box;margin:0}
+body{background:#0b0d10;color:#e6edf3;font:14px system-ui,Roboto,sans-serif;padding:2vw}
+h3{font:600 1.1vw/1 "Roboto Mono",monospace;letter-spacing:.14em;color:#7c8089;
+   margin:0 0 1.2vw;padding-bottom:.6vw;border-bottom:1px solid #212c39}
+.fila{display:flex;margin-bottom:2.4vw}
+.item{flex:1;text-align:center}
+.cx{height:11vw;display:flex;align-items:center;justify-content:center}
+.rot{font:1vw/1.3 "Roboto Mono",monospace;letter-spacing:.08em;color:#7c8089;margin-top:.6vw}
+.rot b{display:block;color:#e6edf3;font-weight:400;font-size:.85vw;margin-top:.2vw}
+
+svg.bicho{width:7vw;height:auto;overflow:visible}
+.corpo,.perna{fill:var(--pele)}.olho{fill:#000}.focinho{fill:#804030}
+.palpebra{fill:var(--pele);opacity:0}
+img{max-width:7.5vw;max-height:9vw}
+
+.parado .b-tronco{animation:respirar 3.2s ease-in-out infinite}
+.parado .palpebra{animation:piscar 4.4s linear infinite}
+@keyframes respirar{0%,100%{transform:translateY(0)}50%{transform:translateY(-.12px)}}
+@keyframes piscar{0%,96%,100%{opacity:0}97%,99%{opacity:1}}
+.trabalhando .b-tronco{animation:respirar .5s ease-in-out infinite}
+.trabalhando .b-perna{animation:passo .5s ease-in-out infinite}
+.trabalhando .p2,.trabalhando .p4{animation-delay:.25s}
+@keyframes passo{0%,100%{transform:translateY(0)}50%{transform:translateY(-.5px)}}
+.atencao{--pele:#f0a04b}
+.atencao svg{animation:pular .62s cubic-bezier(.3,.8,.5,1) infinite}
+@keyframes pular{0%,60%,100%{transform:translateY(0)}25%{transform:translateY(-1.1px)}}
+.pronto{--pele:#4ade80}
+.pronto svg{animation:comemorar 1.6s ease-in-out infinite}
+@keyframes comemorar{0%,70%,100%{transform:translateY(0) rotate(0)}
+ 12%{transform:translateY(-1.4px) rotate(-6deg)}30%{transform:translateY(0) rotate(4deg)}
+ 45%{transform:translateY(-.7px) rotate(0)}}
+</style></head><body>
+
+<h3>SVG — DESENHADOS POR MIM, ANIMADOS POR CSS</h3>
+<div class="fila" id="svgs"></div>
+
+<h3>GIF GERADO AQUI — O QUE FALTAVA</h3>
+<div class="fila">
+  <div class="item"><div class="cx"><img src="claude/chamando.gif"></div>
+    <div class="rot">CHAMANDO<b>precisa de você · 12,5 KB</b></div></div>
+  <div class="item"></div><div class="item"></div><div class="item"></div>
+</div>
+
+<h3>GIF DO TENOR — OS QUE VOCÊ MANDOU</h3>
+<div class="fila">
+  <div class="item"><div class="cx"><img src="claude/picareta.gif"></div>
+    <div class="rot">PICARETA<b>trabalhando · 74 KB</b></div></div>
+  <div class="item"><div class="cx"><img src="claude/fogos.gif"></div>
+    <div class="rot">FOGOS<b>concluído · 149 KB</b></div></div>
+  <div class="item"><div class="cx"><img src="claude/faiscas.gif"></div>
+    <div class="rot">FAÍSCAS<b>parado · 134 KB</b></div></div>
+  <div class="item"><div class="cx"><img src="claude/asterisco.gif"></div>
+    <div class="rot">ASTERISCO<b>descanso · 86 KB</b></div></div>
+</div>
+
+<script>
+var SVG='<svg class="bicho" viewBox="0 0 13 8" shape-rendering="crispEdges">'+
+'<g class="b-tronco">'+
+'<rect class="corpo" x="2" y="0" width="9" height="2"/>'+
+'<rect class="corpo" x="0" y="2" width="13" height="2"/>'+
+'<rect class="corpo" x="2" y="4" width="9" height="2"/>'+
+'<rect class="focinho" x="8" y="1" width="1" height="1"/>'+
+'<rect class="olho" x="3" y="1" width="1" height="1"/>'+
+'<rect class="olho" x="9" y="1" width="1" height="1"/>'+
+'<rect class="palpebra" x="3" y="1" width="1" height="1"/>'+
+'<rect class="palpebra" x="9" y="1" width="1" height="1"/></g>'+
+'<g class="b-perna p1"><rect class="perna" x="2"  y="6" width="1" height="2"/></g>'+
+'<g class="b-perna p2"><rect class="perna" x="4"  y="6" width="1" height="2"/></g>'+
+'<g class="b-perna p3"><rect class="perna" x="7"  y="6" width="2" height="2"/></g>'+
+'<g class="b-perna p4"><rect class="perna" x="10" y="6" width="1" height="2"/></g></svg>';
+var E=[['parado','PARADO','respira e pisca'],['trabalhando','TRABALHANDO','anda, 4 patas'],
+       ['atencao','ATENÇÃO','pula, fica âmbar'],['pronto','PRONTO','comemora, fica verde']];
+document.getElementById('svgs').innerHTML = E.map(function(e){
+  return '<div class="item '+e[0]+'"><div class="cx">'+SVG+'</div>'+
+         '<div class="rot">'+e[1]+'<b>'+e[2]+' · 1 KB</b></div></div>';
+}).join('');
+</script></body></html>

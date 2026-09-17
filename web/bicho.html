@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="pt-BR"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Bichinho SVG</title>
+<style>
+/* Mascote em SVG puro — engenharia reversa da grade 13x8 do pixel art.
+   Doze retângulos. Anima só com transform e opacity, que é o que a Mali-400
+   do Tab E desenha sem engasgar. */
+:root { --pele: #d87050; --fundo: #0c0d10; }
+* { box-sizing: border-box; margin: 0; }
+body { background: #000; color: #e6edf3; font: 14px system-ui, Roboto, sans-serif;
+       display: flex; flex-wrap: wrap; align-items: center; justify-content: center;
+       min-height: 100vh; }
+
+.caixa { width: 24vw; text-align: center; padding: 2vw 0; }
+.rotulo { font-family: "Roboto Mono", monospace; font-size: 1vw;
+          letter-spacing: .12em; color: #7c8089; margin-top: 1vw; }
+
+svg.bicho { width: 12vw; height: auto; overflow: visible; }
+.corpo, .perna { fill: var(--pele); }
+.olho { fill: #000; }
+.focinho { fill: #804030; }
+.palpebra { fill: var(--pele); opacity: 0; }
+
+/* ---------------------------------------------------------------- parado */
+.parado .b-tronco { animation: respirar 3.2s ease-in-out infinite; }
+.parado .palpebra { animation: piscar 4.4s linear infinite; }
+@keyframes respirar { 0%,100% { transform: translateY(0) }
+                      50%     { transform: translateY(-.12px) } }
+@keyframes piscar   { 0%,96%,100% { opacity: 0 } 97%,99% { opacity: 1 } }
+
+/* ----------------------------------------------------------- trabalhando */
+.trabalhando .b-tronco { animation: respirar .5s ease-in-out infinite; }
+.trabalhando .b-perna  { animation: passo .5s ease-in-out infinite; }
+.trabalhando .p2, .trabalhando .p4 { animation-delay: .25s; }
+@keyframes passo { 0%,100% { transform: translateY(0) }
+                   50%     { transform: translateY(-.5px) } }
+
+/* --------------------------------------------------------------- atencao */
+.atencao { --pele: #f0a04b; }
+.atencao svg { animation: pular .62s cubic-bezier(.3,.8,.5,1) infinite; }
+@keyframes pular { 0%,60%,100% { transform: translateY(0) }
+                   25%         { transform: translateY(-1.1px) } }
+
+/* ---------------------------------------------------------------- pronto */
+.pronto { --pele: #4ade80; }
+.pronto svg { animation: comemorar 1.6s ease-in-out infinite; }
+@keyframes comemorar { 0%,70%,100% { transform: translateY(0) rotate(0) }
+                       12%         { transform: translateY(-1.4px) rotate(-6deg) }
+                       30%         { transform: translateY(0) rotate(4deg) }
+                       45%         { transform: translateY(-.7px) rotate(0) } }
+</style></head><body>
+
+<script>
+var SVG =
+'<svg class="bicho" viewBox="0 0 13 8" shape-rendering="crispEdges">' +
+  '<g class="b-tronco">' +
+    '<rect class="corpo" x="2" y="0" width="9" height="2"/>' +
+    '<rect class="corpo" x="0" y="2" width="13" height="2"/>' +
+    '<rect class="corpo" x="2" y="4" width="9" height="2"/>' +
+    '<rect class="focinho" x="8" y="1" width="1" height="1"/>' +
+    '<rect class="olho" x="3" y="1" width="1" height="1"/>' +
+    '<rect class="olho" x="9" y="1" width="1" height="1"/>' +
+    '<rect class="palpebra" x="3" y="1" width="1" height="1"/>' +
+    '<rect class="palpebra" x="9" y="1" width="1" height="1"/>' +
+  '</g>' +
+  '<g class="b-perna p1"><rect class="perna" x="2"  y="6" width="1" height="2"/></g>' +
+  '<g class="b-perna p2"><rect class="perna" x="4"  y="6" width="1" height="2"/></g>' +
+  '<g class="b-perna p3"><rect class="perna" x="7"  y="6" width="2" height="2"/></g>' +
+  '<g class="b-perna p4"><rect class="perna" x="10" y="6" width="1" height="2"/></g>' +
+'</svg>';
+
+// ?n=1 mostra um só; ?gpu=1 promove a camada de compositor
+var q = location.search;
+var quantos = /n=(\d+)/.exec(q);
+var lista = ['parado', 'trabalhando', 'atencao', 'pronto'];
+if (quantos) lista = lista.slice(0, +quantos[1]);
+if (/estatico=1/.test(q)) {
+  document.write('<style>*, *::before, *::after { animation: none !important; }</style>');
+}
+if (/gpu=1/.test(q)) {
+  document.write('<style>svg.bicho, .b-tronco, .b-perna {' +
+                 'will-change: transform; transform: translateZ(0);}</style>');
+}
+lista.forEach(function (e) {
+  document.write('<div class="caixa ' + e + '">' + SVG +
+                 '<div class="rotulo">' + e.toUpperCase() + '</div></div>');
+});
+</script>
+</body></html>

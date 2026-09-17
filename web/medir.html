@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="pt-BR"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Medicao</title>
+<style>
+/* Banco de teste: UMA aba, UM carregamento. O que aparece é decidido por um
+   arquivo no Mac, não por navegação — assim a janela de medição nunca pega
+   carregamento de página nem limpeza de abas, que foi o que sujou tudo antes. */
+:root { --pele: #d87050; }
+* { box-sizing: border-box; margin: 0 }
+body { background:#000; color:#7c8089; font:13px "Roboto Mono",monospace;
+       display:flex; flex-direction:column; align-items:center;
+       justify-content:center; height:100vh }
+#palco { height: 30vh; display:flex; align-items:center }
+svg.bicho { width: var(--tam,12vw); height:auto; overflow:visible }
+.corpo,.perna { fill: var(--pele) } .olho { fill:#000 } .focinho { fill:#804030 }
+.palpebra { fill: var(--pele); opacity:0 }
+img.gif { width: 12vw; height:auto }
+.anim .b-tronco { animation: respirar .5s ease-in-out infinite }
+.anim .b-perna  { animation: passo .5s ease-in-out infinite }
+.anim .p2, .anim .p4 { animation-delay:.25s }
+@keyframes respirar { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-.12px)} }
+@keyframes passo    { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-.5px)} }
+#modo { margin-top: 3vh; letter-spacing:.2em }
+
+/* Mesma animação, mas em PASSOS: o valor salta em vez de interpolar, então o
+   navegador repinta 4x por segundo em vez de 60. Pixel art nem deveria se
+   mover suave — quadro a quadro é o certo esteticamente e sai mais barato. */
+.passos .b-tronco { animation: respirar .5s step-end infinite }
+.passos .b-perna  { animation: passo .5s step-end infinite }
+.passos .p2, .passos .p4 { animation-delay:.25s }
+</style></head><body>
+<div id="palco"></div><div id="modo">—</div>
+<script>
+var SVG = '<svg class="bicho" viewBox="0 0 13 8" shape-rendering="crispEdges">' +
+ '<g class="b-tronco">' +
+ '<rect class="corpo" x="2" y="0" width="9" height="2"/>' +
+ '<rect class="corpo" x="0" y="2" width="13" height="2"/>' +
+ '<rect class="corpo" x="2" y="4" width="9" height="2"/>' +
+ '<rect class="focinho" x="8" y="1" width="1" height="1"/>' +
+ '<rect class="olho" x="3" y="1" width="1" height="1"/>' +
+ '<rect class="olho" x="9" y="1" width="1" height="1"/>' +
+ '<rect class="palpebra" x="3" y="1" width="1" height="1"/>' +
+ '<rect class="palpebra" x="9" y="1" width="1" height="1"/></g>' +
+ '<g class="b-perna p1"><rect class="perna" x="2"  y="6" width="1" height="2"/></g>' +
+ '<g class="b-perna p2"><rect class="perna" x="4"  y="6" width="1" height="2"/></g>' +
+ '<g class="b-perna p3"><rect class="perna" x="7"  y="6" width="2" height="2"/></g>' +
+ '<g class="b-perna p4"><rect class="perna" x="10" y="6" width="1" height="2"/></g></svg>';
+
+var atual = '';
+function aplicar(m) {
+  if (m === atual) return;
+  atual = m;
+  var p = document.getElementById('palco');
+  p.className = '';
+  // ?tam=6vw&n=3 reproduz o tamanho e a quantidade reais do cartão
+  var q = location.search;
+  var tam = /tam=([\d.]+vw)/.exec(q);
+  if (tam) document.documentElement.style.setProperty('--tam', tam[1]);
+  var n = +((/qtd=(\d+)/.exec(q) || [])[1] || 1);
+  function repetir(h) { var o = ''; for (var i = 0; i < n; i++) o += h; return o; }
+
+  if (m === 'svg')       { p.innerHTML = repetir(SVG); p.className = 'anim'; }
+  else if (m === 'passos'){ p.innerHTML = repetir(SVG); p.className = 'passos'; }
+  else if (m === 'gif')  { p.innerHTML = repetir('<img class="gif" src="claude/picareta.gif">'); }
+  else                   { p.innerHTML = ''; }
+  document.getElementById('modo').textContent = m.toUpperCase();
+}
+function checar() {
+  var x = new XMLHttpRequest();
+  x.open('GET', 'modo.txt?t=' + Date.now(), true);
+  x.onload = function () { aplicar((x.responseText || 'nada').trim()); };
+  x.send();
+}
+checar(); setInterval(checar, 2000);
+</script></body></html>

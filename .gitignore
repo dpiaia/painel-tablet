@@ -1,0 +1,11 @@
+# Configuração e segredos: cada instalação gera os seus
+config.json
+extensao/config.js
+hooks/avisar.sh
+
+# Estado de execução
+estado-claude.json
+web/modo.txt
+
+.DS_Store
+__pycache__/

@@ -1,0 +1,57 @@
+{
+  "cidade": "São Paulo, SP",
+  "porta": 8766,
+  "clima_intervalo_s": 600,
+  "adb": "/opt/homebrew/bin/adb",
+  "tablet": "192.168.0.23:5555",
+  "agenda_intervalo_s": 120,
+  "maquina_intervalo_s": 15,
+  "gh": "/opt/homebrew/bin/gh",
+  "repo_design": "sua-org/seu-repo",
+  "github_intervalo_s": 300,
+  "painel": {
+    "cartoes": {
+      "clima": true,
+      "claude": true,
+      "agenda": true,
+      "mensagens": false,
+      "monitor": true,
+      "recado": true
+    },
+    "tempos": {
+      "slide": 10,
+      "animado": 60,
+      "pronto": 90,
+      "sono": 600,
+      "mascote": 30,
+      "tela": 45,
+      "bichos": 3,
+      "contas": 3
+    },
+    "cores": {
+      "fundo": "#000000",
+      "cartao": "#0c0d10",
+      "dentro": "#131620",
+      "borda": "#1d1f26",
+      "texto": "#ffffff",
+      "apagado": "#7c8089",
+      "fraco": "#4a4d55",
+      "ciano": "#22d3ee",
+      "azul": "#3b82f6",
+      "verde": "#22c55e",
+      "laranja": "#f59e0b",
+      "vermelho": "#ef4444"
+    },
+    "recado": {
+      "texto": "fala cuzao",
+      "titulo": "RECADO"
+    },
+    "ordem": [
+      "clima",
+      "claude",
+      "agenda",
+      "mensagens",
+      "monitor"
+    ]
+  }
+}

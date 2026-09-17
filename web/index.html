@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+<title>Painel</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="topo">
+  <div class="marca">PIAIA<span>OS</span></div>
+  <div class="selo" id="selo"><i></i>ONLINE</div>
+  <div class="empurra"></div>
+  <div class="sist" id="sist"></div>
+</header>
+
+<main class="painel">
+
+  <div class="coluna">
+
+    <section class="relogio">
+      <div class="hora" id="hora">--:--</div>
+      <div class="data"><span id="data">&nbsp;</span><span id="marcas"></span></div>
+    </section>
+
+    <section class="cartao toque" data-cartao="clima" data-tela="clima">
+      <header>
+        <h2><svg class="ic" viewBox="0 0 24 24"><path d="M6 17h10a4 4 0 0 0 .5-8 6 6 0 0 0-11.2-1.6A3.6 3.6 0 0 0 6 17z"/><path d="M9 20l-1 2M13 20l-1 2M17 20l-1 2"/></svg><span id="clima-cidade">—</span></h2>
+      </header>
+      <div class="clima-corpo">
+        <div class="clima-esq" id="clima-esq"><div class="vazio">carregando…</div></div>
+        <div class="clima-dir" id="clima-dir"></div>
+      </div>
+    </section>
+
+    <section class="cartao recado" data-cartao="recado" hidden>
+      <header>
+        <h2><svg class="ic" viewBox="0 0 24 24"><path d="M4 5h16v11H8l-4 4z"/></svg><span id="recado-titulo">RECADO</span></h2>
+      </header>
+      <div class="corpo recado-corpo"><p id="recado-texto"></p></div>
+    </section>
+
+    <section class="cartao claude toque" data-cartao="claude" data-tela="claude">
+      <header>
+        <h2 id="claude-titulo"></h2>
+        <span class="etq laranja" id="claude-selo">FASE 3</span>
+      </header>
+      <div class="palco" id="palco-claude"></div>
+      <div class="pontos" id="pontos-claude"></div>
+    </section>
+
+  </div>
+
+  <div class="coluna">
+
+    <section class="cartao agenda toque" data-cartao="agenda" data-tela="agenda">
+      <div class="destaque" id="destaque"></div>
+      <div class="lista" id="lista"></div>
+    </section>
+
+    <div class="dupla">
+
+      <section class="cartao mensagens" data-cartao="mensagens">
+        <header>
+          <h2><svg class="ic" viewBox="0 0 24 24"><path d="M20 15a2 2 0 0 1-2 2H8l-4 4V5a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2z"/></svg>MENSAGENS</h2>
+          <span class="canto" id="msg-aviso"></span>
+        </header>
+        <div class="palco" id="palco"></div>
+        <div class="pontos" id="pontos"></div>
+      </section>
+
+      <section class="cartao monitor" data-cartao="monitor">
+        <header>
+          <h2><svg class="ic" viewBox="0 0 24 24"><path d="M3 13h3l2.5-7 4 14L15.5 13H21"/></svg>MONITOR DO MAC</h2>
+        </header>
+        <div class="corpo" id="corpo-mac"></div>
+      </section>
+
+    </div>
+
+  </div>
+
+</main>
+
+<!-- Tela de detalhe: ocupa tudo, só leitura, volta ao toque. Fica fora do
+     <main> porque quando ela abre o painel some por completo (display:none),
+     senão os GIFs continuariam decodificando atrás dela. -->
+<div class="tela" id="tela" hidden>
+  <header>
+    <h2 id="tela-titulo"></h2>
+    <span class="voltar">toque para voltar</span>
+  </header>
+  <div class="tela-corpo" id="tela-corpo"></div>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>

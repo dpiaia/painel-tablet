@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="pt-BR"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Controle do Painel</title>
+<style>
+/* Esta página roda no Mac, não no tablet: aqui pode usar CSS moderno à
+   vontade. A camisa de força do Chrome 64 vale só para o index.html. */
+:root{ --bg:#0b0d10; --card:#14171d; --linha:#232833; --txt:#e8edf3;
+       --mudo:#8b94a0; --ciano:#22d3ee; --verde:#22c55e; --laranja:#f59e0b;
+       --vermelho:#ef4444; --mono:"SF Mono",Menlo,monospace }
+*{box-sizing:border-box;margin:0}
+body{background:var(--bg);color:var(--txt);font:15px/1.5 system-ui,sans-serif;padding:28px}
+header{display:flex;align-items:baseline;gap:14px;margin-bottom:24px}
+h1{font-size:20px;font-weight:700;letter-spacing:-.01em}
+.sub{color:var(--mudo);font:12px var(--mono);letter-spacing:.1em}
+#salvo{margin-left:auto;font:12px var(--mono);color:var(--verde);opacity:0;transition:opacity .25s}
+#salvo.ver{opacity:1}
+
+.grade{display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:16px;align-items:start}
+section{background:var(--card);border:1px solid var(--linha);border-radius:12px;padding:18px}
+h2{font:600 11px var(--mono);letter-spacing:.16em;color:var(--mudo);margin-bottom:14px}
+
+.linha{display:flex;align-items:center;gap:12px;padding:7px 0;border-top:1px solid var(--linha)}
+.linha:first-of-type{border-top:0}
+.linha label{flex:1;min-width:0}
+.linha .dica,.empilha .dica{display:block;font-size:12px;color:var(--mudo)}
+
+input[type=number],input[type=text],select{
+  background:#0b0d12;border:1px solid var(--linha);color:var(--txt);
+  border-radius:7px;padding:6px 9px;font:13px var(--mono);width:84px;text-align:right}
+input[type=text]{width:100%;text-align:left}
+input[type=color]{width:38px;height:28px;padding:0;border:1px solid var(--linha);
+  border-radius:7px;background:none;cursor:pointer}
+input:focus,select:focus{outline:none;border-color:var(--ciano)}
+
+/* interruptor */
+.chave{position:relative;width:42px;height:24px;flex:none;cursor:pointer}
+.chave input{opacity:0;width:0;height:0;position:absolute}
+.chave i{position:absolute;inset:0;background:#2a3040;border-radius:99px;transition:background .18s}
+.chave i::after{content:"";position:absolute;top:3px;left:3px;width:18px;height:18px;
+  background:#8b94a0;border-radius:50%;transition:transform .18s,background .18s}
+.chave input:checked + i{background:rgba(34,211,238,.25)}
+.chave input:checked + i::after{transform:translateX(18px);background:var(--ciano)}
+
+.cores{display:grid;grid-template-columns:repeat(2,1fr);gap:8px 14px}
+.cor{display:flex;align-items:center;gap:9px}
+.cor span{font:11px var(--mono);color:var(--mudo)}
+
+/* diagnóstico */
+.diag{display:flex;align-items:center;gap:10px;padding:8px 0;border-top:1px solid var(--linha)}
+.diag:first-of-type{border-top:0}
+.bola{width:9px;height:9px;border-radius:50%;flex:none}
+.bola.ok{background:var(--verde)} .bola.aviso{background:var(--laranja)}
+.bola.ruim{background:var(--vermelho)}
+.diag .nome{flex:none;width:150px}
+.diag .txt{color:var(--mudo);font-size:13px;flex:1;min-width:0;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.diag .quando{font:11px var(--mono);color:#5a6170;flex:none}
+
+button{background:#1b2029;border:1px solid var(--linha);color:var(--txt);
+  border-radius:8px;padding:8px 14px;font:13px system-ui;cursor:pointer}
+button:hover{border-color:var(--ciano);color:var(--ciano)}
+.acoes{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px}
+
+.empilha{padding:8px 0;border-top:1px solid var(--linha)}
+.empilha:first-child{border-top:0}
+.empilha label{display:block;margin-bottom:5px}
+
+.ordem li{display:flex;align-items:center;gap:10px;padding:7px 0;
+  border-top:1px solid var(--linha);list-style:none}
+.ordem li:first-child{border-top:0}
+.ordem .nome{flex:1}
+.ordem button{padding:3px 9px;font:12px var(--mono)}
+</style></head><body>
+
+<header>
+  <h1>Controle do Painel</h1>
+  <span class="sub">SÓ NESTE MAC</span>
+  <span id="salvo">salvo</span>
+</header>
+
+<div class="grade">
+  <section><h2>DIAGNÓSTICO</h2><div id="diag"></div>
+    <div class="acoes">
+      <button onclick="verDiag()">Atualizar</button>
+      <button onclick="acao('recarregar')">Recarregar o tablet</button>
+    </div>
+  </section>
+
+  <section><h2>FONTES</h2><div id="fontes"></div></section>
+  <section><h2>CARTÕES NA TELA</h2><div id="cartoes"></div></section>
+  <section><h2>ORDEM DOS CARTÕES</h2><ul class="ordem" id="ordem"></ul></section>
+  <section><h2>TEMPOS</h2><div id="tempos"></div></section>
+  <section><h2>CORES</h2><div class="cores" id="cores"></div>
+    <div class="acoes"><button onclick="resetCores()">Voltar ao padrão</button></div>
+  </section>
+  <section><h2>RECADO NA TELA</h2><div id="recado"></div></section>
+</div>
+
+<script src="controle.js"></script>
+</body></html>
