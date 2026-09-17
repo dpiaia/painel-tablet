@@ -1129,7 +1129,15 @@ function conectar() {
     // quiosque, nem de encostar no aparelho.
     if (estado.versao_web) {
       if (!versaoWeb) versaoWeb = estado.versao_web;
-      else if (versaoWeb !== estado.versao_web) { location.reload(); return; }
+      else if (versaoWeb !== estado.versao_web) {
+        // Endereço novo, e não location.reload(): o WebView do quiosque relê
+        // do próprio cache e ignora Cache-Control, então a página voltava
+        // idêntica sem nem tocar no servidor — recarregava e continuava
+        // velha, em silêncio. Uma URL que o cache nunca viu ele é obrigado a
+        // buscar.
+        location.replace(location.pathname + '?r=' + Date.now());
+        return;
+      }
     }
     if (estado.servidor_ts) deslocamento = estado.servidor_ts * 1000 - Date.now();
     ultimoMinuto = -1;

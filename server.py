@@ -138,7 +138,12 @@ def recarregar_tablet(cfg):
     """
     adb = cfg.get("adb", "")
     serial = cfg.get("tablet", "")
-    url = "http://%s:%d" % (ip_local(), int(cfg.get("porta", 8766)))
+    # A URL leva um carimbo de tempo. O WebView do Fully Kiosk guarda o
+    # index.html pela URL e ignora Cache-Control — recarregar sempre no mesmo
+    # endereço servia a página velha, que por sua vez apontava para o app.js
+    # antigo. Endereço novo, nada para reaproveitar. Já custou três rodadas de
+    # "mudei aqui e não mudou lá".
+    url = "http://%s:%d/?r=%d" % (ip_local(), int(cfg.get("porta", 8766)), int(time.time()))
     passos = []
 
     def rodar(args, limite=15):
@@ -162,7 +167,10 @@ def recarregar_tablet(cfg):
         rodar(["-s", serial, "shell", "input", "keyevent", "KEYCODE_WAKEUP"], 10)
         r = rodar(["-s", serial, "shell", "am", "start",
                    "-a", "android.intent.action.VIEW", "-d", url,
-                   "-n", "de.ozerov.fully/.MainActivity"], 20)
+                   # A atividade é .FullyActivity. Com .MainActivity o intent
+                   # falha, o código cai no navegador padrão e o botão relata
+                   # "página recarregada" sem nada ter acontecido.
+                   "-n", "de.ozerov.fully/.FullyActivity"], 20)
         if r.returncode != 0 or "Error" in (r.stderr or ""):
             # Fully Kiosk pode não estar instalado; tenta o navegador padrão
             passos.append("Fully Kiosk não respondeu — tentando o navegador padrão")
@@ -371,7 +379,11 @@ class Handler(BaseHTTPRequestHandler):
     def log_message(self, fmt, *args):
         if self.path.startswith("/events"):
             return   # o SSE fica aberto por horas; não polui o log
-        print("%s %s" % (self.command, self.path))
+        # flush explícito: o stdout para arquivo é bufferizado em bloco, e o
+        # log ficava minutos atrás da realidade. Diagnosticar cache do tablet
+        # lendo um log atrasado leva à conclusão errada — levou.
+        print("%s %s %s" % (self.address_string(), self.command, self.path),
+              flush=True)
 
     def _cors(self):
         self.send_header("Access-Control-Allow-Origin", "*")
