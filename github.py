@@ -17,6 +17,7 @@ CAMPOS = """
   repository { nameWithOwner }
   author { login }
   reviewDecision
+  mergedAt
   commits(last: 1) { nodes { commit { statusCheckRollup { state } } } }
 """
 
@@ -29,8 +30,15 @@ CONSULTA = """
            { nodes { ... on PullRequest { %s } } }
   pedidos: search(query: "is:pr is:open review-requested:@me", type: ISSUE, first: 20)
            { nodes { ... on PullRequest { %s } } }
+  # Mesclado sai do "is:open", então a tela nunca via um merge acontecer: o PR
+  # simplesmente sumia da lista, e sumir não é um evento. Esta quarta busca dá
+  # o outro lado do fato. Ordenada por atualização, que é o que traz o recém
+  # mesclado para o topo.
+  mesclados: search(query: "is:pr is:merged author:@me sort:updated-desc",
+                    type: ISSUE, first: 10)
+           { nodes { ... on PullRequest { %s } } }
 }
-""" % (CAMPOS, CAMPOS, CAMPOS)
+""" % (CAMPOS, CAMPOS, CAMPOS, CAMPOS)
 
 
 def _limpar(no, pedidos_ids):
@@ -49,6 +57,8 @@ def _limpar(no, pedidos_ids):
         # SUCCESS / FAILURE / PENDING / None (sem CI configurado)
         "ci": rollup.get("state"),
         "meu_review": no.get("number") in pedidos_ids,
+        # ISO 8601, ou None quando ainda está aberto
+        "mesclado_em": no.get("mergedAt"),
     }
 
 
@@ -117,6 +127,7 @@ def ler(gh, repo_design, timeout=45):
         "eu": (dados.get("viewer") or {}).get("login", ""),
         "meus": meus,
         "design": design,
+        "mesclados": lista("mesclados"),
         # quantos realmente esperam uma ação sua no repo de design
         "aguardando": sum(1 for p in design
                           if p["revisao"] != "APPROVED" and p["autor"] != "dependabot"),

@@ -1060,6 +1060,7 @@ function conferirFesta() {
 
 /* --------------------------------------------------------- gatilho: GitHub */
 var vistosGit = null;
+var vistosMerge = null;
 
 function chavePR(p) { return p.repo + '#' + p.numero; }
 
@@ -1091,6 +1092,31 @@ function conferirGit() {
   for (i = 0; i < design.length; i++) {
     var k = chavePR(design[i]);
     if (!agora[k]) agora[k] = { revisao: design[i].revisao, ci: design[i].ci, meu: false };
+  }
+
+  /* Mesclados: um merge some do "is:open", e sumir não é um evento — por isso
+   * o servidor traz uma quarta lista com os seus PRs já mesclados. O que
+   * aparece nela e não estava antes acabou de ser mesclado.
+   *
+   * A lista vem ordenada por atualização, então um PR antigo pode voltar ao
+   * topo só porque alguém comentou nele. Por isso o mergedAt também precisa
+   * ser recente: sem essa checagem, comentário em PR de semana passada viraria
+   * comemoração.
+   */
+  var mesclados = g.mesclados || [];
+  var agoraMerge = {};
+  for (i = 0; i < mesclados.length; i++) agoraMerge[chavePR(mesclados[i])] = 1;
+
+  if (vistosMerge === null) { vistosMerge = agoraMerge; }
+  else {
+    for (i = 0; i < mesclados.length; i++) {
+      var m = mesclados[i];
+      if (vistosMerge[chavePR(m)]) continue;
+      var quando = Date.parse(m.mesclado_em || '');
+      if (!quando || (Date.now() + deslocamento - quando) > 3600000) continue;
+      cenaGit('verde', 'MESCLADO', m);
+    }
+    vistosMerge = agoraMerge;
   }
 
   if (vistosGit === null) { vistosGit = agora; return; }

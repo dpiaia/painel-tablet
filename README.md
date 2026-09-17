@@ -649,6 +649,22 @@ dá o mesmo efeito com ~7 repintes por segundo em vez de 60. A área é pequena
 (~14 px), então deve ser barato — mas isto **não foi medido em isolamento**,
 porque exige um CI em andamento na hora certa.
 
+### Merge precisa de uma quarta busca
+
+As três buscas são `is:open`. Quando um PR é mesclado ele **sai** dessa lista —
+e sumir não é um evento: o código compara o que está lá agora com o que estava
+antes, e ausência não dispara nada. O merge, que é justamente a hora que mais
+importa saber, passava em branco.
+
+Por isso existe uma quarta busca, `is:pr is:merged author:@me
+sort:updated-desc`. Ela dá o outro lado do fato: o que aparece nela e não
+estava antes acabou de ser mesclado.
+
+A ordenação por atualização traz um efeito colateral que precisa de guarda: um
+PR antigo volta ao topo só porque alguém comentou nele. Por isso o `mergedAt`
+também tem que ser da última hora — sem isso, comentário em PR de semana
+passada viraria comemoração de merge.
+
 ### Por que pelo `gh` e não pela API
 
 O `gh` já está autenticado na máquina, com o token no chaveiro do macOS.
