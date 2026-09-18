@@ -46,12 +46,38 @@ registradas e não seriam nossas para distribuir sob MIT.
 
 ## `web/marcas/` — selos de tema
 
-Ícones de sistema que aparecem na barra do topo conforme o tema: Windows 95 e
-Windows XP, o logotipo arco-íris da Apple e o do Orkut. São marcas de seus
-donos (Microsoft, Apple, Google), usadas aqui só para identificar o tema que
-homenageiam. Ficam **fora do git** por isso.
+Logotipos que aparecem na barra do topo conforme o tema:
 
-## Pastas que continuam fora do git
+| arquivo | de quem é |
+|---|---|
+| `win95-topo.png`, `xp-topo.png` | Microsoft |
+| `apple-topo.png` | Apple |
+| `orkut.png` | Google |
 
-- `web/fundos/` — papéis de parede, que são de quem os colocar lá.
-- `web/marcas/` — ícones de marca por tema, pelo mesmo motivo.
+São **marcas registradas de seus donos**, aqui apenas para identificar o tema
+que homenageiam — não para sugerir qualquer vínculo com eles. Não estão sob a
+licença MIT deste repositório, e ninguém pode relicenciá-las.
+
+Os dois logotipos do Windows tiveram o fundo branco removido
+(`ferramentas/limpar_octodex.py`), para pousarem sobre a cor da barra. Isso é
+uma adaptação, feita para exibição.
+
+## `web/fundos/` — papéis de parede
+
+| arquivo | de quem é |
+|---|---|
+| `win95-nuvens.jpg` | Microsoft — "Clouds", do Windows 95 |
+| `winxp-colina.jpg` | Microsoft — "Bliss", do Windows XP |
+| `matrix-chuva.jpg` | gerado para este projeto; cobertos pela MIT |
+
+**Atenção a estes dois.** Os papéis de parede do Windows são fotografias
+licenciadas pela Microsoft, e isso é mais delicado que os logotipos: logotipo
+identificando um tema é uso comum, fotografia redistribuída não é. Eles vêm
+aqui para o painel funcionar assim que alguém clona; quem for usar este projeto
+para outra coisa deve trocá-los.
+
+O do XP foi reduzido de 4500 para 1600px, porque o tablet tem 1,4 GB de RAM e o
+navegador descomprime a imagem inteira antes de escalar.
+
+Qualquer imagem que você colocar nessa pasta aparece no painel de controle, e é
+sua — não deste repositório.
