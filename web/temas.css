@@ -23,10 +23,40 @@
   --raio: 2vw;
   --sans: -apple-system, "SF Pro Text", "Helvetica Neue", Roboto, sans-serif;
 }
+/* Vidro. O `backdrop-filter` é de propósito mesmo sabendo que o WebView 64 do
+   Tab E não tem: ele funciona no Mac e no iPad, e onde não existe sobra a
+   translucidez pura, que sobre um papel de parede já lê como vidro. Degradar
+   é melhor que não ter. */
 [data-tema="apple"] .cartao {
-  border-color: transparent;
-  box-shadow: 0 0.15vw 0.5vw rgba(0,0,0,0.06), 0 0.03vw 0.1vw rgba(0,0,0,0.04);
+  background: rgba(255, 255, 255, 0.72);
+  border-color: rgba(255, 255, 255, 0.65);
+  -webkit-backdrop-filter: saturate(180%) blur(1.6vw);
+          backdrop-filter: saturate(180%) blur(1.6vw);
+  box-shadow: 0 0.25vw 1vw rgba(0, 0, 0, 0.10),
+              0 0.03vw 0.1vw rgba(0, 0, 0, 0.05);
 }
+
+/* Os itens de dentro perdem a moldura e ganham profundidade por TOM: um véu
+   escuro sobre o próprio cartão, em vez de uma linha ao redor. É a diferença
+   que faltava para o tema não parecer o Claro com cantos maiores.
+
+   Como é rgba e não uma cor fixa, funciona com qualquer paleta que você
+   escolher depois — inclusive se mexer nas cores à mão. */
+[data-tema="apple"] .destaque,
+[data-tema="apple"] .ev,
+[data-tema="apple"] .pr,
+[data-tema="apple"] .chip,
+[data-tema="apple"] .cartao-sessao,
+[data-tema="apple"] .coluna-dia,
+[data-tema="apple"] .rodape-mais {
+  border-color: transparent;
+  background: rgba(0, 0, 0, 0.045);
+}
+
+/* A moldura volta só onde ela SIGNIFICA alguma coisa: o anel âmbar de um PR
+   esperando você, e as bordas de estado que o cartão já usava. */
+[data-tema="apple"] .pr.anel { border-color: var(--laranja); }
+[data-tema="apple"] .destaque { border-left-color: var(--ciano); }
 [data-tema="apple"] .cartao h2 {
   font-weight: 600;
   letter-spacing: 0.04em;
@@ -38,6 +68,27 @@
 [data-tema="apple"] .etq,
 [data-tema="apple"] .pilula,
 [data-tema="apple"] .chip { border-radius: 10vw; }
+
+/* ------------------------------------------- a barra vira barra de menus
+   Continua no topo, como no macOS, mas com fundo sólido em vez de flutuar
+   sobre o papel de parede — e a maçã vem antes do nome, que é a ordem de lá. */
+[data-tema="apple"] .topo {
+  background: rgba(255, 255, 255, 0.82);
+  -webkit-backdrop-filter: saturate(180%) blur(1.4vw);
+          backdrop-filter: saturate(180%) blur(1.4vw);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+  padding: 0.5vw 1.4vw;
+  align-items: center;
+}
+[data-tema="apple"] .marca {
+  display: flex;
+  align-items: center;
+  gap: 0.7vw;
+}
+[data-tema="apple"] .marca .selo-tema {
+  height: 1.5vw;
+  margin: 0;
+}
 
 
 /* =================================================================== Orkut

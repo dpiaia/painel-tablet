@@ -1365,7 +1365,10 @@ function aplicarAjustes() {
     // No Windows o logo mora DENTRO do botão Iniciar, à esquerda do nome. Nos
     // outros temas ele é um selo de canto. É a única coisa aqui que muda de
     // lugar no DOM por causa do tema — CSS move aparência, não elemento.
-    var noBotao = (a.tema === 'win95' || a.tema === 'xp');
+    // No Windows o logo entra no botão Iniciar; no Apple ele vai na frente do
+    // nome, como a maçã da barra de menus do macOS. Nos dois casos o destino é
+    // o mesmo elemento — muda só a aparência, no CSS.
+    var noBotao = (a.tema === 'win95' || a.tema === 'xp' || a.tema === 'apple');
     var marcaEl = document.querySelector('.marca');
     var ondeDeveria = noBotao ? marcaEl : $('topo-barra');
     if (ondeDeveria && seloTema.parentNode !== ondeDeveria) {
