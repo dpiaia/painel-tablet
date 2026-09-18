@@ -1326,6 +1326,117 @@ body { display: flex; flex-direction: column; }
 .nota-proc b { color: var(--apagado); font-weight: 600; }
 
 
+/* -------------------------------------------- monitor do Claude (tela) */
+/* Mesma estrutura da tela de processos: blocos em cima, nota colada embaixo.
+   O que muda é o miolo — lá são listas, aqui são dois números grandes e a
+   curva do dia. */
+.tela-uso { display: flex; flex-direction: column; height: 100%; }
+.tela-uso .dividido { flex: none; height: auto; }
+.tela-uso .nota-proc { margin-top: auto; }
+
+/* Número grande porque esta tela existe para ser lida de longe, antes de
+   começar uma tarefa: "posso rodar isso agora?" se responde com um olhar. */
+.uso-grande {
+  font-size: 4.4vw;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--ciano);
+  font-variant-numeric: tabular-nums;
+  margin-bottom: 1vw;
+}
+.uso-grande i {
+  font-size: 1.6vw;
+  font-style: normal;
+  font-weight: 400;
+  color: var(--apagado);
+  margin-left: 0.3vw;
+}
+.uso-grande.atencao { color: var(--laranja); }
+.uso-grande.critico { color: var(--vermelho); }
+
+.uso-barra {
+  height: 0.6vw;
+  border-radius: 10vw;
+  background: var(--borda);
+  overflow: hidden;
+}
+.uso-barra span {
+  display: block;
+  height: 100%;
+  background: var(--ciano);
+  border-radius: 10vw;
+}
+.uso-barra.atencao span { background: var(--laranja); }
+.uso-barra.critico span { background: var(--vermelho); }
+
+.uso-quando {
+  margin-top: 1.4vw;
+  font-size: 1.1vw;
+  color: var(--apagado);
+  line-height: 1.5;
+}
+.uso-quando b { color: var(--texto); font-weight: 600; }
+.uso-resta { margin-top: 0.4vw; font-size: 1.25vw; font-weight: 600; }
+
+/* Quando o painel não sabe, o texto encolhe e apaga: uma ausência não pode
+   ter o mesmo peso visual de uma leitura. */
+.uso-quando.apagada,
+.uso-resta.apagada,
+.uso-ausente,
+.uso-sem-curva {
+  color: var(--fraco);
+  font-size: 0.95vw;
+  font-weight: 400;
+  line-height: 1.5;
+}
+.uso-ausente { margin-top: 1.4vw; }
+.uso-ausente b,
+.uso-sem-curva b { color: var(--apagado); font-weight: 600; }
+
+.uso-extras { margin-top: 1.6vw; }
+
+.uso-curva { margin-top: 1.8vw; }
+.g-uso { display: block; width: 100%; height: auto; }
+
+/* As medidas do gráfico são unidades do viewBox, não pixels: o SVG escala
+   sozinho com a largura da tela, então stroke e texto acompanham. */
+.g-grade  { stroke: var(--borda); stroke-width: 1; }
+.g-virada { stroke: var(--fraco); stroke-width: 1; stroke-dasharray: 3 4; }
+/* fill-opacity em vez de rgba() fixo: assim a área sob a curva acompanha o
+   --ciano do tema, em vez de ficar azulada dentro do XP e do Facebook. */
+.g-area   { fill: var(--ciano); fill-opacity: 0.13; stroke: none; }
+.g-fh     { fill: none; stroke: var(--ciano); stroke-width: 2.5;
+            stroke-linejoin: round; stroke-linecap: round; }
+.g-sd     { fill: none; stroke: var(--laranja); stroke-width: 2;
+            stroke-dasharray: 5 4; }
+.g-eixo, .g-hora {
+  fill: var(--fraco);
+  font-family: var(--mono);
+  font-size: 9px;
+}
+
+.g-legenda { display: flex; margin-top: 1.1vw; }
+.g-chave {
+  display: flex;
+  align-items: center;
+  font-family: var(--mono);
+  font-size: 0.85vw;
+  letter-spacing: 0.06em;
+  color: var(--fraco);
+  margin-right: 1.6vw;   /* sem gap: Chrome 64 */
+}
+.g-chave:before {
+  content: '';
+  width: 1.1vw;
+  height: 0.28vw;
+  border-radius: 10vw;
+  background: var(--fraco);
+  margin-right: 0.5vw;
+}
+.g-chave.fh:before { background: var(--ciano); }
+.g-chave.sd:before { background: var(--laranja); }
+
+
 /* ============================================================ modo relógio
    Os cartões somem e a hora ocupa a tela. A barra do topo fica: ela carrega a
    identidade do tema e o wifi/bateria, e some daria uma tela órfã.

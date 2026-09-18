@@ -745,7 +745,7 @@ function slideUso() {
   var u = estado.uso;
   if (!u || (u.cinco_horas === undefined && u.semanal === undefined)) {
     return { classe: 'monitor-slide', titulo: 'MONITOR DO CLAUDE', icone: ICONE_USO,
-             html: '<div class="vazio">sem leitura do plano</div>' };
+             html: '<div class="vazio">sem leitura do plano</div>', tela: 'uso' };
   }
 
   function barra(rot, pct) {
@@ -764,7 +764,8 @@ function slideUso() {
   var selo = idade === null ? '' : (idade < 2 ? 'AGORA' : idade + ' MIN');
 
   return { classe: 'monitor-slide', titulo: 'MONITOR DO CLAUDE', icone: ICONE_USO,
-           selo: selo, html: '<div class="corpo">' + corpo + '</div>' };
+           selo: selo, html: '<div class="corpo">' + corpo + '</div>',
+           tela: 'uso' };
 }
 
 /* ============================================================== mensagens */
@@ -1353,8 +1354,195 @@ function telaMaquina() {
   '</div>';
 }
 
+
+/* ---------------------------------------- monitor do Claude (tela expandida)
+ *
+ * O cartão mostra duas porcentagens; esta tela mostra o que elas estão
+ * FAZENDO. "3%" sozinho não diz se a janela acabou de virar ou se está para
+ * estourar, e é essa a pergunta de quem olha o painel antes de começar uma
+ * tarefa longa.
+ *
+ * Nada aqui vem de fonte nova: é a mesma série que o cartão já lê, só que
+ * inteira em vez do último ponto. O horário da janela é DERIVADO das quedas
+ * dela — a janela de 5 horas começa quando você mandou a primeira mensagem,
+ * não numa hora redonda, e o arquivo não guarda esse horário em lugar nenhum.
+ * Sem queda na série, a tela diz que não sabe em vez de calcular para trás.
+ */
+function relogioDe(seg) {
+  var d = new Date(seg * 1000);
+  return dois(d.getHours()) + ':' + dois(d.getMinutes());
+}
+
+function duracao(seg) {
+  var m = Math.max(0, Math.round(seg / 60));
+  var h = Math.floor(m / 60);
+  m = m % 60;
+  if (h && m) return h + 'h ' + m + 'min';
+  return h ? h + 'h' : m + 'min';
+}
+
+/* A curva das últimas 24 horas, em SVG escrito à mão.
+ *
+ * SVG e não canvas: o painel redesenha por innerHTML e o canvas exigiria
+ * guardar um contexto e repintar fora do fluxo. E o SVG escala com o viewBox,
+ * então a mesma marcação serve para o Tab E e para o iPad sem medir nada.
+ *
+ * O eixo Y é fixo em 0-100%, nunca ajustado ao maior valor: a pergunta é
+ * "quanto do limite eu já gastei", e uma escala que se estica faria 12%
+ * parecer cheio.
+ */
+function graficoUso(serie) {
+  var L = 600, topo = 10, base = 150, pe = base + 16;
+  var i, a;
+
+  var pontos = [];
+  for (i = 0; i < (serie || []).length; i++) {
+    if (serie[i].fh !== null && serie[i].fh !== undefined) pontos.push(serie[i]);
+  }
+  if (pontos.length < 2) {
+    return '<div class="uso-sem-curva">A série do dia ainda não tem dois ' +
+           'pontos. O app do Claude só grava enquanto está aberto — com ele ' +
+           'fechado, não há curva para desenhar.</div>';
+  }
+
+  var t0 = pontos[0].t, t1 = pontos[pontos.length - 1].t;
+  var vao = Math.max(60, t1 - t0);
+  function px(t) { return Math.round((t - t0) * L / vao * 10) / 10; }
+  function py(p) { return Math.round((base - Math.min(100, p) / 100 * (base - topo)) * 10) / 10; }
+
+  var linhaFh = [], areaFh = [], linhaSd = [], quedas = [], ant = null;
+  for (i = 0; i < serie.length; i++) {
+    a = serie[i];
+    if (a.fh !== null && a.fh !== undefined) {
+      linhaFh.push(px(a.t) + ',' + py(a.fh));
+      if (ant !== null && a.fh < ant) quedas.push(px(a.t));
+      ant = a.fh;
+    }
+    if (a.sd !== null && a.sd !== undefined) linhaSd.push(px(a.t) + ',' + py(a.sd));
+  }
+  areaFh = [px(t0) + ',' + base].concat(linhaFh, [px(t1) + ',' + base]);
+
+  /* As viradas entram como traço vertical. São a única marca do gráfico que
+     não é um valor: contam quantas vezes a janela recomeçou no dia, que é o
+     jeito mais direto de ver "usei o dia todo" contra "usei uma vez". */
+  var viradas = '';
+  for (i = 0; i < quedas.length; i++) {
+    viradas += '<line class="g-virada" x1="' + quedas[i] + '" y1="' + topo +
+               '" x2="' + quedas[i] + '" y2="' + base + '"/>';
+  }
+
+  /* Só 50% e 100% ganham rótulo: o 0% cairia em cima da linha de base e da
+     própria curva, que passa rente ao chão quase o dia inteiro. */
+  var grade = '<line class="g-grade" x1="0" y1="' + base + '" x2="' + L + '" y2="' + base + '"/>';
+  for (i = 1; i <= 2; i++) {
+    var v = i * 50, y = py(v);
+    grade += '<line class="g-grade" x1="0" y1="' + y + '" x2="' + L + '" y2="' + y + '"/>' +
+             '<text class="g-eixo" x="' + (L - 2) + '" y="' + (y - 3) + '" text-anchor="end">' +
+             v + '%</text>';
+  }
+
+  var horas = '';
+  for (i = 0; i <= 4; i++) {
+    var t = t0 + vao * i / 4;
+    horas += '<text class="g-hora" x="' + px(t) + '" y="' + pe + '" text-anchor="' +
+             (i === 0 ? 'start' : (i === 4 ? 'end' : 'middle')) + '">' +
+             relogioDe(t) + '</text>';
+  }
+
+  return '<svg class="g-uso" viewBox="0 0 ' + L + ' ' + (pe + 4) + '">' +
+           grade + viradas +
+           '<polygon class="g-area" points="' + areaFh.join(' ') + '"/>' +
+           '<polyline class="g-fh" points="' + linhaFh.join(' ') + '"/>' +
+           (linhaSd.length > 1
+             ? '<polyline class="g-sd" points="' + linhaSd.join(' ') + '"/>' : '') +
+           horas +
+         '</svg>' +
+         '<div class="g-legenda">' +
+           '<span class="g-chave fh">janela de 5 horas</span>' +
+           '<span class="g-chave sd">semanal</span>' +
+           (quedas.length
+             ? '<span class="g-chave virada">' + quedas.length +
+               (quedas.length === 1 ? ' virada' : ' viradas') + '</span>' : '') +
+         '</div>';
+}
+
+function telaUso() {
+  var u = estado.uso;
+  if (!u || (u.cinco_horas === undefined && u.semanal === undefined)) {
+    return '<div class="vazio">sem leitura do plano</div>';
+  }
+
+  function bloco(rot, pct, extra) {
+    if (pct === undefined || pct === null) {
+      return '<div class="titulo-col">' + rot + '</div>' +
+             '<div class="uso-ausente">sem leitura</div>' + (extra || '');
+    }
+    var cls = nivel(pct, 75, 90);
+    return '<div class="titulo-col">' + rot + '</div>' +
+           '<div class="uso-grande ' + cls + '">' + pct + '<i>%</i></div>' +
+           '<div class="uso-barra ' + cls + '"><span style="width:' +
+             Math.min(100, pct) + '%"></span></div>' + (extra || '');
+  }
+
+  /* Quando fecha, e quanto falta. Só aparece se a série mostrou a virada. */
+  var janela;
+  if (u.virou_em) {
+    var fim = u.virou_em + 5 * 3600;
+    var resta = fim - agoraS();
+    janela = '<div class="uso-quando">abriu <b>' + relogioDe(u.virou_em) +
+             '</b> · fecha <b>' + relogioDe(fim) + '</b></div>' +
+             (resta > 0
+               ? '<div class="uso-resta">faltam ' + duracao(resta) + '</div>'
+               : '<div class="uso-resta apagada">o fim já passou e a virada ' +
+                 'seguinte não apareceu na série</div>');
+  } else {
+    janela = '<div class="uso-quando apagada">a série do dia não tem nenhuma ' +
+             'virada, então não dá para dizer quando esta janela abriu</div>';
+  }
+
+  /* Fable e contexto não estão no arquivo — só chegam empurrados por uma
+     sessão. Ausência declarada, nunca estimada. A classe `monitor-slide` é
+     emprestada de propósito: são as mesmas linhas do cartão, com o mesmo
+     desenho, e duas leituras do mesmo tipo não deveriam ter dois estilos. */
+  var extras = '';
+  if (u.fable !== undefined && u.fable !== null) {
+    extras += linhaMac('FABLE', u.fable + '%', u.fable, nivel(u.fable, 75, 90));
+  }
+  if (u.contexto && u.contexto.pct !== undefined) {
+    extras += linhaMac('CONTEXTO', u.contexto.pct + '%', u.contexto.pct,
+                       nivel(u.contexto.pct, 80, 93));
+  }
+  extras = extras
+    ? '<div class="monitor-slide uso-extras">' + extras + '</div>'
+    : '<div class="uso-ausente">O semanal do Fable e o contexto da sessão não ' +
+      'existem no arquivo do plano: aparecem só quando uma sessão do Claude ' +
+      'Code os empurra para <b>/uso</b>.</div>';
+
+  var idade = u.em ? Math.round((agoraS() - u.em) / 60) : null;
+  var quando = idade === null ? 'sem horário'
+             : (idade < 2 ? 'agora mesmo' : 'há ' + duracao(idade * 60));
+
+  return '<div class="tela-uso">' +
+    '<div class="dividido">' +
+      '<div>' + bloco('Janela de 5 horas', u.cinco_horas, janela) + '</div>' +
+      '<div>' + bloco('Semana · todos os modelos', u.semanal, extras) + '</div>' +
+    '</div>' +
+    '<div class="uso-curva">' +
+      '<div class="titulo-col">Últimas 24 horas</div>' +
+      graficoUso(u.historico) +
+    '</div>' +
+    '<div class="nota-proc">' +
+      'Os números vêm do histórico que o app do Claude grava no Mac — última ' +
+      'amostra <b>' + quando + '</b>, ' + (u.amostras || 0) + ' guardadas. ' +
+      'O app só grava enquanto está aberto, e os horários da janela são ' +
+      'deduzidos das quedas da curva: o arquivo não registra quando ela vira.' +
+    '</div>' +
+  '</div>';
+}
+
 var TELAS = {
   monitor: { titulo: 'Monitor do Mac · processos', render: telaMaquina },
+  uso:    { titulo: 'Monitor do Claude · plano', render: telaUso },
   sobre:  { titulo: 'Sobre o painel',   render: telaSobre },
   clima:  { titulo: 'Clima da semana',  render: telaClima },
   agenda: { titulo: 'Agenda da semana', render: telaAgenda },
