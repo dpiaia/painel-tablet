@@ -114,6 +114,25 @@ const TEMAS = [
     azul:'#000080',verde:'#006400',laranja:'#806000',vermelho:'#800000'}],
 ];
 
+/* A cor que identifica cada tema, para a pílula no painel.
+ *
+ * É uma DECISÃO, não um campo da paleta: no Matrix e no Apple quem identifica
+ * é o destaque, no Windows 95 e no XP é a área de trabalho (o teal e o azul
+ * que todo mundo lembra), e no Orkut é o rosa das comunidades, que marca mais
+ * que o azul do cabeçalho. Derivar isso de uma chave fixa acertaria em uns e
+ * erraria justo nos que têm cara própria.
+ */
+const COR_DO_TEMA = {
+  escuro:   '#22d3ee',
+  claro:    '#2563eb',
+  apple:    '#0071e3',
+  orkut:    '#c0187a',
+  facebook: '#3b5998',
+  matrix:   '#39ff14',
+  win95:    '#008080',
+  xp:       '#245edb',
+};
+
 let painel = null, fontes = {}, pendente = null;
 
 // O que o servidor encontrou no disco: papéis de parede, octocats. Não é
@@ -536,11 +555,16 @@ function desenharTemas() {
   alvo.innerHTML = '';
   TEMAS.forEach(([nome, slug, cores]) => {
     const b = document.createElement('button');
-    b.className = 'tema';
-    // Amostra com as cores que mais mudam a cara: fundo, cartão, destaque.
+    b.className = 'tema tema-cor';
+    const cor = COR_DO_TEMA[slug] || cores.ciano;
+    // A cor do tema pinta a própria pílula, em vez de virar cinco quadradinhos
+    // que a gente precisa decodificar. A faixa da esquerda é a cor cheia; o
+    // fundo é a mesma cor bem diluída, para a pílula inteira já dizer de qual
+    // tema se trata antes de você ler o nome.
+    b.style.setProperty('--cor-tema', cor);
     b.innerHTML = '<span class="amostra">' +
-      ['fundo','cartao','ciano','verde','laranja']
-        .map(k => '<i style="background:' + cores[k] + '"></i>').join('') +
+      ['fundo','cartao','ciano'].map(k =>
+        '<i style="background:' + cores[k] + '"></i>').join('') +
       '</span>' + nome;
     if ((painel.tema || 'escuro') === slug) b.classList.add('ativo');
     b.onclick = () => aplicarTema(slug, cores);
