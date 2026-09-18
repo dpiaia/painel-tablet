@@ -382,3 +382,19 @@
       rgba(77,255,196,0.14) 0px, rgba(77,255,196,0.14) 1px,
       rgba(0,0,0,0) 1px, rgba(0,0,0,0) 6px);
 }
+
+
+/* ------------------------------------------- o sufixo do nome nos Windows
+   Nos dois, o sufixo sai da cor de destaque do tema e ganha a cor da marca,
+   com sombra dura atrás. A sombra não é enfeite: no XP o laranja fica sobre o
+   azul da barra e no 95 o branco fica sobre o teal — em ambos os casos são
+   duas cores de brilho parecido, e sem a sombra o texto encosta no fundo. */
+[data-tema="xp"] .marca span {
+  color: #ff9d2e;
+  text-shadow: 0 0.12vw 0.22vw rgba(0, 0, 0, 0.75);
+}
+
+[data-tema="win95"] .marca span {
+  color: #ffffff;
+  text-shadow: 0 0.12vw 0.22vw rgba(0, 0, 0, 0.8);
+}

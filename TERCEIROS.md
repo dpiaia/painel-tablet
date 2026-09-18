@@ -44,6 +44,13 @@ genéricos: um gesto e uma fruta. O logotipo do Facebook é o "f" azul e o da
 Apple é a maçã mordida — nenhum dos dois está aqui, porque são marcas
 registradas e não seriam nossas para distribuir sob MIT.
 
+## `web/marcas/` — selos de tema
+
+Ícones de sistema que aparecem na barra do topo conforme o tema: Windows 95 e
+Windows XP, o logotipo arco-íris da Apple e o do Orkut. São marcas de seus
+donos (Microsoft, Apple, Google), usadas aqui só para identificar o tema que
+homenageiam. Ficam **fora do git** por isso.
+
 ## Pastas que continuam fora do git
 
 - `web/fundos/` — papéis de parede, que são de quem os colocar lá.

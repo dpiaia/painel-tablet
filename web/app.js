@@ -291,7 +291,7 @@ var SUFIXO = {
   win95:    '95',
   xp:       'XP',
   facebook: svg(24, ICONE.curtir),
-  apple:    'OS' + svg(24, ICONE.maca, 'depois')
+  apple:    'OS'      // a maçã saiu daqui: agora é o selo colorido na ponta
 };
 
 /* Alguns temas ganham um ícone de arquivo, de web/marcas/<slug>.png.
@@ -1340,6 +1340,21 @@ function aplicarAjustes() {
     var fim = marca.querySelector('span');
     var suf = sufixoDe(a.tema);
     if (fim && fim.innerHTML !== suf) fim.innerHTML = suf;
+  }
+
+  // --- selo do tema, na ponta direita da barra
+  //
+  // Mesmo inventário de web/marcas/ que o sufixo usa, com outro sufixo de
+  // arquivo: <slug>.png fica colado no nome, <slug>-topo.png ancora o canto.
+  // Sem o arquivo, some — nada quebra num tema que não tem selo.
+  var seloTema = $('selo-tema');
+  if (seloTema) {
+    var arq = (a.tema || '') + '-topo.png';
+    var tem = (estado.marcas || []).indexOf(arq) >= 0;
+    seloTema.hidden = !tem;
+    if (tem && seloTema.getAttribute('src') !== 'marcas/' + arq) {
+      seloTema.src = 'marcas/' + arq;
+    }
   }
 
   // --- recado

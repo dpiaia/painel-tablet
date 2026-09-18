@@ -1204,3 +1204,14 @@ body { display: flex; flex-direction: column; }
    cartão dentro de uma dupla divide a linha com o irmão. */
 .coluna > .cartao { flex: 1; min-height: 0; }
 .dupla > .cartao  { flex: 1; min-height: 0; }
+
+
+/* Selo do tema na ponta direita da barra do topo. Altura casada com a do
+   texto da barra, para não empurrar nada. */
+.selo-tema {
+  height: 1.9vw;
+  width: auto;
+  margin-left: 1.1vw;
+  flex: none;
+  object-fit: contain;
+}
