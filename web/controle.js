@@ -80,6 +80,13 @@ const TEMAS = [
     texto:'#0b0b0b',apagado:'#4a4a45',fraco:'#8a8a80',ciano:'#0054e3',
     azul:'#0054e3',verde:'#2f8a2f',laranja:'#d07b00',vermelho:'#c00000'}],
 
+  // Matrix: fósforo verde sobre preto. Duotone total — a gravidade vira
+  // brilho, não matiz: "tudo bem" é o verde mais apagado da tela e "quebrado"
+  // é quase branco, que é como um monitor monocromático sempre avisou.
+  ['Matrix', 'matrix', {fundo:'#000000',cartao:'#020803',dentro:'#04140a',borda:'#0c4f22',
+    texto:'#33ff66',apagado:'#1f9e45',fraco:'#0f5c28',ciano:'#39ff14',
+    azul:'#00b34a',verde:'#148f3a',laranja:'#4dff7a',vermelho:'#b9ffcb'}],
+
   // Windows 95: o cinza das janelas sobre o teal da área de trabalho
   ['Windows 95', 'win95', {fundo:'#008080',cartao:'#c0c0c0',dentro:'#dfdfdf',borda:'#808080',
     texto:'#000000',apagado:'#404040',fraco:'#6b6b6b',ciano:'#000080',

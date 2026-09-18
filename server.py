@@ -576,7 +576,7 @@ class Handler(BaseHTTPRequestHandler):
         if rota == "/controle":
             if not eh_local(self):
                 return self.send_error(403, "o controle so abre no proprio Mac")
-            return self._arquivo("controle.html")
+            return self._pagina("controle.html", ("controle.js",))
         if rota == "/verificar-repo":
             if not eh_local(self):
                 return self.send_error(403)
@@ -615,21 +615,29 @@ class Handler(BaseHTTPRequestHandler):
         self.wfile.write(corpo)
 
     def _indice(self):
-        """Serve a página com ?v=<mtime> no CSS e no JS.
+        return self._pagina("index.html", ("style.css", "temas.css", "app.js"))
+
+    def _pagina(self, nome, arquivos):
+        """Serve uma página com ?v=<mtime> no CSS e no JS que ela referencia.
 
         O WebView do tablet guardava o app.js antigo mesmo com no-store, e a
         página ficava pedindo arquivos que tinham mudado de nome — 404 mudo e
         cartão vazio. Com a marca de tempo na URL, código novo é URL nova e não
         existe cache velho para servir.
+
+        Vale também para o painel de controle. Ele não tem o auto-recarregamento
+        da tela do tablet, então uma aba aberta de manhã continuava rodando o
+        controle.js da manhã. Foi exatamente assim que um conserto de gravação
+        pareceu não ter funcionado: estava certo no disco e velho na aba.
         """
-        caminho = os.path.join(WEB_DIR, "index.html")
+        caminho = os.path.join(WEB_DIR, nome)
         try:
             with open(caminho, encoding="utf8") as fh:
                 html = fh.read()
         except OSError:
             return self.send_error(404)
 
-        for arquivo in ("style.css", "temas.css", "app.js"):
+        for arquivo in arquivos:
             try:
                 versao = int(os.path.getmtime(os.path.join(WEB_DIR, arquivo)))
             except OSError:

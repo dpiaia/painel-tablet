@@ -221,3 +221,108 @@
 /* O selo verde do topo se apagava contra o azul da área de trabalho do XP. */
 [data-tema="xp"] .selo { background: rgba(255,255,255,0.18); color: #ffffff; }
 [data-tema="xp"] .selo.off { background: rgba(255,255,255,0.18); color: #ffd7d7; }
+
+
+/* ================================================================== Matrix
+   Fósforo verde sobre preto, duotone total: até o vermelho de "quebrado" é
+   verde. Num monitor monocromático a gravidade nunca foi cor — era BRILHO. É
+   o que a paleta faz: "tudo bem" é o verde mais apagado da tela, "atenção" é
+   mais claro, e "quebrado" é quase branco. A informação continua lá, lida por
+   luminância em vez de matiz.
+
+   A fonte é monoespaçada em tudo, inclusive no relógio: um terminal desses não
+   tinha outra. */
+[data-tema="matrix"] {
+  --raio: 0;
+  --sans: "Roboto Mono", "Droid Sans Mono", "SF Mono", Consolas, monospace;
+}
+
+[data-tema="matrix"] .cartao {
+  border: 1px solid var(--borda);
+  box-shadow: inset 0 0 2vw rgba(0, 255, 90, 0.045);
+}
+
+[data-tema="matrix"] .cartao > header {
+  margin: -1.3vw -1.5vw 1.1vw;
+  padding: 0.5vw 1.5vw;
+  border-bottom: 1px solid var(--borda);
+  background: rgba(0, 255, 90, 0.05);
+}
+
+/* O brilho do fósforo: sombra da própria cor do texto, que sangra um pouco
+   para fora da letra. Só nos textos grandes — em corpo de 0,9vw isso vira
+   borrão e atrapalha a leitura, que é o oposto do efeito. */
+[data-tema="matrix"] .hora,
+[data-tema="matrix"] .marca,
+[data-tema="matrix"] .clima-temp,
+[data-tema="matrix"] .destaque,
+[data-tema="matrix"] .cartao h2 {
+  text-shadow: 0 0 0.6vw currentColor;
+}
+
+[data-tema="matrix"] .ic { stroke-width: 2; }
+
+[data-tema="matrix"] .etq,
+[data-tema="matrix"] .pilula,
+[data-tema="matrix"] .chip,
+[data-tema="matrix"] .selo,
+[data-tema="matrix"] .pr-estado,
+[data-tema="matrix"] .pr-ci { border-radius: 0; }
+
+[data-tema="matrix"] .selo i { border-radius: 0; }
+
+
+/* ------------------------------------------------------ o tubo: varredura
+   Duas camadas, e as duas são baratas de propósito.
+
+   As linhas fixas são um gradiente repetido: o navegador pinta uma vez e não
+   toca mais nelas. A linha que desce é um elemento só, movido por
+   translate3d — transform puro, sem repintar nada. Numa Mali-400 é a
+   diferença entre um efeito e um painel travado. */
+.crt { display: none; }
+
+[data-tema="matrix"] .crt {
+  display: block;
+  position: fixed;
+  left: 0; top: 0; right: 0; bottom: 0;
+  z-index: 5;
+  pointer-events: none;
+  background: repeating-linear-gradient(
+    to bottom,
+    rgba(0, 255, 90, 0.05) 0px,
+    rgba(0, 255, 90, 0.05) 1px,
+    rgba(0, 0, 0, 0) 1px,
+    rgba(0, 0, 0, 0) 3px);
+}
+
+[data-tema="matrix"] .crt i {
+  position: absolute;
+  left: 0; right: 0; top: 0;
+  height: 14vh;
+  background: linear-gradient(
+    to bottom,
+    rgba(0, 255, 90, 0) 0%,
+    rgba(0, 255, 90, 0.055) 60%,
+    rgba(0, 255, 90, 0.11) 92%,
+    rgba(0, 255, 90, 0) 100%);
+  -webkit-animation: varrer 7s linear infinite;
+          animation: varrer 7s linear infinite;
+  will-change: transform;
+}
+
+@-webkit-keyframes varrer {
+  0%   { -webkit-transform: translate3d(0, -14vh, 0); }
+  100% { -webkit-transform: translate3d(0, 100vh, 0); }
+}
+@keyframes varrer {
+  0%   { transform: translate3d(0, -14vh, 0); }
+  100% { transform: translate3d(0, 100vh, 0); }
+}
+
+/* O glitch: um tranco horizontal de 120ms, disparado pelo app.js de vez em
+   quando. Feito por classe e não por animação contínua — animação de 30
+   segundos em que 29 não têm nada ainda custa um quadro por vez à GPU. */
+[data-tema="matrix"] .painel { will-change: transform; }
+[data-tema="matrix"].tremendo .painel { transform: translate3d(0.35vw, 0, 0); }
+[data-tema="matrix"].tremendo .topo  { transform: translate3d(-0.25vw, 0, 0); }
+[data-tema="matrix"].tremendo .crt   { opacity: 0.45; }

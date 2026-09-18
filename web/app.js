@@ -978,6 +978,7 @@ function aplicarAjustes() {
   // tem canto largo), então a conta de quantas linhas cabem tem que ser
   // refeita — e ela não roda sozinha, porque o conteúdo não mudou.
   setTimeout(function () { ajustarListas('palco-claude'); ajustarListas('palco'); }, 60);
+  agendarTremor();
 
   // --- cores: a folha inteira usa variáveis, então trocar a variável troca
   //     tudo que depende dela. Nenhum seletor precisa saber disso.
@@ -1484,6 +1485,34 @@ function proximaCena() {
       proximaCena();
     }, 420));
   }, c.intro + Math.max(1, c.espera) * 1000));
+}
+
+
+/* O glitch do Matrix: um tranco de 120ms a cada 18-50 segundos.
+ *
+ * Por temporizador e não por animação CSS infinita. Uma animação de 30
+ * segundos em que 29 não têm movimento nenhum ainda faz a GPU compor um quadro
+ * por vez o tempo todo — num Mali-400 isso é custo permanente para um efeito
+ * que aparece uma vez por minuto. Com temporizador, o custo existe só nos
+ * 120ms em que a tela treme.
+ *
+ * Intervalo sorteado: em cadência fixa o olho aprende o ritmo e o defeito
+ * deixa de parecer defeito.
+ */
+var relogioTremor = null;
+
+function agendarTremor() {
+  clearTimeout(relogioTremor);
+  if (document.documentElement.getAttribute('data-tema') !== 'matrix') {
+    document.documentElement.classList.remove('tremendo');
+    return;
+  }
+  relogioTremor = setTimeout(function () {
+    var raiz = document.documentElement;
+    raiz.classList.add('tremendo');
+    setTimeout(function () { raiz.classList.remove('tremendo'); }, 120);
+    agendarTremor();
+  }, 18000 + Math.random() * 32000);
 }
 
 

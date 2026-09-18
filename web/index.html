@@ -104,6 +104,11 @@
 <!-- Festa de conclusão: some a tela inteira por alguns segundos quando uma
      tarefa do Claude termina. Fica fora do .painel de propósito — é uma
      camada por cima de tudo, inclusive da tela de detalhe. -->
+<!-- Varredura do tubo, só no tema Matrix. Fica fora do .painel porque cobre a
+     tela toda, e abaixo das cenas: elas têm cor própria e ficariam esverdeadas
+     por cima. Quem liga e desliga é o CSS pelo data-tema, não o JS. -->
+<div class="crt" aria-hidden="true"><i></i></div>
+
 <div class="festa" id="festa" hidden>
 
   <!-- Confete: quadradinhos caindo, para combinar com o pixel art. São
