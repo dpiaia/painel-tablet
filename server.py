@@ -363,6 +363,32 @@ def octodex():
     return nomes
 
 
+_marcas_cache = (0, [])
+
+
+def marcas():
+    """Ícones de marca por tema, em web/marcas/ (opcional, fora do git).
+
+    O painel procura <slug>.png. Sem a pasta, cada tema volta ao sufixo de
+    texto do código — nada quebra.
+    """
+    global _marcas_cache
+    pasta = os.path.join(WEB_DIR, "marcas")
+    try:
+        marca = os.stat(pasta).st_mtime
+    except OSError:
+        return []
+    if marca == _marcas_cache[0]:
+        return _marcas_cache[1]
+    try:
+        nomes = sorted(n for n in os.listdir(pasta)
+                       if n.lower().endswith((".png", ".svg", ".jpg", ".webp")))
+    except OSError:
+        nomes = []
+    _marcas_cache = (marca, nomes)
+    return nomes
+
+
 _fundos_cache = (0, [])
 
 
@@ -417,6 +443,7 @@ def retrato():
     dados["versao_web"] = versao_web()
     dados["octodex"] = octodex()
     dados["fundos"] = fundos()
+    dados["marcas"] = marcas()
     return dados
 
 

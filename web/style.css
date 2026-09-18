@@ -1097,8 +1097,13 @@ body { display: flex; flex-direction: column; }
   width: 1.5vw;
   height: 1.5vw;
   fill: currentColor;
+  object-fit: contain;
   vertical-align: -0.22vw;
   margin-left: 0.25vw;
 }
 .marca .sufixo:first-child { margin-left: 0; }
+
+/* Ícone de arquivo precisa de mais corpo que ícone de traço: o desenhado é
+   uma silhueta e lê pequeno, o de imagem tem detalhe dentro e some. */
+.marca img.sufixo { width: 1.9vw; height: 1.9vw; vertical-align: -0.42vw; }
 .marca .sufixo.depois { margin-left: 0.35vw; }

@@ -138,6 +138,17 @@ function salvar(secao, chave, valor) {
   enviar(corpo);
 }
 
+/* Recarrega o painel de controle buscando tudo de novo do servidor.
+ *
+ * Endereço novo a cada vez, e não location.reload(): o reload relê do cache, e
+ * esta página já ficou rodando código de horas antes enquanto o disco tinha a
+ * versão nova. Um conserto de gravação chegou a parecer não ter funcionado por
+ * causa disso.
+ */
+function atualizarPainel() {
+  location.replace('/controle?r=' + Date.now());
+}
+
 /* ------------------------------------------------------------- pedaços */
 function chave(ligado, aoMudar) {
   const l = document.createElement('label');
@@ -357,7 +368,10 @@ function desenharMarca() {
   inp.maxLength = 18;          // mais que isso empurra o relógio do tablet
   inp.value = painel.marca === undefined ? 'PIAIA' : painel.marca;
   inp.placeholder = 'PIAIA';
-  inp.onchange = () => salvar('marca', null, inp.value.trim());
+  // oninput e não onchange: onchange só dispara ao SAIR do campo, e ninguém
+  // sai do campo para conferir — você digita e olha para o tablet. Parecia
+  // quebrado sem estar. O debounce de 250ms do enviar() já segura a rajada.
+  inp.oninput = () => salvar('marca', null, inp.value.trim());
   campo.appendChild(inp);
   alvo.appendChild(campo);
 }
@@ -426,7 +440,7 @@ function desenharRecado() {
     const inp = document.createElement('input');
     inp.type = 'text'; inp.value = (painel.recado || {})[id] || '';
     inp.placeholder = dica;
-    inp.onchange = () => salvar('recado', id, inp.value);
+    inp.oninput = () => salvar('recado', id, inp.value);   // ver desenharMarca
     campo.appendChild(inp);
     alvo.appendChild(campo);
   });

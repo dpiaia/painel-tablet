@@ -109,34 +109,6 @@ function desenharSistema() {
   $('sist').innerHTML = html;
 }
 
-/* =========================================================== saúde do Mac */
-function nivel(valor, atencao, critico) {
-  if (valor >= critico) return 'critico';
-  if (valor >= atencao) return 'atencao';
-  return '';
-}
-
-function metrica(rotulo, texto, classe) {
-  return '<span class="m ' + classe + '">' + rotulo + ' <b>' + texto + '</b></span>';
-}
-
-function desenharMaquina() {
-  var m = estado.maquina;
-  if (!m) { $('mac').innerHTML = ''; return; }
-
-  // O swap é o número que importa: no macOS "memória livre" baixa é normal,
-  // mas swap crescendo significa que a máquina já está paginando para o disco.
-  var livre = m.swap_total_gb - m.swap_gb;
-  var nivelSwap = livre < 1 ? 'critico' : (m.swap_gb >= 2 ? 'atencao' : '');
-
-  $('mac').innerHTML =
-    '<span class="rot">MAC</span>' +
-    metrica('CPU', m.cpu + '%', nivel(m.cpu, 85, 95)) +
-    metrica('MEM', m.ram + '%', nivel(m.ram, 85, 92)) +
-    metrica('SWAP', m.swap_gb + 'G', nivelSwap) +
-    '<span class="div">|</span>';
-}
-
 /* ================================================================== clima */
 var TEMPO = {
   sol:        '<circle cx="32" cy="32" r="11"/><path d="M32 7v6M32 51v6M7 32h6M51 32h6M14 14l4 4M46 46l4 4M50 14l-4 4M18 46l-4 4"/>',
@@ -306,9 +278,23 @@ var SUFIXO = {
   win95:    '95',
   xp:       'XP',
   facebook: svg(24, ICONE.curtir),
-  orkut:    svg(16, ICONE.carinha) + svg(16, ICONE.gelo) + svg(16, ICONE.coracao),
   apple:    'OS' + svg(24, ICONE.maca, 'depois')
 };
+
+/* Alguns temas ganham um ícone de arquivo, de web/marcas/<slug>.png.
+ *
+ * A pasta é opcional e fica fora do git (ícone de terceiro). Quando o arquivo
+ * existe, ele vence o sufixo desenhado; quando não existe, o painel cai no
+ * texto sem reclamar. É a mesma regra dos octocats e dos papéis de parede:
+ * o inventário vem do disco, não de uma lista no código.
+ */
+function sufixoDe(tema) {
+  var arquivo = tema + '.png';
+  if ((estado.marcas || []).indexOf(arquivo) >= 0) {
+    return '<img class="sufixo" src="marcas/' + arquivo + '" alt="">';
+  }
+  return SUFIXO[tema] || 'OS';
+}
 
 var CORES_RECADO = {
   amarelo: { fundo: '#fde68a', borda: '#f0c74a', texto: '#422006', fraco: '#7c5312' },
@@ -316,6 +302,25 @@ var CORES_RECADO = {
   azul:    { fundo: '#bfdbfe', borda: '#89b8f5', texto: '#0c2a4d', fraco: '#1d4f86' },
   rosa:    { fundo: '#fbcfe8', borda: '#f0a3ce', texto: '#500724', fraco: '#8d1447' },
   lilas:   { fundo: '#ddd6fe', borda: '#b6a8f7', texto: '#2e1065', fraco: '#5b32b0' }
+};
+
+/* As mesmas cinco escolhas, traduzidas para o Matrix.
+ *
+ * Um post-it amarelo no meio de um monitor de fósforo quebra o tema inteiro —
+ * é a única coisa na tela que não é verde. Mas as cinco opções precisam
+ * continuar distinguíveis, senão a escolha vira enfeite.
+ *
+ * A saída é trocar o eixo: fora do Matrix quem diferencia é o MATIZ, aqui é a
+ * TEXTURA. Cinco tramas diferentes sobre o mesmo verde — listra, liso,
+ * diagonal para um lado, para o outro, e xadrez. É o que um terminal
+ * monocromático sempre fez para separar áreas sem ter uma segunda cor.
+ */
+var CORES_RECADO_MATRIX = {
+  amarelo: { fundo: '#123d1c', borda: '#2a7a3e', texto: '#5cff8a', fraco: '#2fbf5e' },
+  verde:   { fundo: '#0a2c12', borda: '#1d6b30', texto: '#43ff74', fraco: '#26a44e' },
+  azul:    { fundo: '#07261c', borda: '#18664a', texto: '#3dffb0', fraco: '#21a877' },
+  rosa:    { fundo: '#15331c', borda: '#2f7a45', texto: '#66ff95', fraco: '#33b866' },
+  lilas:   { fundo: '#0d2a22', borda: '#1f6b55', texto: '#4dffc4', fraco: '#26a882' }
 };
 
 var GIFS = {
@@ -1113,12 +1118,14 @@ function aplicarAjustes() {
   // Só o pedaço antes do "OS" é seu. Mexo no primeiro nó de TEXTO em vez de no
   // innerHTML do elemento: o <span> do "OS" fica de pé, com a cor de destaque
   // que ele já tem, sem precisar remontar nada.
-  var marca = $('marca');
+  // .marca é CLASSE, não id — $() é getElementById e devolvia nulo, pulando o
+  // bloco inteiro sem erro nenhum. O nome ficava eternamente em PIAIA OS.
+  var marca = document.querySelector('.marca');
   if (marca && marca.firstChild) {
     var nome = (a.marca === undefined || a.marca === null) ? 'PIAIA' : a.marca;
     if (marca.firstChild.nodeValue !== nome) marca.firstChild.nodeValue = nome;
     var fim = marca.querySelector('span');
-    var suf = SUFIXO[a.tema] || 'OS';
+    var suf = sufixoDe(a.tema);
     if (fim && fim.innerHTML !== suf) fim.innerHTML = suf;
   }
 
@@ -1136,10 +1143,16 @@ function aplicarAjustes() {
 
   var cartaoRecado = document.querySelector('[data-cartao="recado"]');
   if (cartaoRecado) {
-    var paleta = CORES_RECADO[r.cor] || null;
+    var noMatrix = (a.tema === 'matrix');
+    var paleta = (noMatrix ? CORES_RECADO_MATRIX : CORES_RECADO)[r.cor] || null;
     var est = cartaoRecado.style;
+    // A textura é do CSS e entra por background-IMAGE. Por isso aqui vai
+    // backgroundColor e não o atalho `background`: o atalho zera a imagem
+    // junto, e a trama sumiria no instante em que a cor fosse aplicada.
+    if (noMatrix && r.cor) cartaoRecado.setAttribute('data-textura', r.cor);
+    else cartaoRecado.removeAttribute('data-textura');
     if (paleta) {
-      est.background = paleta.fundo;
+      est.backgroundColor = paleta.fundo;
       est.borderColor = paleta.borda;
       est.setProperty('--texto', paleta.texto);
       est.setProperty('--apagado', paleta.fraco);
@@ -1148,7 +1161,7 @@ function aplicarAjustes() {
       // Volta ao tema: remover é diferente de escrever o valor padrão. Se eu
       // escrevesse, o cartão ficaria preso naquela cor quando você trocasse
       // de tema, enquanto todos os outros mudariam.
-      est.background = '';
+      est.backgroundColor = '';
       est.borderColor = '';
       est.removeProperty('--texto');
       est.removeProperty('--apagado');

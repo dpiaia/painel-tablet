@@ -343,3 +343,42 @@
   -webkit-filter: grayscale(1) sepia(1) hue-rotate(75deg) saturate(3.2) brightness(0.95);
           filter: grayscale(1) sepia(1) hue-rotate(75deg) saturate(3.2) brightness(0.95);
 }
+
+
+/* ------------------------------------- o recado no Matrix: trama, não cor
+   Fora do Matrix as cinco opções do recado se distinguem pelo matiz. Aqui não
+   há um segundo matiz para gastar, então quem separa é a TRAMA — que é o que
+   um terminal monocromático sempre fez para diferenciar áreas.
+
+   Gradiente repetido é pintado uma vez e nunca mais tocado: custo zero por
+   quadro, ao contrário de qualquer coisa animada. */
+[data-tema="matrix"] [data-cartao="recado"][data-textura="amarelo"] {
+  background-image: repeating-linear-gradient(to bottom,
+    rgba(51,255,102,0.20) 0px, rgba(51,255,102,0.20) 1px,
+    rgba(0,0,0,0) 1px, rgba(0,0,0,0) 4px);
+}
+
+/* O "verde" fica liso de propósito: numa lista de cinco tramas, uma delas
+   precisa ser a ausência de trama, senão não há linha de base. */
+
+[data-tema="matrix"] [data-cartao="recado"][data-textura="azul"] {
+  background-image: repeating-linear-gradient(45deg,
+    rgba(61,255,176,0.17) 0px, rgba(61,255,176,0.17) 2px,
+    rgba(0,0,0,0) 2px, rgba(0,0,0,0) 7px);
+}
+
+[data-tema="matrix"] [data-cartao="recado"][data-textura="rosa"] {
+  background-image: repeating-linear-gradient(-45deg,
+    rgba(102,255,149,0.17) 0px, rgba(102,255,149,0.17) 2px,
+    rgba(0,0,0,0) 2px, rgba(0,0,0,0) 7px);
+}
+
+[data-tema="matrix"] [data-cartao="recado"][data-textura="lilas"] {
+  background-image:
+    repeating-linear-gradient(45deg,
+      rgba(77,255,196,0.14) 0px, rgba(77,255,196,0.14) 1px,
+      rgba(0,0,0,0) 1px, rgba(0,0,0,0) 6px),
+    repeating-linear-gradient(-45deg,
+      rgba(77,255,196,0.14) 0px, rgba(77,255,196,0.14) 1px,
+      rgba(0,0,0,0) 1px, rgba(0,0,0,0) 6px);
+}

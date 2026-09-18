@@ -20,3 +20,7 @@ web/octodex/
 # Papéis de parede: imagens do usuário, não do projeto.
 web/fundos/*
 !web/fundos/LEIA-ME.md
+
+# Ícones de marca de terceiros: mesma razão da pasta dos octocats.
+web/marcas/*
+!web/marcas/LEIA-ME.md
