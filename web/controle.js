@@ -444,8 +444,8 @@ function desenharFundos() {
     vazio.textContent = 'Nenhuma imagem em web/fundos/. Solte arquivos ali e ' +
                         'eles aparecem aqui, sem reiniciar nada.';
     campo.appendChild(vazio);
-    alvo.appendChild(campo);
-    return;
+    // sem `return`: mesmo sem nenhuma imagem, o botão de enviar precisa
+    // existir — é justamente o caso em que ele serve.
   }
 
   const atual = (painel.fundos || {})[tema] || '';
@@ -476,6 +476,52 @@ function desenharFundos() {
   });
 
   campo.appendChild(linha);
+
+  // Enviar um arquivo novo. O File vai cru no corpo do fetch, com o nome na
+  // query — sem multipart, que do lado do servidor custaria um parser inteiro.
+  const envio = document.createElement('div');
+  envio.className = 'acoes';
+  const arquivo = document.createElement('input');
+  arquivo.type = 'file';
+  arquivo.accept = 'image/png,image/jpeg,image/webp,image/gif';
+  arquivo.style.display = 'none';
+  arquivo.onchange = async () => {
+    const f = arquivo.files && arquivo.files[0];
+    if (!f) return;
+    aviso.textContent = 'enviando ' + f.name + '…';
+    try {
+      const r = await fetch('/fundo?nome=' + encodeURIComponent(f.name),
+                            {method: 'POST', body: f});
+      const d = await r.json();
+      if (!d.ok) throw new Error('recusado');
+      disponiveis.fundos = d.fundos || [];
+      aviso.textContent = d.reduzida
+        ? d.nome + ' enviado (reduzido para caber no tablet)'
+        : d.nome + ' enviado';
+      desenharFundos();
+    } catch (e) {
+      aviso.textContent = 'não deu para enviar — formato ou tamanho recusado';
+    }
+    arquivo.value = '';
+  };
+
+  const bt = document.createElement('button');
+  bt.textContent = 'Enviar imagem';
+  bt.onclick = () => arquivo.click();
+
+  const limpar = document.createElement('button');
+  limpar.textContent = 'Limpar todos os temas';
+  limpar.onclick = () => {
+    painel.fundos = {};
+    salvar('fundos', null, {});
+    desenharFundos();
+  };
+
+  const aviso = document.createElement('span');
+  aviso.className = 'aviso-envio';
+
+  envio.append(arquivo, bt, limpar, aviso);
+  campo.appendChild(envio);
   alvo.appendChild(campo);
 }
 

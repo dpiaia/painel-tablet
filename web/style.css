@@ -278,8 +278,13 @@ body { display: flex; flex-direction: column; }
    não ficam melhores esticados. */
 /* Vertical, não lado a lado: com a largura inteira cabem mais compromissos
    e os títulos param de ser cortados no meio. */
-.agenda { flex: 1; flex-direction: column; padding: 1vw; }
-.agenda > * + * { margin-top: 0.7vw; }
+/* O padding volta ao dos outros cartões. Era 1vw, e com um cabeçalho isso
+   quebraria os temas que sangram a faixa de título até a borda (Windows 95,
+   XP, Orkut, Facebook): eles usam margem negativa de -1.3vw/-1.5vw, medida do
+   padding padrão. Faixa mais estreita que o cartão apareceria como um degrau. */
+.agenda { flex: 1; flex-direction: column; }
+.agenda > .destaque + * { margin-top: 0.7vw; }
+.agenda > .lista { margin-top: 0.7vw; }
 
 .destaque {
   flex: none;

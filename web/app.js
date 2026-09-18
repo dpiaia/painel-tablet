@@ -170,7 +170,20 @@ function horaDe(e, classe) {
 }
 
 function marcarAgenda(curta) {
-  document.querySelector('.agenda').className = 'cartao agenda' + (curta ? ' sozinho' : '');
+  document.querySelector('.agenda').className = 'cartao agenda toque' + (curta ? ' sozinho' : '');
+
+  // O canto conta o que ainda vem HOJE — não o total da semana. Num cartão de
+  // relance, "3" querendo dizer "três nos próximos sete dias" seria pior que
+  // nada: você olharia e se prepararia para um dia que não é esse.
+  var canto = $('agenda-canto');
+  if (canto) {
+    var fim = new Date(Date.now() + deslocamento);
+    fim.setHours(23, 59, 59, 999);
+    var restam = (((estado.agenda || {}).itens) || []).filter(function (i) {
+      return !i.dia_inteiro && i.fim_ts > agoraS() && i.inicio_ts <= fim.getTime() / 1000;
+    }).length;
+    canto.textContent = restam ? restam + (restam === 1 ? ' HOJE' : ' HOJE') : '';
+  }
 }
 
 function desenharAgenda() {

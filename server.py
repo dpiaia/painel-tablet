@@ -13,6 +13,7 @@ import json
 import mimetypes
 import os
 import queue
+import re
 import socket
 import subprocess
 import threading
@@ -574,6 +575,62 @@ class Handler(BaseHTTPRequestHandler):
         return self._json({"ok": True, "painel": painel,
                            "fontes": {k: cfg.get(k) for k in FONTES_EDITAVEIS}})
 
+    def _subir_fundo(self):
+        """Recebe um papel de parede do painel de controle.
+
+        Corpo binário cru com o nome na query, em vez de multipart: o navegador
+        manda o File direto no fetch, e aqui não precisa de parser de formulário
+        — são vinte linhas a menos e nenhum caso de borda de fronteira MIME.
+
+        Só do próprio Mac, como todas as rotas de controle.
+        """
+        if not eh_local(self):
+            return self.send_error(403, "so do proprio Mac")
+
+        bruto = urllib.parse.parse_qs(
+            urllib.parse.urlparse(self.path).query).get("nome", [""])[0]
+        # O nome vem de um arquivo do usuário: fica só o que é seguro em
+        # caminho. Sem isso, "../../algo" escreveria fora da pasta.
+        nome = re.sub(r"[^A-Za-z0-9._-]", "_", os.path.basename(bruto)).strip("._")
+        ext = os.path.splitext(nome)[1].lower()
+        if ext not in (".png", ".jpg", ".jpeg", ".webp", ".gif"):
+            return self.send_error(400, "extensao nao aceita")
+
+        try:
+            tamanho = int(self.headers.get("Content-Length") or 0)
+        except ValueError:
+            tamanho = 0
+        if tamanho <= 0 or tamanho > 25 * 1024 * 1024:
+            return self.send_error(413, "arquivo vazio ou grande demais")
+
+        dados = self.rfile.read(tamanho)
+        pasta = os.path.join(WEB_DIR, "fundos")
+        os.makedirs(pasta, exist_ok=True)
+        destino = os.path.join(pasta, nome)
+
+        # Reduz, se houver Pillow. O tablet tem 1,4 GB e o WebView descomprime a
+        # imagem inteira antes de escalar: uma foto de celular de 4000px come
+        # memória à toa para aparecer em 1138. Sem Pillow, grava como veio — a
+        # dependência é opcional de propósito, para o projeto rodar sem ela.
+        reduzida = False
+        try:
+            from PIL import Image
+            import io
+            im = Image.open(io.BytesIO(dados))
+            if max(im.size) > 1600:
+                im = im.convert("RGB") if ext in (".jpg", ".jpeg") else im
+                im.thumbnail((1600, 1600), Image.LANCZOS)
+                im.save(destino)
+                reduzida = True
+        except Exception:
+            reduzida = False
+        if not reduzida:
+            with open(destino, "wb") as fh:
+                fh.write(dados)
+
+        return self._json({"ok": True, "nome": nome, "reduzida": reduzida,
+                           "fundos": fundos()})
+
     def _acao(self):
         """Botões do painel de controle. Só coisas idempotentes e reversíveis."""
         if not eh_local(self):
@@ -592,6 +649,8 @@ class Handler(BaseHTTPRequestHandler):
             return self._ajustes()
         if rota == "/acao":
             return self._acao()
+        if rota == "/fundo":
+            return self._subir_fundo()
         if rota == "/claude":
             return self._hook_claude()
         if rota != "/ingest":
