@@ -151,6 +151,35 @@
 [data-tema="orkut"] .pilula,
 [data-tema="orkut"] .chip { border-radius: 0.3vw; }
 
+/* ------------------------------------------------- o nome vira "…kut"
+   Logo na frente, nome em rosa e negrito, e "kut" no mesmo rosa depois:
+   Piaia vira Piaiakut. Mesma construção do "book" do Facebook — o sufixo de
+   verdade (#marca-fim) segura o logo e vai para a frente com `order`, e o
+   pedaço de texto entra pelo ::after, que é sempre o último filho.
+
+   O "kut" repete a cor e muda só o peso. Fosse outro tom, leria como duas
+   palavras; no mesmo tom com peso menor, lê como uma palavra só com a
+   terminação emendada, que é a graça. */
+[data-tema="orkut"] .marca {
+  display: flex;
+  align-items: center;
+  color: var(--ciano);
+  font-weight: 800;
+}
+[data-tema="orkut"] .marca #marca-fim {
+  order: -1;
+  margin: 0 0.7vw 0 0;
+  display: flex;
+  align-items: center;
+}
+[data-tema="orkut"] .marca .sufixo { margin: 0; }
+[data-tema="orkut"] .marca::after {
+  content: 'kut';
+  color: var(--ciano);
+  font-weight: 400;
+  letter-spacing: -0.01em;
+}
+
 
 /* ================================================================ Facebook
    O de 2008: #3b5998 na faixa, canto quase reto, tudo mais compacto. */
