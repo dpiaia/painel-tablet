@@ -398,3 +398,68 @@
   color: #ffffff;
   text-shadow: 0 0.12vw 0.22vw rgba(0, 0, 0, 0.8);
 }
+
+
+/* ====================================== a barra vira barra de tarefas
+   Só no Windows 95 e no XP. O corpo é uma coluna flex com a barra e o painel;
+   inverter a direção põe a barra embaixo sem mexer numa linha de HTML. As
+   camadas de cena e do tubo são `position: fixed`, então ficam fora do fluxo e
+   não se importam com a inversão. */
+[data-tema="win95"] body,
+[data-tema="xp"] body { flex-direction: column-reverse; }
+
+[data-tema="win95"] .topo,
+[data-tema="xp"] .topo {
+  padding: 0.45vw 0.7vw;
+  align-items: center;
+}
+
+/* O painel perde a folga de baixo, que agora é a barra, e ganha a de cima. */
+[data-tema="win95"] .painel,
+[data-tema="xp"] .painel { padding: 1.4vw 2vw 0.8vw; }
+
+/* --------------------------------------------------------- Windows 95
+   Cinza com relevo, e o nome como botão Iniciar: saliente, com o mesmo
+   desenho de sombra dos cartões. A bandeja à direita é o oposto — afundada. */
+[data-tema="win95"] .topo {
+  background: var(--cartao);
+  box-shadow: inset 0 1px 0 #ffffff, inset 0 2px 0 #dfdfdf;
+}
+[data-tema="win95"] .marca {
+  padding: 0.3vw 0.9vw;
+  background: var(--cartao);
+  box-shadow: inset -1px -1px 0 #000000, inset 1px 1px 0 #ffffff,
+              inset -2px -2px 0 #808080, inset 2px 2px 0 #dfdfdf;
+  color: #000000;
+}
+[data-tema="win95"] .marca span { color: #000080; text-shadow: none; }
+[data-tema="win95"] .sist,
+[data-tema="win95"] .selo-tema-caixa {
+  padding: 0.25vw 0.7vw;
+  box-shadow: inset 1px 1px 0 #808080, inset -1px -1px 0 #ffffff;
+}
+
+/* ---------------------------------------------------------- Windows XP
+   O azul da barra com o filete claro em cima, e a área de notificação num
+   azul mais aberto, como era. */
+[data-tema="xp"] .topo {
+  background: linear-gradient(to bottom, #3f8cf3 0%, #245edb 9%, #1941a5 100%);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.55);
+}
+[data-tema="xp"] .marca {
+  padding: 0.28vw 1.1vw;
+  border-radius: 0 0.9vw 0.9vw 0;
+  color: #ffffff;
+  text-shadow: 0 0.1vw 0.2vw rgba(0,0,0,0.5);
+  background: linear-gradient(to bottom, #59b23f 0%, #3c8a2a 45%, #2f7a20 100%);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.5);
+}
+[data-tema="xp"] .sist {
+  padding: 0.25vw 0.8vw;
+  border-radius: 0.3vw;
+  color: #ffffff;
+  background: linear-gradient(to bottom, #1a6fd4 0%, #1358b8 100%);
+  box-shadow: inset 1px 0 0 rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.25);
+}
+[data-tema="xp"] .sist b { color: #ffffff; }
+[data-tema="xp"] .selo { color: #dff0ff; }

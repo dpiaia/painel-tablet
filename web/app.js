@@ -1388,8 +1388,11 @@ function aplicarAjustes() {
 
 /* ================================================================= desenho */
 function desenhar() {
-  aplicarAjustes();
+  // O layout PRIMEIRO. aplicarAjustes pergunta onde cada cartão está (o clima
+  // só encolhe se estiver dividindo a linha), e na carga inicial ele ainda
+  // estava no estoque — dava um piscar do arranjo largo antes de assentar.
   montarLayout((estado.ajustes || {}).layout);
+  aplicarAjustes();
   desenharMaquina();
   desenharSistema();
   desenharClima();
