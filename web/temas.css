@@ -132,11 +132,40 @@
 /* A faixa do Orkut era clara com o título em azul escuro e um filete embaixo,
    não uma tarja cheia — e o azul dele (#6699cc) é claro demais para segurar
    texto branco. Assim fica legível e mais parecido com o módulo original. */
+/* A faixa do título fica BRANCA como o resto do cartão: quem separa é o
+   filete azul embaixo, não uma mudança de fundo. Duas marcações para a mesma
+   fronteira é uma a mais. */
 [data-tema="orkut"] .cartao > header {
   margin: -1.3vw -1.5vw 1.1vw;
   padding: 0.55vw 1.5vw;
-  background: var(--dentro);
+  background: var(--cartao);
   border-bottom: 2px solid var(--azul);
+}
+
+/* Os itens de dentro perdem a moldura. Com a borda azul no cartão E borda em
+   cada linha, o cartão virava uma grade de caixas dentro de caixas. A moldura
+   fica só onde significa: o anel de um PR esperando você e o filete do
+   compromisso em destaque. */
+[data-tema="orkut"] .destaque,
+[data-tema="orkut"] .ev,
+[data-tema="orkut"] .pr,
+[data-tema="orkut"] .chip,
+[data-tema="orkut"] .cartao-sessao,
+[data-tema="orkut"] .coluna-dia,
+[data-tema="orkut"] .rodape-mais { border-color: transparent; }
+
+[data-tema="orkut"] .pr.anel { border-color: var(--laranja); }
+[data-tema="orkut"] .destaque { border-left-color: var(--ciano); }
+
+/* O canto superior direito do primeiro cartão da coluna da direita — o canto
+   de fora do conjunto — abre mais que os outros. É o desenho assimétrico das
+   caixas de perfil daquela época.
+
+   Duas regras porque o primeiro item da coluna pode ser um cartão sozinho ou
+   uma dupla; na dupla, quem encosta na quina é o cartão da direita. */
+[data-tema="orkut"] #col-dir > .cartao:first-child,
+[data-tema="orkut"] #col-dir > .dupla:first-child > .cartao:last-child {
+  border-top-right-radius: 1.9vw;
 }
 [data-tema="orkut"] .cartao h2 {
   color: var(--texto);
