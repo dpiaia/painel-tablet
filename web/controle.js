@@ -48,6 +48,7 @@ const TEMPOS = [
   ['mascote', 'Troca de mascote',      's',   'alterna picareta e faíscas'],
   ['animado', 'Bichinho congela após', 's',   'depois vira o asterisco'],
   ['pronto',  'Concluído some após',   's',   'libera vaga pro que está rodando'],
+  ['ocioso',  'Sessão parada some após','s',  'aberta, mas sem nada acontecendo'],
   ['sono',    'Clawd dorme após',      's',   'sem nada acontecendo'],
   ['tela',    'Tela de detalhe volta', 's',   'depois do toque'],
   ['festa',   'Cena de conclusão',     's',   'o Clawd quando uma tarefa termina'],

@@ -350,6 +350,7 @@ var T = {
   slide: 8,      // segundos por slide
   animado: 60,   // até o bichinho congelar
   pronto: 120,   // até a sessão concluída sair do cartão
+  ocioso: 1800,  // até a sessão só ABERTA sair do cartão
   sono: 600,     // até o Clawd dormir
   mascote: 30,   // troca entre picareta e faíscas
   tela: 45,      // até a tela de detalhe voltar sozinha
@@ -407,10 +408,28 @@ var PESO = { atencao: 0, trabalhando: 1, pronto: 2, parado: 3, desconhecido: 4 }
 // Uma sessão concluída merece aparecer — você quer ver que terminou — mas não
 // merece ocupar vaga para sempre. Passados 2 minutos ela sai do cartão e fica
 // só na tela cheia, liberando espaço para o que ainda está em execução.
+/* Quais sessões merecem um lugar no cartão.
+ *
+ * Duas saem por idade, e por motivos diferentes.
+ *
+ * A CONCLUÍDA some depois de T.pronto para liberar espaço: já foi vista, já
+ * teve a festa, e quem está rodando agora importa mais.
+ *
+ * A PARADA some depois de T.ocioso, e essa regra nasceu de um caso concreto: o
+ * app do Claude Code retoma sessões sozinho ao restaurar a janela, e isso
+ * dispara SessionStart. Aparecia no cartão um projeto de dois dias atrás, sem
+ * ninguém ter tocado nele — verdade técnica ("existe uma sessão aberta"), mas
+ * não uma notícia. `parado` é o estado mais fraco que existe aqui: significa
+ * apenas que a sessão existe. Merece um lugar por meia hora, não para sempre.
+ *
+ * As outras duas não saem nunca por idade. `trabalhando` é atividade em curso,
+ * e `atencao` espera uma ação sua — espera ignorada não vira espera resolvida.
+ */
 function relevantes(sessoes, agora) {
   return sessoes.filter(function (s) {
-    if (s.estado !== 'pronto') return true;
-    return (agora - s.em) <= T.pronto;
+    if (s.estado === 'pronto') return (agora - s.em) <= T.pronto;
+    if (s.estado === 'parado') return (agora - s.em) <= T.ocioso;
+    return true;
   }).sort(function (a, b) {
     // `PESO[x] || 9` seria uma armadilha: o peso do 'atencao' é ZERO, e zero
     // é falsy — o estado mais urgente cairia para o fim da fila.
