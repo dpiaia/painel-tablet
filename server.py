@@ -314,6 +314,16 @@ def esperar(segundos):
         time.sleep(min(2.0, max(0.1, resta)))
 
 
+# Serializa quem MEXE no config. A gravação em si já era atômica (os.replace
+# nunca deixa o arquivo pela metade), mas o ciclo ler-modificar-gravar não era:
+# com duas requisições ao mesmo tempo, as duas leem o mesmo estado, cada uma
+# acrescenta a sua seção e a última a gravar apaga a da outra. Perdi layout,
+# marca, fundos, recado e ritmo assim, num dia em que eu mandava POST pelo curl
+# enquanto o painel de controle salvava. Arquivo íntegro, conteúdo faltando —
+# o pior dos dois mundos, porque nada aparenta ter dado errado.
+_trava_config = threading.Lock()
+
+
 def gravar_config(cfg):
     tmp = CONFIG_PATH + ".tmp"
     with open(tmp, "w", encoding="utf8") as fh:
@@ -550,6 +560,10 @@ class Handler(BaseHTTPRequestHandler):
         if not isinstance(novos, dict):
             return self.send_error(400, "json invalido")
 
+        with _trava_config:
+            return self._gravar_ajustes(novos)
+
+    def _gravar_ajustes(self, novos):
         cfg = carregar_config()
         painel = cfg.get("painel") or {}
 

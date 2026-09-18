@@ -796,3 +796,51 @@
    negociável. */
 .sem-desfoque[data-tema="apple"] .cartao { background: rgba(255, 255, 255, 0.88); }
 .sem-desfoque[data-tema="apple"] .topo   { background: rgba(255, 255, 255, 0.94); }
+
+
+/* ======================================== o relógio grande, por tema
+   O modo relógio pousa direto no papel de parede, então cada tema precisa
+   dizer como o texto se segura ali. É a mesma pergunta do véu: o que fica
+   FORA de um cartão não tem superfície própria. */
+
+/* Apple: a data em branco. A foto do Golden Gate é clara em cima e escura
+   embaixo, e é embaixo que a data cai — daí ela ler melhor em branco que no
+   cinza do tema. A sombra escura é o seguro para o trecho claro. */
+[data-tema="apple"] .data-grande {
+  color: #ffffff;
+  text-shadow: 0 0.1vw 0.5vw rgba(0, 0, 0, 0.55);
+}
+
+/* Orkut: os dois-pontos em rosa, piscando. É o único lugar do modo relógio
+   com animação, e ela cabe porque é um elemento minúsculo mudando só opacity
+   — o compositor resolve sem repintar. A hora inteira pulsando seria repaint
+   de meia tela a cada ciclo. */
+[data-tema="orkut"] .hora-grande .dp {
+  color: var(--ciano);
+  -webkit-animation: piscar-dp 3s steps(1, end) infinite;
+          animation: piscar-dp 3s steps(1, end) infinite;
+}
+@-webkit-keyframes piscar-dp {
+  0%, 82%  { opacity: 1; }
+  83%, 99% { opacity: 0.12; }
+  100%     { opacity: 1; }
+}
+@keyframes piscar-dp {
+  0%, 82%  { opacity: 1; }
+  83%, 99% { opacity: 0.12; }
+  100%     { opacity: 1; }
+}
+
+/* Facebook: a hora no azul da marca. */
+[data-tema="facebook"] .hora-grande { color: var(--ciano); }
+
+/* Windows XP e 95: tudo branco. Nos dois o papel de parede é uma foto de
+   paisagem e o --texto é o preto das janelas — que existe para pousar em
+   cinza ou creme, não sobre céu e grama. */
+[data-tema="xp"] .hora-grande,
+[data-tema="xp"] .data-grande,
+[data-tema="win95"] .hora-grande,
+[data-tema="win95"] .data-grande {
+  color: #ffffff;
+  text-shadow: 0 0.12vw 0.6vw rgba(0, 0, 0, 0.55);
+}

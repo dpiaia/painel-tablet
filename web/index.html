@@ -27,6 +27,10 @@
   <!-- Selo do tema, na ponta direita. Depois do wifi/bateria de propósito: os
        dados mudam o tempo todo e o selo não, então ele ancora o canto. -->
   <img class="selo-tema" id="selo-tema" alt="" hidden>
+  <!-- Só aparece no modo relógio. Fica na barra, depois da bateria: é o
+       lugar onde o olho já procura controle, e flutuando no canto ele
+       competia com a hora pelo centro da tela. -->
+  <button class="voltar-hora" id="voltar-hora">voltar</button>
 </header>
 
 <!-- As colunas nascem VAZIAS. Quem as preenche é montarLayout(), lendo a
@@ -120,9 +124,11 @@
      saber deste modo, e um segundo dono do mesmo elemento é onde essas coisas
      quebram. São dois campos de texto; duplicar custa menos que acoplar. -->
 <div class="modo-hora" id="modo-hora" hidden>
-  <div class="hora-grande" id="hora-grande">--:--</div>
+  <!-- Três pedaços porque os dois-pontos precisam de vida própria: um tema
+       pinta eles de outra cor e faz piscar. Como o <i> nunca é reescrito, a
+       animação dele não reinicia a cada minuto. -->
+  <div class="hora-grande"><span id="hg-h">--</span><i class="dp">:</i><span id="hg-m">--</span></div>
   <div class="data-grande" id="data-grande"></div>
-  <button class="voltar-hora" id="voltar-hora">voltar</button>
 </div>
 
 <div class="crt" aria-hidden="true"><i></i></div>

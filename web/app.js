@@ -69,7 +69,11 @@ function tique() {
   $('data').textContent = dataTxt;
 
   if (modoHora) {
-    if ($('hora-grande').textContent !== hora) $('hora-grande').textContent = hora;
+    // Só os números mudam; os dois-pontos ficam de pé para a animação de um
+    // tema não recomeçar a cada minuto.
+    var hh = hora.slice(0, 2), mm = hora.slice(3);
+    if ($('hg-h').textContent !== hh) $('hg-h').textContent = hh;
+    if ($('hg-m').textContent !== mm) $('hg-m').textContent = mm;
     $('data-grande').textContent = dataTxt;
   }
 
