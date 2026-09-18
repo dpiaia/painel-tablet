@@ -1187,3 +1187,15 @@ body { display: flex; flex-direction: column; }
 
 /* O nome no topo vira alvo de toque como os cartões. */
 .marca.toque { cursor: pointer; }
+
+
+/* ===================================================== layout livre
+   Com os widgets podendo ir para qualquer lugar, quem cresce não pode mais ser
+   decidido por cartão. Antes era `.claude { flex: 1 }` e `.agenda { flex: 1 }`,
+   o que só funcionava enquanto o lugar de cada um era fixo — movido para uma
+   dupla, o cartão levava o crescimento junto e espremia o vizinho.
+
+   A regra passa a ser posicional: cartão direto na coluna ocupa o que sobra;
+   cartão dentro de uma dupla divide a linha com o irmão. */
+.coluna > .cartao { flex: 1; min-height: 0; }
+.dupla > .cartao  { flex: 1; min-height: 0; }

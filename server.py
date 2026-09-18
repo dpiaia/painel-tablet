@@ -67,7 +67,7 @@ _estado = {
 # agenda da aba do Google Agenda aberta no Opera e manda por aqui.
 FONTES_EXTERNAS = ("email", "chat", "whatsapp", "agenda_web")
 PADRAO_PAINEL = ("cartoes", "tempos", "cores", "recado", "ordem", "tema",
-                 "marca", "fundos")
+                 "marca", "fundos", "layout")
 
 # Chaves do topo do config que o painel de controle pode mudar. Lista fechada
 # de propósito: um POST não encosta em token, caminho de binário nem porta.

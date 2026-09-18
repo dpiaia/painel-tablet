@@ -79,8 +79,8 @@ function tique() {
     return;                       // com a tela aberta o painel nem é tocado
   }
   sliderMsg.girar();
-  sliderClaude.girar();
-  desenharClaude();   // barato: só refaz o DOM quando a assinatura muda
+  hostsSlide.forEach(function (h) { h.slider.girar(); });
+  desenharSlides();   // barato: só refaz o DOM quando a assinatura muda
 
   var minuto = Math.floor((Date.now() + deslocamento) / 60000);
   if (minuto !== ultimoMinuto) {
@@ -556,7 +556,10 @@ function slidePRs(titulo, lista, mostrarRepo, vazio, eu, erro) {
            selo: erro ? 'SEM CONTATO' : 'ONLINE', html: corpo };
 }
 
-function desenharClaude() {
+// Produz o DESCRITOR do widget do Claude — {titulo, icone, selo, html} —, em
+// vez de empurrar direto para um slider. É o que permite a mesma coisa virar um
+// cartão sozinho ou um slide dentro de um grupo, sem duas versões do código.
+function slideClaude() {
   var c = estado.claude || {};
   var m = CLAUDE[c.estado] || CLAUDE.ausente;
   var todas = c.sessoes || [];
@@ -611,19 +614,26 @@ function desenharClaude() {
            : (c.estado === 'parado' || c.estado === 'desconhecido') ? 'OCIOSO'
            : ((c.sessoes || []).length > 1 ? c.sessoes.length + ' SESSÕES' : 'ONLINE');
 
-  var slides = [{ classe: '', titulo: 'CLAUDE CODE', icone: ICONE_CLAUDE,
-                  selo: selo, html: bichos }];
+  return { classe: '', titulo: 'CLAUDE CODE', icone: ICONE_CLAUDE,
+           selo: selo, html: bichos, tela: 'claude' };
+}
 
-  // ---- slides 2 e 3: o GitHub, quando houver
+function slideGitMeus() {
   var g = estado.git;
-  if (g) {
-    slides.push(slidePRs('GITHUB - MEUS PULL REQUESTS', g.meus || [], true,
-                         'nenhum PR seu aberto', g.eu, g.erro));
-    slides.push(slidePRs('GITHUB - REPO DESIGN', g.design || [], false,
-                         'nada aberto no repositório', g.eu, g.erro));
-  }
+  if (!g) return null;
+  var d = slidePRs('GITHUB - MEUS PULL REQUESTS', g.meus || [], true,
+                   'nenhum PR seu aberto', g.eu, g.erro);
+  d.tela = 'claude';
+  return d;
+}
 
-  sliderClaude.atualizar(slides);
+function slideGitDesign() {
+  var g = estado.git;
+  if (!g) return null;
+  var d = slidePRs('GITHUB - REPO DESIGN', g.design || [], false,
+                   'nada aberto no repositório', g.eu, g.erro);
+  d.tela = 'claude';
+  return d;
 }
 
 /* =============================================================== monitor */
@@ -672,8 +682,10 @@ function desenharMaquina() {
  * Esconde em vez de remover: na próxima medição tudo volta a aparecer e a
  * conta é refeita do zero, sem precisar redesenhar o cartão inteiro.
  */
-function ajustarListas(idPalco) {
-  var slides = $(idPalco).querySelectorAll('.slide');
+function ajustarListas(palco) {
+  if (typeof palco === 'string') palco = $(palco);
+  if (!palco) return;
+  var slides = palco.querySelectorAll('.slide');
   for (var s = 0; s < slides.length; s++) {
     var el = slides[s];
     var rodape = el.querySelector('.rodape-mais');
@@ -698,9 +710,11 @@ function ajustarListas(idPalco) {
   }
 }
 
-function Slider(idPalco, idPontos) {
-  this.palco = idPalco;
-  this.pontos = idPontos;
+function Slider(palco, pontos) {
+  // Elementos, não ids: os hospedeiros agora nascem do layout e não têm id
+  // fixo. Um cartão de slider pode existir duas vezes na tela.
+  this.palco = palco;
+  this.pontos = pontos;
   this.atual = 0;
   this.assinatura = '';
   this.trocaEm = 0;
@@ -714,12 +728,14 @@ Slider.prototype.atualizar = function (slides) {
   }).join('|');
   if (nova === this.assinatura) return;
   this.assinatura = nova;
-  $(this.palco).innerHTML = slides.map(function (x) {
+  this.palco.innerHTML = slides.map(function (x) {
     var html = typeof x === 'string' ? x : x.html;
     var cls = typeof x === 'string' ? '' : (x.classe || '');
     return '<div class="slide ' + cls + '" data-classe="' + cls + '">' + html + '</div>';
   }).join('');
-  $(this.pontos).innerHTML = slides.map(function () { return '<i></i>'; }).join('');
+  this.pontos.innerHTML = slides.map(function () { return '<i></i>'; }).join('');
+  // Um slide só não é slider: os pontinhos viram enfeite que confunde.
+  this.pontos.style.display = slides.length > 1 ? '' : 'none';
   // Os slides inativos são invisíveis por opacidade, não por display — então
   // têm altura medível e todos podem ser ajustados de uma vez, aqui.
   ajustarListas(this.palco);
@@ -729,14 +745,14 @@ Slider.prototype.atualizar = function (slides) {
 };
 
 Slider.prototype.mostrar = function (i) {
-  var todos = $(this.palco).querySelectorAll('.slide');
+  var todos = this.palco.querySelectorAll('.slide');
   if (!todos.length) return;
   this.atual = i % todos.length;
   for (var k = 0; k < todos.length; k++) {
     var extra = todos[k].getAttribute('data-classe') || '';
     todos[k].className = 'slide ' + extra + (k === this.atual ? ' ativo' : '');
   }
-  var pts = $(this.pontos).querySelectorAll('i');
+  var pts = this.pontos.querySelectorAll('i');
   for (var j = 0; j < pts.length; j++) pts[j].className = j === this.atual ? 'ativo' : '';
 
   // Um cartão que mostra coisas diferentes precisa de cabeçalho diferente:
@@ -746,23 +762,145 @@ Slider.prototype.mostrar = function (i) {
 };
 
 Slider.prototype.girar = function () {
-  var n = $(this.palco).querySelectorAll('.slide').length;
+  var n = this.palco.querySelectorAll('.slide').length;
   if (n < 2 || Date.now() < this.trocaEm) return;
   this.trocaEm = Date.now() + T.slide * 1000;
   this.mostrar(this.atual + 1);
 };
 
-var sliderMsg = new Slider('palco', 'pontos');
-var sliderClaude = new Slider('palco-claude', 'pontos-claude');
+var sliderMsg = new Slider($('palco'), $('pontos'));
 
-// Precisa vir DEPOIS do objeto existir: como declaração `var`, sliderClaude
-// estava içado mas ainda undefined lá em cima, e a página quebrava no load.
-sliderClaude.aoTrocar = function (slide) {
-  $('claude-titulo').innerHTML = (slide.icone || ICONE_CLAUDE) + (slide.titulo || '');
-  var selo = $('claude-selo');
-  selo.textContent = slide.selo || '';
-  selo.style.visibility = slide.selo ? '' : 'hidden';
+/* ================================================================== layout
+ *
+ * A tela é montada a partir da configuração, não do HTML. Cada coluna recebe
+ * uma lista de itens, e cada item é um de três:
+ *
+ *   {tipo:'solo',   ids:['agenda']}                 um widget ocupando a linha
+ *   {tipo:'par',    ids:['clima','recado']}         dois lado a lado
+ *   {tipo:'slider', ids:['claude','git-meus',...]}  um cartão que alterna
+ *
+ * Widgets vêm de dois lugares. Os de NÓ são seções prontas no estoque e são
+ * MOVIDAS para a coluna — mover preserva o estado (o gif no meio da animação,
+ * a rolagem de uma lista), coisa que recriar o HTML perderia a cada mudança.
+ * Os de SLIDE produzem um descritor e são desenhados num molde; sozinhos viram
+ * um cartão comum, agrupados viram um slider. Um grupo de um é o caso solo, e
+ * por isso não existem dois caminhos.
+ */
+var WIDGETS_NO = ['relogio', 'clima', 'recado', 'agenda', 'mensagens', 'monitor'];
+var WIDGETS_SLIDE = {
+  'claude':     slideClaude,
+  'git-meus':   slideGitMeus,
+  'git-design': slideGitDesign
 };
+
+var LAYOUT_PADRAO = {
+  esquerda: [
+    { tipo: 'solo',   ids: ['relogio'] },
+    { tipo: 'par',    ids: ['clima', 'recado'] },
+    { tipo: 'slider', ids: ['claude', 'git-meus', 'git-design'] }
+  ],
+  direita: [
+    { tipo: 'solo',   ids: ['agenda'] },
+    { tipo: 'par',    ids: ['mensagens', 'monitor'] }
+  ]
+};
+
+var hostsSlide = [];        // {slider, ids} de cada cartão de slide na tela
+var layoutAtual = '';       // assinatura, para não remontar à toa
+
+function noDoWidget(id) {
+  return document.querySelector('[data-widget="' + id + '"]');
+}
+
+function montarLayout(cfg) {
+  var l = cfg && cfg.esquerda && cfg.direita ? cfg : LAYOUT_PADRAO;
+  var assinatura = JSON.stringify(l);
+  if (assinatura === layoutAtual) return;
+  layoutAtual = assinatura;
+
+  // Devolve todo mundo ao estoque antes de remontar. Sem isso, um widget que
+  // mudou de coluna apareceria nas duas até alguém reparar.
+  var estoque = $('estoque');
+  for (var i = 0; i < WIDGETS_NO.length; i++) {
+    var no = noDoWidget(WIDGETS_NO[i]);
+    if (no) estoque.appendChild(no);
+  }
+  hostsSlide = [];
+
+  montarColuna($('col-esq'), l.esquerda || []);
+  montarColuna($('col-dir'), l.direita || []);
+
+  // A conta de quantas linhas cabem só vale depois que a coluna inteira
+  // existe: a altura de um cartão em flex depende dos irmãos, e medir no
+  // meio da montagem dá um número que ainda vai mudar. Um quadro depois,
+  // tudo já assentou.
+  setTimeout(function () {
+    for (var i = 0; i < hostsSlide.length; i++) {
+      ajustarListas(hostsSlide[i].slider.palco);
+    }
+    ajustarListas(sliderMsg.palco);
+  }, 0);
+}
+
+function montarColuna(coluna, itens) {
+  coluna.innerHTML = '';
+  for (var i = 0; i < itens.length; i++) {
+    var it = itens[i] || {};
+    var ids = (it.ids || []).filter(function (id) {
+      return WIDGETS_NO.indexOf(id) >= 0 || WIDGETS_SLIDE[id];
+    });
+    if (!ids.length) continue;
+
+    if (it.tipo === 'par' && ids.length > 1) {
+      var dupla = document.createElement('div');
+      // `abertura` é o pareamento do clima, que tem regra própria: o clima
+      // abraça o conteúdo e o vizinho fica com o resto.
+      dupla.className = 'dupla' + (ids.indexOf('clima') >= 0 ? ' abertura' : '');
+      for (var k = 0; k < ids.length; k++) dupla.appendChild(pecaDe(ids[k]));
+      coluna.appendChild(dupla);
+    } else if (it.tipo === 'slider' && ids.length > 1) {
+      coluna.appendChild(hospedeiro(ids));
+    } else {
+      coluna.appendChild(pecaDe(ids[0]));
+    }
+  }
+}
+
+// Um widget sozinho: nó movido do estoque, ou um hospedeiro de um slide só.
+function pecaDe(id) {
+  if (WIDGETS_SLIDE[id]) return hospedeiro([id]);
+  return noDoWidget(id) || document.createComment('sem ' + id);
+}
+
+function hospedeiro(ids) {
+  var el = document.getElementById('molde-host').content
+             .firstElementChild.cloneNode(true);
+  el.setAttribute('data-tela', 'claude');
+  el.setAttribute('data-cartao', ids.join('+'));
+  var slider = new Slider(el.querySelector('.palco'), el.querySelector('.pontos'));
+  var cabeca = el.querySelector('h2'), selo = el.querySelector('.etq');
+  slider.aoTrocar = function (slide) {
+    cabeca.innerHTML = (slide.icone || '') + (slide.titulo || '');
+    selo.textContent = slide.selo || '';
+    selo.style.visibility = slide.selo ? '' : 'hidden';
+  };
+  hostsSlide.push({ slider: slider, ids: ids });
+  return el;
+}
+
+// Preenche os hospedeiros com o conteúdo de cada widget de slide.
+function desenharSlides() {
+  for (var i = 0; i < hostsSlide.length; i++) {
+    var h = hostsSlide[i], slides = [];
+    for (var k = 0; k < h.ids.length; k++) {
+      var d = WIDGETS_SLIDE[h.ids[k]]();
+      if (d) slides.push(d);
+    }
+    if (slides.length) h.slider.atualizar(slides);
+  }
+}
+
+
 
 function chip(rotulo, dado) {
   var classe = 'chip', valor;
@@ -1095,7 +1233,8 @@ function aplicarAjustes() {
   // O tema muda a altura útil do cartão (o 95 troca borda por relevo, o Apple
   // tem canto largo), então a conta de quantas linhas cabem tem que ser
   // refeita — e ela não roda sozinha, porque o conteúdo não mudou.
-  setTimeout(function () { ajustarListas('palco-claude'); ajustarListas('palco'); }, 60);
+  setTimeout(function () { hostsSlide.forEach(function (h) { ajustarListas(h.slider.palco); });
+  ajustarListas(sliderMsg.palco); }, 60);
   agendarTremor();
 
   // --- cores: a folha inteira usa variáveis, então trocar a variável troca
@@ -1234,18 +1373,19 @@ function aplicarAjustes() {
   // caber, um slide que some): força o redesenho na próxima passada.
   assinaturaClaude = '';
   sliderMsg.assinatura = '';
-  sliderClaude.assinatura = '';
+  hostsSlide.forEach(function (h) { h.slider.assinatura = ''; });
   ultimoMinuto = -1;
 }
 
 /* ================================================================= desenho */
 function desenhar() {
   aplicarAjustes();
+  montarLayout((estado.ajustes || {}).layout);
   desenharMaquina();
   desenharSistema();
   desenharClima();
   desenharAgenda();
-  desenharClaude();
+  desenharSlides();
   desenharMensagens();
 }
 
@@ -1720,8 +1860,8 @@ function conectar() {
 // Virar o tablet, mudar a janela no Mac: a altura do cartão muda e a conta de
 // quantas linhas cabem precisa ser refeita.
 window.addEventListener('resize', function () {
-  ajustarListas('palco-claude');
-  ajustarListas('palco');
+  hostsSlide.forEach(function (h) { ajustarListas(h.slider.palco); });
+  ajustarListas(sliderMsg.palco);
 });
 
 ultimoSinal = Date.now();

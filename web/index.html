@@ -26,18 +26,26 @@
   <div class="sist" id="sist"></div>
 </header>
 
+<!-- As colunas nascem VAZIAS. Quem as preenche é montarLayout(), lendo a
+     configuração: assim dá para mover qualquer widget para qualquer posição de
+     qualquer coluna sem tocar neste arquivo. Antes o layout era este HTML, e
+     arrastar não teria onde gravar. -->
 <main class="painel">
+  <div class="coluna" id="col-esq"></div>
+  <div class="coluna" id="col-dir"></div>
+</main>
 
-  <div class="coluna">
+<!-- Estoque: todo widget que é um nó pronto mora aqui e é MOVIDO para a
+     coluna. Nó movido preserva estado (o gif no meio da animação, a rolagem),
+     coisa que recriar o HTML perderia a cada mudança de layout. -->
+<div id="estoque" hidden>
 
-    <section class="relogio">
+<section data-widget="relogio" class="relogio">
       <div class="hora" id="hora">--:--</div>
       <div class="data"><span id="data">&nbsp;</span><span id="marcas"></span></div>
     </section>
 
-    <div class="dupla abertura">
-
-    <section class="cartao toque" data-cartao="clima" data-tela="clima">
+<section data-widget="clima" class="cartao toque" data-cartao="clima" data-tela="clima">
       <header>
         <h2><svg class="ic" viewBox="0 0 24 24"><path d="M6 17h10a4 4 0 0 0 .5-8 6 6 0 0 0-11.2-1.6A3.6 3.6 0 0 0 6 17z"/><path d="M9 20l-1 2M13 20l-1 2M17 20l-1 2"/></svg><span id="clima-cidade">—</span></h2>
       </header>
@@ -47,36 +55,19 @@
       </div>
     </section>
 
-    <section class="cartao recado" data-cartao="recado" hidden>
+<section data-widget="recado" class="cartao recado" data-cartao="recado" hidden>
       <header>
         <h2><svg class="ic" viewBox="0 0 24 24"><path d="M4 5h16v11H8l-4 4z"/></svg><span id="recado-titulo">RECADO</span></h2>
       </header>
       <div class="corpo recado-corpo"><p id="recado-texto"></p></div>
     </section>
 
-    </div>
-
-    <section class="cartao claude toque" data-cartao="claude" data-tela="claude">
-      <header>
-        <h2 id="claude-titulo"></h2>
-        <span class="etq laranja" id="claude-selo">FASE 3</span>
-      </header>
-      <div class="palco" id="palco-claude"></div>
-      <div class="pontos" id="pontos-claude"></div>
-    </section>
-
-  </div>
-
-  <div class="coluna">
-
-    <section class="cartao agenda toque" data-cartao="agenda" data-tela="agenda">
+<section data-widget="agenda" class="cartao agenda toque" data-cartao="agenda" data-tela="agenda">
       <div class="destaque" id="destaque"></div>
       <div class="lista" id="lista"></div>
     </section>
 
-    <div class="dupla">
-
-      <section class="cartao mensagens" data-cartao="mensagens">
+<section data-widget="mensagens" class="cartao mensagens" data-cartao="mensagens">
         <header>
           <h2><svg class="ic" viewBox="0 0 24 24"><path d="M20 15a2 2 0 0 1-2 2H8l-4 4V5a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2z"/></svg>MENSAGENS</h2>
           <span class="canto" id="msg-aviso"></span>
@@ -85,18 +76,28 @@
         <div class="pontos" id="pontos"></div>
       </section>
 
-      <section class="cartao monitor" data-cartao="monitor">
+<section data-widget="monitor" class="cartao monitor" data-cartao="monitor">
         <header>
           <h2><svg class="ic" viewBox="0 0 24 24"><path d="M3 13h3l2.5-7 4 14L15.5 13H21"/></svg>MONITOR DO MAC</h2>
         </header>
         <div class="corpo" id="corpo-mac"></div>
       </section>
 
-    </div>
+</div>
 
-  </div>
-
-</main>
+<!-- Molde do cartão que hospeda widgets de slide: Claude, PRs meus, PRs do
+     design. Sozinho vira um cartão comum; agrupado, um slider. É o mesmo
+     molde nos dois casos — um grupo de um só. -->
+<template id="molde-host">
+  <section class="cartao toque">
+    <header>
+      <h2></h2>
+      <span class="etq laranja"></span>
+    </header>
+    <div class="palco"></div>
+    <div class="pontos"></div>
+  </section>
+</template>
 
 <!-- Tela de detalhe: ocupa tudo, só leitura, volta ao toque. Fica fora do
      <main> porque quando ela abre o painel some por completo (display:none),
