@@ -430,7 +430,7 @@
 [data-tema="win95"] .marca {
   display: flex;
   align-items: center;
-  gap: 0.5vw;
+  gap: 0.85vw;
   height: 2.6vw;
   padding: 0 1vw 0 0.55vw;
   background: var(--cartao);
@@ -462,7 +462,7 @@
 [data-tema="xp"] .marca {
   display: flex;
   align-items: center;
-  gap: 0.6vw;
+  gap: 1vw;
   height: 3.1vw;
   margin: -0.45vw 0.8vw -0.45vw -0.7vw;
   padding: 0 1.6vw 0 0.9vw;
@@ -482,6 +482,10 @@
   filter: drop-shadow(0 0.1vw 0.15vw rgba(0,0,0,0.4));
 }
 [data-tema="xp"] .marca span { text-shadow: 0 0.12vw 0.2vw rgba(0,0,0,0.55); }
+
+/* O nome em minúsculas, como o "start" do XP. Só o nome: o sufixo é a versão
+   do sistema e continua em caixa alta, que é como a Microsoft escrevia. */
+[data-tema="xp"] .marca #marca-nome { text-transform: lowercase; }
 [data-tema="xp"] .sist {
   padding: 0.25vw 0.8vw;
   border-radius: 0.3vw;
