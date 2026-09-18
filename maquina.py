@@ -83,3 +83,51 @@ def ler():
 
 if __name__ == "__main__":
     print(ler())
+
+
+# Quantos processos por lista. Seis cabe na tela de detalhe sem rolar, e depois
+# do sexto a informação já é ruído: quem está comendo a máquina está no topo.
+QUANTOS = 6
+
+
+def _nome_curto(caminho):
+    """Um nome que dê para ler de longe, a partir do caminho do executável.
+
+    O `comm` do ps devolve o caminho inteiro, e no macOS os caminhos interessantes
+    são longos justamente nos processos que mais pesam:
+
+        /Applications/Claude.app/Contents/Frameworks/Claude Helper.app/Contents/MacOS/Claude Helper
+
+    O último componente já é o nome útil ("Claude Helper"), então é ele que fica.
+    """
+    nome = caminho.rsplit("/", 1)[-1].strip()
+    return nome[:38] if nome else caminho[:38]
+
+
+def processos(quantos=QUANTOS):
+    """Os processos que mais consomem CPU e memória.
+
+    NÃO há lista de swap. O macOS não expõe swap por processo de um jeito
+    barato — só o total do sistema, que já aparece no cartão. `footprint` traria
+    a memória comprimida de um processo, mas pede privilégio e demora, o que não
+    cabe num laço que roda a cada poucos segundos. Mostrar uma coluna de swap
+    inventada a partir do RSS seria pior do que não mostrar.
+
+    Uma chamada só ao ps, duas ordenações aqui.
+    """
+    saida = _rodar(["ps", "-Ao", "pid,pcpu,rss,comm"])
+    linhas = []
+    for linha in saida.splitlines()[1:]:
+        partes = linha.strip().split(None, 3)
+        if len(partes) < 4:
+            continue
+        try:
+            pid, cpu, rss = int(partes[0]), float(partes[1]), int(partes[2])
+        except ValueError:
+            continue
+        linhas.append({"pid": pid, "cpu": round(cpu, 1),
+                       "mem_mb": round(rss / 1024.0), "nome": _nome_curto(partes[3])})
+
+    por_cpu = sorted(linhas, key=lambda p: -p["cpu"])[:quantos]
+    por_mem = sorted(linhas, key=lambda p: -p["mem_mb"])[:quantos]
+    return {"cpu": por_cpu, "memoria": por_mem, "total": len(linhas)}

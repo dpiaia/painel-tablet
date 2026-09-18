@@ -917,7 +917,12 @@ def laco_maquina(cfg):
     intervalo = max(5, int(cfg.get("maquina_intervalo_s", 15)))
     while True:
         try:
-            publicar(maquina=maquina.ler())
+            # A lista de processos viaja junto com os números. Coletar só quando
+            # a tela de detalhe abre deixaria ela em branco no primeiro toque,
+            # e o `ps` custa poucos milissegundos — mais barato que a espera.
+            dados = maquina.ler()
+            dados["processos"] = maquina.processos()
+            publicar(maquina=dados)
         except Exception as erro:
             print("maquina falhou: %s" % erro)
         time.sleep(intervalo)

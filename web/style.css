@@ -1243,3 +1243,72 @@ body { display: flex; flex-direction: column; }
   flex-direction: column;
   justify-content: center;
 }
+
+
+/* ------------------------------------------------- processos do Mac (tela) */
+.tela-proc { display: flex; flex-direction: column; height: 100%; }
+.tela-proc .dividido { flex: 1; min-height: 0; height: auto; }
+
+.proc {
+  padding: 0.5vw 0;
+  border-top: 1px solid var(--borda);
+}
+.proc:first-of-type { border-top: 0; }
+.proc-topo { display: flex; align-items: baseline; }
+
+/* A barra usa a mesma linguagem do cartão do monitor — mesma altura, mesmo
+   raio, mesmas cores de estado. Duas leituras do mesmo tipo de coisa não
+   deveriam ter dois desenhos. */
+.proc-barra {
+  height: 0.35vw;
+  margin-top: 0.4vw;
+  border-radius: 10vw;
+  background: var(--borda);
+  overflow: hidden;
+}
+.proc-barra span {
+  display: block;
+  height: 100%;
+  border-radius: 10vw;
+  background: var(--ciano);
+}
+.proc.atencao .proc-barra span { background: var(--laranja); }
+.proc.critico .proc-barra span { background: var(--vermelho); }
+.proc.atencao .proc-val { color: var(--laranja); }
+.proc.critico .proc-val { color: var(--vermelho); }
+
+/* O número vem PRIMEIRO e em largura fixa: a pergunta é "quem está comendo a
+   máquina", e ela se responde varrendo a coluna de valores, não os nomes. */
+.proc-val {
+  font-family: var(--mono);
+  font-size: 1.25vw;
+  font-weight: 600;
+  width: 6vw;
+  flex: none;
+  color: var(--texto);
+}
+.proc-nome {
+  flex: 1;
+  min-width: 0;
+  font-size: 1.15vw;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.proc-pid {
+  font-family: var(--mono);
+  font-size: 0.85vw;
+  color: var(--fraco);
+  margin-left: 1vw;
+  flex: none;
+}
+
+.nota-proc {
+  margin-top: 1.4vw;
+  padding-top: 1vw;
+  border-top: 1px solid var(--borda);
+  font-size: 0.95vw;
+  color: var(--fraco);
+  line-height: 1.5;
+}
+.nota-proc b { color: var(--apagado); font-weight: 600; }

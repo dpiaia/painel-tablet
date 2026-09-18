@@ -1198,7 +1198,81 @@ function telaSobre() {
   '</div>';
 }
 
+/* A tela do monitor: quem está comendo a máquina.
+ *
+ * Duas listas, não três. O cartão mostra CPU, memória e SWAP, mas swap POR
+ * PROCESSO o macOS não entrega de um jeito barato — só o total do sistema. O
+ * `footprint` traria a memória comprimida de um processo, mas pede privilégio
+ * e demora, o que não cabe num laço de poucos segundos.
+ *
+ * Em vez de uma terceira coluna estimada a partir do RSS, a tela diz o que
+ * sabe e o que não sabe. Número inventado num painel de diagnóstico é pior que
+ * coluna ausente: você agiria em cima dele.
+ */
+function linhaProc(p, valor, classe, pct) {
+  var largura = Math.max(2, Math.min(100, pct));   // 2% para a barra existir
+  return '<div class="proc ' + (classe || '') + '">' +
+           '<div class="proc-topo">' +
+             '<span class="proc-val">' + valor + '</span>' +
+             '<span class="proc-nome">' + escapar(p.nome) + '</span>' +
+             '<span class="proc-pid">' + p.pid + '</span>' +
+           '</div>' +
+           '<div class="proc-barra"><span style="width:' + largura + '%"></span></div>' +
+         '</div>';
+}
+
+function telaMaquina() {
+  var m = estado.maquina || {};
+  var ps = m.processos;
+  if (!ps || !ps.cpu) {
+    return '<div class="vazio">sem leitura da máquina</div>';
+  }
+
+  /* A barra da CPU é absoluta: 100% é um núcleo inteiro, e o que passa disso
+   * (um processo com várias linhas de execução chega a 300%) enche a barra e
+   * fica marcado em vermelho pelo próprio número. Encolher a escala para caber
+   * o maior esconderia justamente o caso grave. */
+  var cpu = ps.cpu.map(function (p) {
+    return linhaProc(p, p.cpu.toFixed(1) + '%',
+                     p.cpu >= 80 ? 'critico' : (p.cpu >= 40 ? 'atencao' : ''),
+                     p.cpu);
+  }).join('');
+
+  /* A da memória é RELATIVA ao maior da lista, e o texto continua em MB. Não
+   * existe "porcentagem de memória" que sirva aqui: sobre o total da máquina
+   * todas as barras ficariam quase vazias (600 MB em 16 GB é 4%) e a
+   * comparação — que é a pergunta real, quem está comendo mais — sumiria. A
+   * barra compara; o número informa. */
+  var maior = ps.memoria.reduce(function (m, p) {
+    return Math.max(m, p.mem_mb); }, 1);
+  var mem = ps.memoria.map(function (p) {
+    var mb = p.mem_mb;
+    var txt = mb >= 1024 ? (mb / 1024).toFixed(1) + ' GB' : mb + ' MB';
+    return linhaProc(p, txt,
+                     mb >= 4096 ? 'critico' : (mb >= 2048 ? 'atencao' : ''),
+                     mb * 100 / maior);
+  }).join('');
+
+  // Uma caixa em coluna: o bloco de duas colunas toma o que sobra e a nota
+  // fica embaixo. Sem ela, `.dividido` tem height:100% e empurra a nota para
+  // fora do corte do .tela-corpo — some sem avisar.
+  return '<div class="tela-proc">' +
+    '<div class="dividido">' +
+      '<div><div class="titulo-col">Mais CPU</div>' + cpu + '</div>' +
+      '<div><div class="titulo-col">Mais memória</div>' + mem + '</div>' +
+    '</div>' +
+    '<div class="nota-proc">' +
+      'A barra da CPU é sobre um núcleo (acima de 100% enche). A da memória ' +
+      'compara com o maior da lista. Swap não aparece por processo: o macOS ' +
+      'só informa o total do sistema — <b>' +
+      (m.swap_gb === undefined ? '?' : m.swap_gb) + ' GB</b> agora. ' +
+      ps.total + ' processos vistos.' +
+    '</div>' +
+  '</div>';
+}
+
 var TELAS = {
+  monitor: { titulo: 'Monitor do Mac · processos', render: telaMaquina },
   sobre:  { titulo: 'Sobre o painel',   render: telaSobre },
   clima:  { titulo: 'Clima da semana',  render: telaClima },
   agenda: { titulo: 'Agenda da semana', render: telaAgenda },
