@@ -463,3 +463,97 @@
 }
 [data-tema="xp"] .sist b { color: #ffffff; }
 [data-tema="xp"] .selo { color: #dff0ff; }
+
+
+/* ============================= a tela de detalhe vira uma JANELA
+   Nos outros temas ela ocupa a tela toda, e funciona: o fundo do tema é
+   escuro ou claro, e o texto pousa nele. No Windows 95 e no XP não — o
+   `--fundo` ali é a ÁREA DE TRABALHO (teal e azul), não uma superfície de
+   leitura. Tela cheia daquela cor com texto de cartão em cima fica ilegível.
+
+   A referência resolve os dois problemas de uma vez: vira uma janela, com
+   barra de título, pousada no papel de parede. E a barra de tarefas continua
+   aparecendo atrás, como continuaria de verdade. */
+[data-tema="win95"].tela-aberta .topo,
+[data-tema="xp"].tela-aberta .topo { display: flex; }
+
+/* ---------------------------------------------------------- Windows 95 */
+[data-tema="win95"] .tela {
+  top: 3vw; left: 5vw; right: 5vw; bottom: 7vw;   /* espaço para a barra */
+  background: var(--cartao);
+  padding: 0.35vw;
+  box-shadow: inset -1px -1px 0 #000000, inset 1px 1px 0 #ffffff,
+              inset -2px -2px 0 #808080, inset 2px 2px 0 #dfdfdf,
+              0.3vw 0.3vw 0 rgba(0, 0, 0, 0.35);
+}
+[data-tema="win95"] .tela > header {
+  background: var(--azul);
+  border-bottom: 0;
+  padding: 0.4vw 0.7vw;
+  margin: 0 0 1.4vw;
+  align-items: center;
+}
+[data-tema="win95"] .tela h2 {
+  color: #ffffff;
+  font-family: var(--mono);
+  font-size: 1.15vw;
+  letter-spacing: 0.08em;
+}
+[data-tema="win95"] .tela .voltar { color: rgba(255, 255, 255, 0.75); }
+
+/* O quadradinho de fechar. Decorativo, mas honesto: qualquer toque na tela
+   fecha, inclusive nele. */
+[data-tema="win95"] .tela > header::after,
+[data-tema="xp"] .tela > header::after {
+  content: '\00d7';
+  margin-left: 1vw;
+  line-height: 1;
+}
+[data-tema="win95"] .tela > header::after {
+  width: 1.5vw; height: 1.5vw;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--cartao);
+  color: #000000;
+  font-size: 1.1vw;
+  box-shadow: inset -1px -1px 0 #000000, inset 1px 1px 0 #ffffff,
+              inset -2px -2px 0 #808080, inset 2px 2px 0 #dfdfdf;
+}
+[data-tema="win95"] .tela-corpo { padding: 0 1vw 1vw; }
+
+/* ---------------------------------------------------------- Windows XP */
+[data-tema="xp"] .tela {
+  top: 3vw; left: 5vw; right: 5vw; bottom: 7vw;
+  background: var(--cartao);
+  border: 3px solid var(--azul);
+  border-radius: 0.7vw 0.7vw 0.3vw 0.3vw;
+  padding: 0;
+  box-shadow: 0 0.4vw 1.2vw rgba(0, 0, 0, 0.35);
+}
+[data-tema="xp"] .tela > header {
+  background: linear-gradient(to bottom,
+              rgba(255,255,255,0.35) 0%, rgba(255,255,255,0.05) 45%,
+              rgba(0,0,0,0.10) 55%, rgba(0,0,0,0.20) 100%), var(--azul);
+  border-bottom: 0;
+  padding: 0.5vw 1vw;
+  margin: 0 0 1.4vw;
+  align-items: center;
+}
+[data-tema="xp"] .tela h2 {
+  color: #ffffff;
+  font-size: 1.2vw;
+  text-shadow: 1px 1px 1px rgba(0, 0, 0, 0.45);
+}
+[data-tema="xp"] .tela .voltar {
+  color: rgba(255, 255, 255, 0.8);
+  text-shadow: 1px 1px 1px rgba(0, 0, 0, 0.4);
+}
+[data-tema="xp"] .tela > header::after {
+  width: 1.7vw; height: 1.4vw;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 0.3vw;
+  background: linear-gradient(to bottom, #e86a5a 0%, #c8351f 100%);
+  color: #ffffff;
+  font-size: 1.1vw;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.5);
+}
+[data-tema="xp"] .tela-corpo { padding: 0 1.6vw 1.6vw; }

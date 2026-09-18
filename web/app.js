@@ -1188,10 +1188,13 @@ function abrirTela(tipo) {
   $('tela-titulo').textContent = t.titulo;
   $('tela-corpo').innerHTML = t.render();
   $('tela').hidden = false;
-  // Esconde o painel de verdade: coberto não basta, os GIFs continuariam
-  // decodificando atrás.
-  document.querySelector('.painel').style.display = 'none';
-  document.querySelector('.topo').style.display = 'none';
+  // Classe em vez de estilo embutido: assim um tema pode decidir o contrário.
+  // No Windows 95 e no XP a tela vira uma janela, e a barra de tarefas tem que
+  // continuar aparecendo atrás dela — estilo embutido não daria essa escolha.
+  //
+  // O painel some de verdade, não coberto: escondido, os gifs param de
+  // decodificar; cobertos, continuariam gastando CPU atrás.
+  document.documentElement.classList.add('tela-aberta');
 }
 
 function fecharTela() {
@@ -1199,8 +1202,7 @@ function fecharTela() {
   telaAberta = '';
   $('tela').hidden = true;
   $('tela-corpo').innerHTML = '';
-  document.querySelector('.painel').style.display = '';
-  document.querySelector('.topo').style.display = '';
+  document.documentElement.classList.remove('tela-aberta');
   assinaturaClaude = '';   // força redesenhar os bichinhos ao voltar
   desenhar();
 }
