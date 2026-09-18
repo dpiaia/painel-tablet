@@ -36,7 +36,12 @@ function agoraS() { return (Date.now() + deslocamento) / 1000; }
 // A conta é a luminância relativa do WCAG — a mesma que decide contraste de
 // texto —, e não a média dos canais: verde pesa muito mais que azul no olho, e
 // um fundo azul-escuro seria julgado claro pela média.
-function veu(hex) {
+function veu(hex, tema) {
+  // Temas de vidro pedem véu leve. O véu existe para o relógio e a barra, que
+  // ficam FORA dos cartões, não sobrarem sobre a foto — mas com 60% de branco
+  // a foto some, e sem foto não há vidro nenhum para ver. No Apple a barra tem
+  // fundo próprio, então só o relógio precisa de ajuda: menos véu basta.
+  var forte = (tema === 'apple') ? 0.34 : 0.62;
   var h = (hex || '').replace('#', '');
   if (h.length !== 6) return 'rgba(0,0,0,0.55)';
   var c = [0, 2, 4].map(function (i) {
@@ -44,7 +49,8 @@ function veu(hex) {
     return x <= 0.03928 ? x / 12.92 : Math.pow((x + 0.055) / 1.055, 2.4);
   });
   var lum = 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
-  return lum > 0.4 ? 'rgba(255,255,255,0.62)' : 'rgba(0,0,0,0.58)';
+  return lum > 0.4 ? 'rgba(255,255,255,' + forte + ')'
+                   : 'rgba(0,0,0,' + (forte - 0.04) + ')';
 }
 function hhmm(ts) {
   var d = new Date(ts * 1000);
@@ -1317,7 +1323,7 @@ function aplicarAjustes() {
   var fundo = (a.fundos || {})[a.tema || 'escuro'];
   var corpo = document.body;
   if (fundo) {
-    var v = veu(((a.cores || {}).fundo) || '#000000');
+    var v = veu(((a.cores || {}).fundo) || '#000000', a.tema);
     corpo.style.backgroundImage =
       'linear-gradient(' + v + ',' + v + '), url("fundos/' +
       encodeURIComponent(fundo) + '")';
@@ -1914,6 +1920,21 @@ window.addEventListener('resize', function () {
   hostsSlide.forEach(function (h) { ajustarListas(h.slider.palco); });
   ajustarListas(sliderMsg.palco);
 });
+
+/* O WebView 64 do Tab E não tem backdrop-filter. No Mac e no iPad o cartão de
+ * vidro desfoca a foto atrás e o texto pousa num borrão uniforme; lá ele
+ * pousaria na foto crua, e sobre um trecho escuro isso vira texto ilegível.
+ *
+ * Detectar e marcar a raiz deixa o CSS decidir: onde há desfoque, vidro de
+ * verdade; onde não há, um cartão mais fechado. É a mesma ideia do véu — o
+ * efeito é bem-vindo, a legibilidade não é negociável.
+ */
+(function () {
+  var tem = window.CSS && CSS.supports &&
+            (CSS.supports('backdrop-filter', 'blur(1px)') ||
+             CSS.supports('-webkit-backdrop-filter', 'blur(1px)'));
+  if (!tem) document.documentElement.classList.add('sem-desfoque');
+})();
 
 ultimoSinal = Date.now();
 conectar();
