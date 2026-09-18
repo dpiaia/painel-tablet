@@ -217,6 +217,21 @@
   vertical-align: 0;
 }
 
+/* "book" depois do nome, num azul mais claro: qualquer nome vira o nome DELE.
+   PIAIA vira PIAIAbook.
+
+   Feito com ::after e não com um elemento novo no HTML. O sufixo de verdade
+   (#marca-fim) já está ocupado pelo disco do polegar, e criar uma segunda
+   caixa vazia que só um tema usa seria carregar peso morto nos outros oito.
+   Como o ::after é o último filho, ele cai depois do nome sozinho — o disco
+   tem order -1 e vai para a frente. */
+[data-tema="facebook"] .marca::after {
+  content: 'book';
+  color: #8b9dc3;
+  font-weight: 400;
+  letter-spacing: -0.01em;
+}
+
 [data-tema="facebook"] .sist {
   background: #f0f2f5;
   border-radius: 10vw;
