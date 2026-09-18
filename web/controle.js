@@ -5,14 +5,34 @@
  */
 'use strict';
 
-const CARTOES = [
-  ['clima',     'Clima',             'temperatura, previsão da semana no toque'],
-  ['recado',    'Recado',            'o texto que você escrever abaixo'],
-  ['claude',    'Claude Code e Git', 'sessões, seus PRs e os do repositório'],
-  ['agenda',    'Agenda',            'compromissos de hoje e da semana'],
-  ['mensagens', 'Mensagens',         'Gmail, Chat e WhatsApp pela extensão'],
-  ['monitor',   'Monitor do Mac',    'CPU, memória e swap'],
+// Os nove widgets. O antigo cartão "Claude Code e Git" virou três: o slider
+// deixou de ser uma peça e passou a ser um arranjo possível entre elas.
+const WIDGETS = [
+  ['relogio',    'Relógio',            'hora, data e marcas do dia'],
+  ['clima',      'Clima',              'temperatura; a semana no toque'],
+  ['recado',     'Recado',             'o texto que você escrever'],
+  ['claude',     'Claude Code',        'estado das sessões'],
+  ['git-meus',   'Meus pull requests', 'os PRs que você abriu'],
+  ['git-design', 'PRs do repositório', 'o repositório vigiado'],
+  ['agenda',     'Agenda',             'compromissos de hoje e da semana'],
+  ['mensagens',  'Mensagens',          'Gmail, Chat e WhatsApp pela extensão'],
+  ['monitor',    'Monitor do Mac',     'CPU, memória e swap'],
 ];
+
+// Espelha o LAYOUT_PADRAO do app.js. Duplicado de propósito: o painel de
+// controle não carrega o app.js, e uma importação só para isto pagaria caro
+// por uma constante.
+const LAYOUT_PADRAO = {
+  esquerda: [
+    { tipo: 'solo',   ids: ['relogio'] },
+    { tipo: 'par',    ids: ['clima', 'recado'] },
+    { tipo: 'slider', ids: ['claude', 'git-meus', 'git-design'] }
+  ],
+  direita: [
+    { tipo: 'solo',   ids: ['agenda'] },
+    { tipo: 'par',    ids: ['mensagens', 'monitor'] }
+  ]
+};
 
 const FONTES = [
   ['cidade',       'texto', 'Cidade do clima',    'ex.: Paulínia, SP'],
@@ -225,42 +245,197 @@ function linha(...filhos) {
 /* ------------------------------------- cartões e ordem, na mesma lista */
 // Eram duas listas separadas, e são a mesma coisa: ligar e posicionar o mesmo
 // cartão. Juntar tira metade da tela e some com o vaivém entre dois lugares.
-function ordemAtual() {
-  const salva = painel.ordem || [];
-  return salva.concat(CARTOES.map(c => c[0]).filter(id => !salva.includes(id)));
+/* ============================================================ arranjo
+ *
+ * Arrastar um widget para qualquer posição de qualquer coluna, e juntar
+ * widgets num par (lado a lado) ou num slider (alternando no mesmo cartão).
+ *
+ * Um widget fora das colunas é um widget desligado — não existem duas
+ * verdades. Antes havia um interruptor por cartão E uma ordem separada; com
+ * posição livre isso viraria três lugares para dizer a mesma coisa.
+ */
+function layoutAtual() {
+  const l = painel.layout;
+  if (l && Array.isArray(l.esquerda) && Array.isArray(l.direita)) return l;
+  return JSON.parse(JSON.stringify(LAYOUT_PADRAO));
 }
 
-function desenharCartoes() {
-  const alvo = document.getElementById('cartoes');
-  alvo.innerHTML = '';
-  const ordem = ordemAtual();
-  ordem.forEach((id, i) => {
-    const def = CARTOES.find(c => c[0] === id);
-    if (!def) return;
-    const ligado = painel.cartoes[id] !== false;
+function nomeWidget(id) {
+  const d = WIDGETS.find(w => w[0] === id);
+  return d ? d[1] : id;
+}
 
-    const mover = document.createElement('div');
-    mover.className = 'mover';
-    const sobe = document.createElement('button'); sobe.textContent = '↑';
-    const desce = document.createElement('button'); desce.textContent = '↓';
-    sobe.disabled = i === 0; desce.disabled = i === ordem.length - 1;
-    sobe.onclick = () => mover_(i, -1); desce.onclick = () => mover_(i, +1);
-    mover.append(sobe, desce);
-
-    const l = linha(chave(ligado, v => { salvar('cartoes', id, v); desenharCartoes(); }),
-                    rotulo(def[1], def[2]), mover);
-    if (!ligado) l.classList.add('off');
-    alvo.appendChild(l);
+// Tira o widget de onde estiver e deixa o layout íntegro: item que ficou vazio
+// some, item que ficou com um só volta a ser solo, com três ou mais vira
+// slider (dois lado a lado ainda cabem, três não).
+function retirar(l, id) {
+  ['esquerda', 'direita'].forEach(col => {
+    l[col] = l[col].map(it => ({
+      tipo: it.tipo,
+      ids: (it.ids || []).filter(x => x !== id)
+    })).filter(it => it.ids.length);
+    l[col].forEach(it => {
+      if (it.ids.length === 1) it.tipo = 'solo';
+      else if (it.ids.length > 2 && it.tipo !== 'slider') it.tipo = 'slider';
+    });
   });
 }
 
-function mover_(i, passo) {
-  const o = ordemAtual();
-  const j = i + passo;
-  [o[i], o[j]] = [o[j], o[i]];
-  painel.ordem = o;
-  salvar('ordem', null, o);
-  desenharCartoes();
+function salvarLayout(l) {
+  painel.layout = l;
+  // O liga/desliga continua existindo para o app.js, mas quem o define agora é
+  // a presença no layout. Escrever os dois mantém uma verdade só.
+  const dentro = {};
+  ['esquerda', 'direita'].forEach(c => l[c].forEach(it => it.ids.forEach(x => dentro[x] = 1)));
+  painel.cartoes = painel.cartoes || {};
+  WIDGETS.forEach(([id]) => { painel.cartoes[id] = !!dentro[id]; });
+
+  salvar('layout', null, l);
+  salvar('cartoes', null, painel.cartoes);
+  desenharArranjo();
+}
+
+function mexer(id, destino) {
+  const l = layoutAtual();
+  retirar(l, id);
+  if (destino.tipo === 'fora') { salvarLayout(l); return; }
+
+  const col = l[destino.coluna];
+  if (destino.tipo === 'junta') {
+    const it = col[destino.indice];
+    if (!it) return;
+    it.ids.push(id);
+    if (it.ids.length === 2 && it.tipo === 'solo') it.tipo = 'par';
+    if (it.ids.length > 2) it.tipo = 'slider';
+  } else {
+    col.splice(Math.max(0, Math.min(destino.indice, col.length)), 0,
+               { tipo: 'solo', ids: [id] });
+  }
+  salvarLayout(l);
+}
+
+let arrastando = null;
+
+function chipWidget(id) {
+  const c = document.createElement('div');
+  c.className = 'chip-w';
+  c.draggable = true;
+  c.textContent = nomeWidget(id);
+  c.ondragstart = (e) => {
+    arrastando = id;
+    c.classList.add('levando');
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', id);
+  };
+  c.ondragend = () => { arrastando = null; c.classList.remove('levando'); };
+  return c;
+}
+
+function alvoSolta(destino, classe) {
+  const z = document.createElement('div');
+  z.className = classe;
+  z.ondragover = (e) => { e.preventDefault(); z.classList.add('sobre'); };
+  z.ondragleave = () => z.classList.remove('sobre');
+  z.ondrop = (e) => {
+    e.preventDefault(); e.stopPropagation();
+    z.classList.remove('sobre');
+    if (arrastando) mexer(arrastando, destino);
+  };
+  return z;
+}
+
+function blocoItem(it, coluna, i) {
+  const b = alvoSolta({ tipo: 'junta', coluna: coluna, indice: i }, 'bloco');
+  const chips = document.createElement('div');
+  chips.className = 'chips' + (it.tipo === 'par' ? ' lado-a-lado' : '');
+  it.ids.forEach(id => chips.appendChild(chipWidget(id)));
+  b.appendChild(chips);
+
+  if (it.ids.length > 1) {
+    const pe = document.createElement('div');
+    pe.className = 'pe-bloco';
+    const nome = document.createElement('span');
+    nome.textContent = it.tipo === 'par' ? 'lado a lado' : 'alternando no mesmo cartão';
+    pe.appendChild(nome);
+
+    // Dois widgets cabem lado a lado; três não — por isso a troca só aparece
+    // no par. Com três, alternar é a única forma que cabe.
+    if (it.ids.length === 2) {
+      const troca = document.createElement('button');
+      troca.textContent = it.tipo === 'par' ? 'alternar' : 'lado a lado';
+      troca.onclick = () => {
+        const l = layoutAtual();
+        const alvo = l[coluna][i];
+        alvo.tipo = alvo.tipo === 'par' ? 'slider' : 'par';
+        salvarLayout(l);
+      };
+      pe.appendChild(troca);
+    }
+
+    const sep = document.createElement('button');
+    sep.textContent = 'separar';
+    sep.onclick = () => {
+      const l = layoutAtual();
+      const alvo = l[coluna][i];
+      const soltos = alvo.ids.map(x => ({ tipo: 'solo', ids: [x] }));
+      l[coluna].splice(i, 1, ...soltos);
+      salvarLayout(l);
+    };
+    pe.appendChild(sep);
+    b.appendChild(pe);
+  }
+  return b;
+}
+
+function desenharArranjo() {
+  const alvo = document.getElementById('cartoes');
+  alvo.innerHTML = '';
+  const l = layoutAtual();
+
+  const grade = document.createElement('div');
+  grade.className = 'colunas-editor';
+
+  [['esquerda', 'Coluna esquerda'], ['direita', 'Coluna direita']].forEach(([col, titulo]) => {
+    const caixa = document.createElement('div');
+    caixa.className = 'col-editor';
+    caixa.innerHTML = '<div class="titulo-col">' + titulo + '</div>';
+    l[col].forEach((it, i) => {
+      caixa.appendChild(alvoSolta({ tipo: 'pos', coluna: col, indice: i }, 'fenda'));
+      caixa.appendChild(blocoItem(it, col, i));
+    });
+    caixa.appendChild(alvoSolta({ tipo: 'pos', coluna: col, indice: l[col].length },
+                                'fenda fenda-fim'));
+    grade.appendChild(caixa);
+  });
+  alvo.appendChild(grade);
+
+  // Bandeja do que está fora: arrastar para cá desliga, arrastar de volta liga.
+  const dentro = {};
+  ['esquerda', 'direita'].forEach(c => l[c].forEach(it => it.ids.forEach(x => dentro[x] = 1)));
+  const fora = WIDGETS.map(w => w[0]).filter(id => !dentro[id]);
+
+  const bandeja = alvoSolta({ tipo: 'fora' }, 'bandeja');
+  bandeja.innerHTML = '<div class="titulo-col">Fora da tela</div>';
+  const chips = document.createElement('div');
+  chips.className = 'chips';
+  if (!fora.length) {
+    const v = document.createElement('span');
+    v.className = 'dica-vazia';
+    v.textContent = 'Tudo está na tela. Arraste um widget para cá para desligá-lo.';
+    chips.appendChild(v);
+  } else {
+    fora.forEach(id => chips.appendChild(chipWidget(id)));
+  }
+  bandeja.appendChild(chips);
+  alvo.appendChild(bandeja);
+
+  const acoes = document.createElement('div');
+  acoes.className = 'acoes';
+  const padrao = document.createElement('button');
+  padrao.textContent = 'Voltar ao arranjo padrão';
+  padrao.onclick = () => salvarLayout(JSON.parse(JSON.stringify(LAYOUT_PADRAO)));
+  acoes.appendChild(padrao);
+  alvo.appendChild(acoes);
 }
 
 /* --------------------------------------------------------------- fontes */
@@ -624,7 +799,7 @@ async function iniciar() {
   fontes = d.fontes || {};
 
   desenharNav();
-  desenharMarca(); desenharCartoes(); desenharFontes(); desenharRecado();
+  desenharMarca(); desenharArranjo(); desenharFontes(); desenharRecado();
   desenharFundos();
   desenharTempos(); desenharTemas(); desenharCores(); verDiag();
   setInterval(verDiag, 15000);

@@ -1266,33 +1266,10 @@ function aplicarAjustes() {
     el.hidden = cartoes[el.getAttribute('data-cartao')] === false;
   }
 
-  // --- ordem, calculada DENTRO de cada container
-  //
-  // Uma lista única aplicada a tudo embaralha o layout: a agenda e a dupla
-  // (mensagens + monitor) são irmãs, mas só a agenda tem data-cartao — a dupla
-  // ficava com order 0 e subia por cima. Aqui cada container ordena os
-  // próprios filhos, e um container ganha a posição do primeiro cartão dentro
-  // dele. O relógio, que não é cartão, fica onde sempre esteve.
-  function posicao(el) {
-    var id = el.getAttribute && el.getAttribute('data-cartao');
-    if (id) return ordem.indexOf(id);
-    var dentro = el.querySelectorAll ? el.querySelectorAll('[data-cartao]') : [];
-    var menor = -1;
-    for (var k = 0; k < dentro.length; k++) {
-      var p = ordem.indexOf(dentro[k].getAttribute('data-cartao'));
-      if (p >= 0 && (menor < 0 || p < menor)) menor = p;
-    }
-    return menor;
-  }
-
-  var caixas = document.querySelectorAll('.coluna, .dupla');
-  for (var c = 0; c < caixas.length; c++) {
-    var filhos = caixas[c].children;
-    for (var f = 0; f < filhos.length; f++) {
-      var pos = posicao(filhos[f]);
-      filhos[f].style.order = pos < 0 ? '-1' : pos;   // não-cartões vêm antes
-    }
-  }
+  // A ordem agora é o LAYOUT: montarLayout() põe cada widget no lugar, e o
+  // truque antigo de `order` no CSS brigaria com ele — dois donos da mesma
+  // decisão, e o que perdesse deixaria a tela embaralhada de um jeito difícil
+  // de explicar.
 
   // --- clima em meia largura quando divide a linha com o recado
   //
@@ -1301,7 +1278,11 @@ function aplicarAjustes() {
   // detalhes descem para uma faixa embaixo em vez de disputar a direita.
   var clima = document.querySelector('[data-cartao="clima"]');
   if (clima) {
-    var dividindo = cartoes.clima !== false && cartoes.recado !== false;
+    // Antes isto perguntava se o recado estava ligado. Agora a pergunta certa é
+    // se o clima está DIVIDINDO a linha — ele pode estar pareado com o monitor,
+    // ou sozinho com o recado em outra coluna.
+    var dividindo = !!(clima.parentNode && clima.parentNode.className &&
+                       clima.parentNode.className.indexOf('dupla') >= 0);
     clima.className = clima.className.replace(/ ?estreito/, '') + (dividindo ? ' estreito' : '');
   }
 
