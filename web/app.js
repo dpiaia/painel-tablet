@@ -962,7 +962,45 @@ function telaClaude() {
   return '<div class="dividido"><div>' + esquerda + '</div><div>' + direita + '</div></div>';
 }
 
+/* A tela "sobre", que abre tocando no nome.
+ *
+ * Os endereços vão como TEXTO, não como link. O tablet vive em quiosque: um
+ * toque que navegasse para fora tiraria o painel da tela e alguém teria que ir
+ * até lá para trazê-lo de volta. Aqui o toque só abre e só fecha, como em todo
+ * o resto — quem quiser o endereço lê e digita.
+ */
+var LINKS = [
+  ['site',      'www.piaianet.com'],
+  ['linkedin',  'linkedin.com/in/denispiaia'],
+  ['instagram', 'instagram.com/denispiaia'],
+  ['linktree',  'linktr.ee/denispiaia'],
+  ['e-mail',    'denis@piaianet.com']
+];
+
+function telaSobre() {
+  var links = LINKS.map(function (l) {
+    return '<div class="link"><span class="rot">' + l[0] + '</span>' +
+           '<span class="val">' + escapar(l[1]) + '</span></div>';
+  }).join('');
+
+  return '<div class="sobre">' +
+    '<div class="sobre-txt">' +
+      '<p class="lead">Um tablet Android de 2015 virou painel de mesa.</p>' +
+      '<p>O Mac reúne agenda, clima, mensagens, pull requests e o estado das ' +
+      'sessões do Claude Code. O tablet só mostra. Tudo na rede local — ' +
+      'nada sobe para lugar nenhum.</p>' +
+      '<p class="repo">Código aberto em <b>github.com/dpiaia/painel-tablet</b></p>' +
+    '</div>' +
+    '<div class="sobre-autor">' +
+      '<div class="quem">Denis Piaia</div>' +
+      '<div class="oque">design engineer</div>' +
+      links +
+    '</div>' +
+  '</div>';
+}
+
 var TELAS = {
+  sobre:  { titulo: 'Sobre o painel',   render: telaSobre },
   clima:  { titulo: 'Clima da semana',  render: telaClima },
   agenda: { titulo: 'Agenda da semana', render: telaAgenda },
   claude: { titulo: 'Claude Code · GitHub', render: telaClaude }
