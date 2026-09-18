@@ -20,10 +20,15 @@
 <body>
 
 <header class="topo" id="topo-barra">
-  <div class="marca toque" data-tela="sobre"><b id="marca-nome">PIAIA</b><span id="marca-fim">OS</span></div>
+  <div class="marca toque" data-menu="temas"><b id="marca-nome">PIAIA</b><span id="marca-fim">OS</span></div>
   <div class="selo" id="selo"><i></i>ONLINE</div>
   <div class="empurra"></div>
   <div class="sist" id="sist"></div>
+  <!-- Os créditos saíram do nome e vieram para cá. O nome agora abre ajustes,
+       e ajuste e crédito não são a mesma gaveta: o "i" é onde todo sistema põe
+       "sobre", e fica onde o olho já vai procurar — no fim da barra, depois da
+       bateria. -->
+  <button class="info toque" id="info" data-tela="sobre" aria-label="Sobre o painel">i</button>
   <!-- Selo do tema, na ponta direita. Depois do wifi/bateria de propósito: os
        dados mudam o tempo todo e o selo não, então ele ancora o canto. -->
   <img class="selo-tema" id="selo-tema" alt="" hidden>
@@ -204,6 +209,17 @@
     <div class="festa-rot" id="festa-rot">FINALIZADO</div>
   </div>
 
+</div>
+
+<!-- Menu de configurações, aberto pelo nome. Um só marcador para oito formas:
+     cartão no Escuro/Claro/Apple/Orkut, cartão de topo azul no Facebook, menu
+     Iniciar no 95 e no XP, terminal no Matrix. Quem decide é o data-tema — o
+     JS escreve sempre a mesma lista. -->
+<div class="menu" id="menu" hidden>
+  <div class="menu-caixa">
+    <div class="menu-topo"><span class="menu-titulo">Temas</span></div>
+    <div class="menu-lista" id="menu-lista"></div>
+  </div>
 </div>
 
 <div class="tela" id="tela" hidden>

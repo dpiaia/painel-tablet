@@ -830,46 +830,105 @@
 }
 
 
-/* ==================================== créditos: duas janelas no 95 e no XP
+/* ======================================= o menu de configurações, por tema
  *
- * A tela dos créditos é a única que já chega com dois quadros próprios — o
- * texto e o seletor de tema. Nestes dois temas eles viram janelas de verdade
- * sobre o papel de parede, e para isso a moldura da TELA precisa sair da
- * frente: uma janela dentro de outra janela não é o que o Windows fazia.
- *
- * Some a moldura e some junto o "toque para voltar" dela — por isso a janela
- * de cima acende o aviso próprio (.so-janela), que fica escondido nos outros
- * temas, onde a barra da tela continua no lugar.
+ * A marcação é sempre a mesma — caixa, título, lista de itens — e cada tema
+ * decide o que ela é. O Claro, o Apple e o Orkut não precisam de quase nada:
+ * a forma base é escrita em variáveis, e trocar a paleta já os desenha. Quem
+ * muda de ESTRUTURA é que aparece aqui.
  */
-[data-tema="win95"] .tela[data-tela-tipo="sobre"],
-[data-tema="xp"]    .tela[data-tela-tipo="sobre"] {
-  background: none;
-  border: 0;
+
+/* ------------------------------------------------------------- Apple */
+/* Canto largo e sombra macia, a mesma conversa dos cartões deste tema. */
+[data-tema="apple"] .menu-caixa {
+  border-radius: 1.6vw;
+  box-shadow: 0 1.4vw 4vw rgba(0, 0, 0, 0.22);
+}
+[data-tema="apple"] .menu-item { border-radius: 1.2vw; }
+[data-tema="apple"] .menu-previa { border-radius: 1.1vw; }
+
+/* ------------------------------------------------------------- Orkut */
+/* O rosa das comunidades no título e uma faixa dele no alto da caixa: é como
+   o Orkut separava as seções da página. */
+[data-tema="orkut"] .menu-caixa { border-top: 0.35vw solid var(--ciano); }
+[data-tema="orkut"] .menu-titulo {
+  color: var(--ciano);
+  font-family: var(--sans);
+  font-weight: 700;
+  font-size: 1.1vw;
+  letter-spacing: 0;
+}
+[data-tema="orkut"] .menu-item.ativo { border-color: var(--ciano); }
+
+/* ---------------------------------------------------------- Facebook */
+/* A barra azul-escura de antes do redesenho, sangrando de ponta a ponta. */
+[data-tema="facebook"] .menu-caixa { border-radius: 0.3vw; }
+[data-tema="facebook"] .menu-topo {
+  background: var(--ciano);
+  padding: 0.8vw 1.4vw;
+  margin-bottom: 1.2vw;
+}
+[data-tema="facebook"] .menu-titulo {
+  color: #ffffff;
+  font-family: var(--sans);
+  font-weight: 700;
+  font-size: 1.1vw;
+  letter-spacing: 0;
+}
+[data-tema="facebook"] .menu-item { border-radius: 0.3vw; }
+[data-tema="facebook"] .menu-previa { border-radius: 0.3vw; }
+[data-tema="facebook"] .menu-item.ativo { border-color: var(--azul); }
+
+/* ============================== Windows 95 e XP: o menu Iniciar aberto
+ *
+ * Nestes dois a barra do topo é uma barra de TAREFAS, e vive embaixo
+ * (body em column-reverse). Um menu que descesse do nome desceria do lugar
+ * errado: aqui ele sobe do canto, como o Iniciar sempre subiu, e por isso
+ * troca top por bottom e vira uma coluna estreita em vez de uma fileira.
+ */
+[data-tema="win95"] .menu-caixa,
+[data-tema="xp"] .menu-caixa {
+  top: auto;
+  right: auto;
+  bottom: 5.2vw;
+  left: 0.8vw;
+  width: 27vw;
+}
+[data-tema="win95"] .menu-lista,
+[data-tema="xp"] .menu-lista {
+  flex-direction: column;
+  flex-wrap: nowrap;
   padding: 0;
-  box-shadow: none;
 }
-[data-tema="win95"] .tela[data-tela-tipo="sobre"] > header,
-[data-tema="xp"]    .tela[data-tela-tipo="sobre"] > header { display: none; }
-[data-tema="win95"] .tela[data-tela-tipo="sobre"] .tela-corpo,
-[data-tema="xp"]    .tela[data-tela-tipo="sobre"] .tela-corpo { padding: 0; }
-
-[data-tema="win95"] .quadro-topo .so-janela,
-[data-tema="xp"]    .quadro-topo .so-janela { display: block; }
-
-[data-tema="win95"] .quadro-sobre,
-[data-tema="xp"]    .quadro-sobre { margin-bottom: 1.6vw; }
-[data-tema="win95"] .quadro-corpo,
-[data-tema="xp"]    .quadro-corpo { padding: 0 1.2vw 1.2vw; }
-[data-tema="win95"] .quadro-topo::after,
-[data-tema="xp"]    .quadro-topo::after {
-  content: '\00d7';
-  margin-left: 1vw;
-  line-height: 1;
+[data-tema="win95"] .menu-item,
+[data-tema="xp"] .menu-item {
+  flex-direction: row;
+  align-items: center;
+  width: 100%;
+  margin: 0;
+  padding: 0.45vw 1vw;
+  border: 0;
+  border-radius: 0;
+}
+[data-tema="win95"] .menu-previa,
+[data-tema="xp"] .menu-previa {
+  width: 2.6vw;
+  height: 2.6vw;
   flex: none;
+  margin: 0 0.9vw 0 0;
+  border-radius: 0.2vw;
 }
+[data-tema="win95"] .previa-hora,
+[data-tema="xp"] .previa-hora { font-size: 0.8vw; }
+[data-tema="win95"] .menu-nome,
+[data-tema="xp"] .menu-nome { font-size: 1.1vw; font-weight: 400; }
+[data-tema="win95"] .menu-ativo,
+[data-tema="xp"] .menu-ativo { margin-top: 0; font-size: 0.7vw; }
 
 /* ---------------------------------------------------------- Windows 95 */
-[data-tema="win95"] .quadro {
+[data-tema="win95"] .menu-caixa {
+  display: flex;             /* a faixa vertical e a lista, lado a lado */
+  align-items: stretch;
   background: var(--cartao);
   border: 0;
   border-radius: 0;
@@ -878,61 +937,129 @@
               inset -2px -2px 0 #808080, inset 2px 2px 0 #dfdfdf,
               0.3vw 0.3vw 0 rgba(0, 0, 0, 0.35);
 }
-[data-tema="win95"] .quadro-topo {
-  background: var(--azul);
-  padding: 0.4vw 0.7vw;
-  margin: 0 0 0.9vw;
+/* A faixa azul de pé com o nome ao contrário — o mesmo título, virado 90°.
+   Não é decoração nostálgica: é o que dizia, sem palavra nenhuma, que aquela
+   coluna toda era um menu só. */
+[data-tema="win95"] .menu-topo {
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+  flex: none;
+  align-items: flex-start;
+  padding: 0.9vw 0.4vw;
+  margin: 0 0.35vw 0 0;
+  background: linear-gradient(to top, #000080 0%, #1084d0 100%);
 }
-[data-tema="win95"] .quadro-topo h3 {
+[data-tema="win95"] .menu-titulo {
   color: #ffffff;
-  font-family: var(--mono);
-  font-size: 1.05vw;
-  letter-spacing: 0.08em;
+  font-family: var(--sans);
+  font-weight: 700;
+  font-size: 1.35vw;
+  letter-spacing: 0;
 }
-[data-tema="win95"] .quadro-topo .voltar { color: rgba(255, 255, 255, 0.75); }
-[data-tema="win95"] .quadro-topo::after {
-  width: 1.5vw; height: 1.5vw;
-  display: flex; align-items: center; justify-content: center;
-  background: var(--cartao);
-  color: #000000;
-  font-size: 1.1vw;
-  box-shadow: inset -1px -1px 0 #000000, inset 1px 1px 0 #ffffff,
-              inset -2px -2px 0 #808080, inset 2px 2px 0 #dfdfdf;
-}
+[data-tema="win95"] .menu-lista { flex: 1; min-width: 0; }
+[data-tema="win95"] .menu-item.ativo { background: #000080; color: #ffffff; }
+[data-tema="win95"] .menu-item.ativo .menu-ativo { color: #ffffff; }
 
 /* ---------------------------------------------------------- Windows XP */
-[data-tema="xp"] .quadro {
-  background: var(--cartao);
-  border: 3px solid var(--azul);
-  border-radius: 0.7vw 0.7vw 0.3vw 0.3vw;
-  padding: 0;
-  box-shadow: 0 0.4vw 1.2vw rgba(0, 0, 0, 0.35);
+[data-tema="xp"] .menu-caixa {
+  background: #ffffff;
+  border: 1px solid #0a3d91;
+  border-radius: 0.6vw 0.6vw 0 0;
+  box-shadow: 0 0.5vw 1.6vw rgba(0, 0, 0, 0.45);
 }
-[data-tema="xp"] .quadro-topo {
+[data-tema="xp"] .menu-topo {
   background: linear-gradient(to bottom,
               rgba(255,255,255,0.35) 0%, rgba(255,255,255,0.05) 45%,
               rgba(0,0,0,0.10) 55%, rgba(0,0,0,0.20) 100%), var(--azul);
-  padding: 0.5vw 1vw;
-  margin: 0 0 0.9vw;
+  padding: 0.7vw 1vw;
+  margin-bottom: 0.5vw;
 }
-[data-tema="xp"] .quadro-topo h3 {
+[data-tema="xp"] .menu-titulo {
   color: #ffffff;
   font-family: var(--sans);
+  font-weight: 700;
   font-size: 1.1vw;
-  letter-spacing: 0.02em;
+  letter-spacing: 0;
   text-transform: none;
   text-shadow: 1px 1px 1px rgba(0, 0, 0, 0.45);
 }
-[data-tema="xp"] .quadro-topo .voltar {
-  color: rgba(255, 255, 255, 0.8);
-  text-shadow: 1px 1px 1px rgba(0, 0, 0, 0.4);
+[data-tema="xp"] .menu-lista { padding-bottom: 0.5vw; }
+[data-tema="xp"] .menu-item.ativo { background: #316ac5; color: #ffffff; }
+[data-tema="xp"] .menu-item.ativo .menu-ativo { color: #ffffff; }
+
+/* ------------------------------------------------- Matrix: um terminal
+ *
+ * Sem ícone nenhum: num terminal a opção É o texto. As prévias somem, os
+ * nomes viram minúsculas numeradas e o que estava em uso ganha o cursor —
+ * que é como um menu de texto sempre disse "você está aqui".
+ */
+[data-tema="matrix"] .menu-caixa {
+  background: #000000;
+  border: 1px solid var(--borda);
+  border-radius: 0;
+  box-shadow: 0 0 2.5vw rgba(51, 255, 102, 0.16);
 }
-[data-tema="xp"] .quadro-topo::after {
-  width: 1.7vw; height: 1.4vw;
-  display: flex; align-items: center; justify-content: center;
-  border-radius: 0.3vw;
-  background: linear-gradient(to bottom, #e86a5a 0%, #c8351f 100%);
+[data-tema="matrix"] .menu-topo { padding: 0.9vw 1.2vw 0.2vw; margin-bottom: 0.6vw; }
+/* O título vira a linha de comando: font-size 0 engole o texto "Temas" e o
+   ::before o repõe como prompt. Trocar o texto no JS seria mais direto, mas
+   aí o tema estaria escrevendo conteúdo, e conteúdo não é assunto de folha
+   de estilo — nem de tema. */
+[data-tema="matrix"] .menu-titulo {
+  color: var(--apagado);
+  font-size: 0;
+  letter-spacing: 0.04em;
+  text-transform: none;   /* o prompt é minúsculo; a base deixa tudo em caixa alta */
+}
+[data-tema="matrix"] .menu-titulo::before {
+  content: 'painel:~$ temas --listar';
+  font-size: 1vw;
+}
+
+[data-tema="matrix"] .menu-lista {
+  flex-direction: column;
+  flex-wrap: nowrap;
+  padding: 0 1.2vw 1.2vw;
+  counter-reset: opcao;
+}
+[data-tema="matrix"] .menu-previa { display: none; }
+[data-tema="matrix"] .menu-item {
+  flex-direction: row;
+  align-items: baseline;
+  width: 100%;
+  margin: 0;
+  padding: 0.28vw 0;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  counter-increment: opcao;
+}
+[data-tema="matrix"] .menu-rot { display: flex; align-items: baseline; }
+[data-tema="matrix"] .menu-nome {
+  font-family: var(--mono);
+  font-size: 1.15vw;
+  font-weight: 400;
+  text-transform: lowercase;
+}
+[data-tema="matrix"] .menu-nome::before { content: '[' counter(opcao) ']  '; color: var(--fraco); }
+[data-tema="matrix"] .menu-ativo {
+  margin: 0 0 0 1vw;
+  color: var(--ciano);
+  letter-spacing: 0.1em;
+}
+[data-tema="matrix"] .menu-item.ativo { background: none; }
+[data-tema="matrix"] .menu-item.ativo .menu-nome { color: var(--ciano); }
+
+/* ------------------------------------------- o "i" nas barras coloridas */
+/* Onde a barra do topo tem fundo próprio e texto branco, o "i" acompanha —
+   senão ele fica cinza sobre azul, que é justamente onde some. */
+[data-tema="win95"] .info,
+[data-tema="xp"] .info {
+  border-color: rgba(255, 255, 255, 0.55);
   color: #ffffff;
-  font-size: 1.1vw;
-  box-shadow: inset 0 1px 0 rgba(255,255,255,0.5);
+}
+/* No Facebook a barra é BRANCA — aqui o risco é o contrário, sumir de claro
+   demais. */
+[data-tema="facebook"] .info {
+  border-color: rgba(0, 0, 0, 0.18);
+  color: var(--apagado);
 }

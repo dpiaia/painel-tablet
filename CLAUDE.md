@@ -137,7 +137,7 @@ Carregam o token do painel.
 aberto na rede local de propósito — o painel é uma tela, não um cofre.
 
 **A única exceção é `POST /tema`, e ela é estreita de propósito.** O seletor de
-tema mora na tela de créditos do tablet, e o tablet chega pelo Wi-Fi: sem
+tema mora no menu de configurações do tablet, e o tablet chega pelo Wi-Fi: sem
 exceção não haveria seletor. O que a torna aceitável é o tamanho. A rota não
 aceita um corpo de ajustes — aceita UM slug, confere contra a lista fechada de
 `temas.py` e grava duas chaves (`tema` e `cores`). Chaves extras no corpo são

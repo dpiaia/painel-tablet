@@ -604,7 +604,7 @@ class Handler(BaseHTTPRequestHandler):
         """Troca o tema inteiro a partir do slug. É o ÚNICO POST que a rede faz.
 
         Por que ele foge do `eh_local` que protege /ajustes: o seletor mora na
-        tela de créditos do TABLET, e o tablet chega pelo Wi-Fi. Sem exceção
+        menu de configurações do TABLET, e o tablet chega pelo Wi-Fi. Sem exceção
         não haveria seletor.
 
         A exceção é estreita de propósito, e o estreito é o que a torna
@@ -779,7 +779,7 @@ class Handler(BaseHTTPRequestHandler):
             return self._json(retrato())
         if rota == "/temas.json":
             # Aberto de propósito: é catálogo, não configuração. Quem desenha
-            # o seletor — o controle no Mac e a tela de créditos no tablet —
+            # o seletor — o controle no Mac e o menu do nome no tablet —
             # busca uma vez e guarda. Fora do SSE porque não muda: mandar as
             # oito paletas em cada empurrão custaria mais de um KB a cada
             # quinze segundos para dizer sempre a mesma coisa.

@@ -576,9 +576,9 @@ body { display: flex; flex-direction: column; }
 /* Toque expande, nunca age: o tablet é só vidro. Nenhum controle daqui
    altera nada — nem marca e-mail como lido, nem responde ao Claude.
 
-   A única exceção é o seletor de tema nos créditos (.tema-btn), e ela cabe na
-   regra em vez de quebrá-la: ele não age sobre o mundo, muda como o próprio
-   vidro se parece, para quem já está na frente dele. */
+   A única exceção é o menu de configurações, aberto pelo nome (.menu-item), e
+   ela cabe na regra em vez de quebrá-la: ele não age sobre o mundo, muda como
+   o próprio vidro se parece, para quem já está na frente dele. */
 .toque { cursor: pointer; }
 .toque:active { border-color: var(--ciano); }
 
@@ -1330,86 +1330,150 @@ body { display: flex; flex-direction: column; }
 .nota-proc b { color: var(--apagado); font-weight: 600; }
 
 
-/* ------------------------------------------ créditos + seletor de tema */
-/* A tela dos créditos são dois quadros empilhados: o texto em cima, tomando o
-   que sobra, e o seletor embaixo com a altura do conteúdo. Sem este pai em
-   coluna, .sobre (height:100%) comia a tela inteira e o seletor morria no
-   overflow:hidden do .tela-corpo. */
-.tela-sobre { display: flex; flex-direction: column; height: 100%; }
-.quadro {
+/* ------------------------------------------------- o "i" na barra do topo */
+/* Os créditos moraram no nome até o nome virar a porta dos ajustes. Aqui eles
+   ficam onde todo sistema põe "sobre": um "i" no fim da barra, depois da
+   bateria. Redondo e pequeno — é um atalho, não um botão que disputa atenção
+   com a hora. */
+.info {
   display: flex;
-  flex-direction: column;
+  align-items: center;
+  justify-content: center;
   flex: none;
-  min-height: 0;
+  width: 2.1vw;
+  height: 2.1vw;
+  margin-left: 1.2vw;
+  padding: 0;
+  border: 1px solid var(--borda);
+  border-radius: 50%;
+  background: none;
+  color: var(--apagado);
+  font-family: var(--mono);
+  font-size: 1.15vw;
+  font-style: italic;
+  line-height: 1;
+  cursor: pointer;
+}
+.info:active { border-color: var(--ciano); color: var(--ciano); }
+
+/* ------------------------------------------------- menu de configurações */
+/* Uma marcação, oito formas. O que está aqui é a forma do tema Escuro, que os
+   temas de paleta (Claro, Apple, Orkut) herdam inteira — tudo é variável, e
+   trocar a variável já os desenha. Facebook, Windows 95, XP e Matrix mudam de
+   estrutura e têm regras próprias em temas.css.
+
+   O véu por trás não é enfeite: o menu é o único lugar do painel onde um
+   toque muda alguma coisa, e escurecer o resto diz que agora a tela está
+   esperando uma escolha, não mostrando informação. */
+.menu {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  z-index: 55;            /* acima da tela de detalhe (50), abaixo da hora (60) */
+  background: rgba(0, 0, 0, 0.45);
+}
+
+/* Desce do nome, porque foi o nome que abriu: um menu que aparecesse no meio
+   da tela não teria vindo de lugar nenhum. */
+.menu-caixa {
+  position: absolute;
+  top: 5.6vw;
+  left: 2vw;
+  right: 2vw;
   background: var(--cartao);
   border: 1px solid var(--borda);
   border-radius: var(--raio);
+  box-shadow: 0 1vw 3vw rgba(0, 0, 0, 0.45);
   overflow: hidden;
 }
-.quadro-sobre { flex: 1; margin-bottom: 1.2vw; }   /* sem gap: Chrome 64 */
-.quadro-corpo { flex: 1; min-height: 0; padding: 1.4vw 1.6vw; }
-.quadro-sobre .sobre { height: 100%; }
 
-.quadro-topo {
+/* O recheio mora nas partes, não na caixa: é o que deixa o Facebook e o XP
+   sangrarem a barra de título até a borda sem brigar com o pai. */
+.menu-topo {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  flex: none;
-  padding: 0.9vw 1.6vw 0;
+  padding: 1.2vw 1.4vw 0;
+  margin-bottom: 1.2vw;
 }
-.quadro-topo h3 {
+.menu-titulo {
   font-family: var(--mono);
-  font-size: 0.9vw;
-  font-weight: 400;
+  font-size: 0.85vw;
   letter-spacing: 0.22em;
   text-transform: uppercase;
   color: var(--apagado);
 }
-/* Só as janelas do 95 e do XP mostram a saída: nos outros temas ela continua
-   na barra da própria tela, e repetir seria dizer duas vezes. */
-.quadro-topo .so-janela { display: none; }
 
-.tema-lista { display: flex; flex-wrap: wrap; }
+.menu-lista { display: flex; flex-wrap: wrap; padding: 0 1.4vw 1.4vw; }
 
-/* Alvo de dedo, não de mouse: 3.4vw de altura dá ~39px no Tab E, acima do
-   mínimo confortável de toque. A cor do próprio tema pinta a pílula — faixa
-   cheia à esquerda, fundo bem diluído — em vez de virar três quadradinhos
-   para decifrar. As amostras ficam como confirmação, não como legenda.
-
-   O tom diluído vem do JS, em rgba(): color-mix() é do Chrome 111 e este
-   painel roda em 64. */
-.tema-btn {
+/* Alvo de dedo, não de mouse: a prévia sozinha já tem 7vw (~80px no Tab E),
+   muito acima do mínimo confortável de toque. */
+.menu-item {
   display: flex;
-  align-items: center;
-  position: relative;
-  overflow: hidden;
-  height: 3.4vw;
-  padding: 0 1.1vw 0 1.4vw;
-  margin: 0 0.7vw 0.7vw 0;   /* sem gap: Chrome 64 */
-  border: 1px solid var(--borda);
-  border-radius: 10vw;
-  background: var(--dentro);
+  flex-direction: column;
+  align-items: flex-start;
+  flex: none;
+  width: 11vw;
+  padding: 0.8vw;
+  margin: 0 0.5vw 0 0;   /* sem gap: Chrome 64 */
+  border: 1px solid transparent;
+  border-radius: 1vw;
+  background: none;
   color: var(--texto);
   font-family: var(--sans);
-  font-size: 1.05vw;
-  white-space: nowrap;
+  text-align: left;
   cursor: pointer;
 }
-.tema-btn .faixa {
-  position: absolute;
-  left: 0; top: 0; bottom: 0;
-  width: 0.5vw;
-}
-.tema-btn .amostra {
+.menu-item:last-child { margin-right: 0; }
+.menu-item.ativo { border-color: var(--borda); background: var(--dentro); }
+.menu-item:active { transform: scale(0.97); }
+
+/* A prévia mostra o tema com o próprio tema: quem tem marca mostra a marca,
+   quem não tem mostra a hora nas cores dele. Ler "Matrix" é uma coisa; ver o
+   verde sobre o preto é outra, e é a que decide. */
+.menu-previa {
   display: flex;
-  border-radius: 10vw;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 7vw;
+  margin-bottom: 0.8vw;
+  border-radius: 0.8vw;
   overflow: hidden;
-  flex: none;
-  margin-right: 0.7vw;
 }
-.tema-btn .amostra i { width: 0.75vw; height: 1.5vw; }
-.tema-btn.ativo { font-weight: 700; }
-.tema-btn:active { transform: scale(0.97); }
+.menu-previa img { width: 62%; height: 62%; object-fit: contain; }
+.menu-previa svg { width: 52%; height: 52%; fill: currentColor; }
+.menu-sigla { font-size: 2.2vw; font-weight: 700; }
+.previa-hora {
+  font-size: 2vw;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+}
+
+/* nowrap porque a fileira é o desenho: no Orkut e no Facebook a fonte é mais
+   larga e "Windows XP" quebrava em duas linhas em uns itens e não em outros,
+   desalinhando a régua de baixo. */
+.menu-nome {
+  display: block;
+  font-size: 1.3vw;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+/* "ativo" ocupa lugar mesmo quando não aparece: sem isso a linha de baixo do
+   item ativo empurrava os vizinhos e a fileira inteira desalinhava. */
+.menu-ativo {
+  display: block;
+  margin-top: 0.3vw;
+  font-family: var(--mono);
+  font-size: 0.8vw;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--verde);
+  visibility: hidden;
+}
+.menu-item.ativo .menu-ativo { visibility: visible; }
+
+.menu-vazio { padding: 0 1.4vw 1.4vw; font-size: 0.95vw; color: var(--fraco); }
 
 
 /* -------------------------------------------- monitor do Claude (tela) */

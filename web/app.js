@@ -1249,20 +1249,31 @@ var LINKS = [
 ];
 
 
-/* ------------------------------------------------ seletor de tema (créditos)
+/* ------------------------------------------------- menu de configurações
+ *
+ * Aberto pelo NOME na barra do topo. Os créditos saíram dali e foram para o
+ * "i" depois da bateria: ajuste e crédito não são a mesma gaveta, e misturar
+ * os dois fazia com que quem queria trocar o tema tivesse que passar por um
+ * texto sobre o projeto.
  *
  * Este é o único lugar do tablet onde um toque MUDA alguma coisa. A regra da
- * casa é "toque expande, nunca age" — o tablet é vidro, e nada nele marca
- * e-mail como lido nem responde ao Claude. A troca de tema é a exceção porque
- * não age sobre o mundo: muda como o próprio vidro se parece, para quem já
- * está na frente dele. Levantar da mesa e ir até o Mac para trocar uma cor
- * era a única coisa que o painel pedia e não precisava pedir.
+ * casa é "toque expande, nunca age" — o tablet é vidro. A troca de tema cabe
+ * na regra em vez de quebrá-la: não age sobre o mundo, muda como o próprio
+ * vidro se parece, para quem já está na frente dele.
+ *
+ * O MENU MUDA DE FORMA COM O TEMA, e essa é a graça. A marcação é uma só —
+ * caixa, título, lista de itens — e cada tema decide o que ela é: um cartão
+ * no Escuro, no Claro, no Apple e no Orkut; um cartão de topo azul no
+ * Facebook; o menu Iniciar sobre a barra de tarefas no 95 e no XP; uma lista
+ * de texto num terminal no Matrix. Trocar de tema com o menu aberto redesenha
+ * o menu na hora, o que é a demonstração mais direta do que o tema faz.
  *
  * A tabela não mora aqui. O servidor manda as oito paletas em /temas.json,
  * buscadas uma vez, e o tablet devolve só o SLUG — ele nunca precisa saber
  * que "Windows 95" tem um teal no fundo.
  */
 var TEMAS_DISP = [];
+var menuAberto = false;
 
 function carregarTemas() {
   var x = new XMLHttpRequest();
@@ -1271,73 +1282,97 @@ function carregarTemas() {
     if (x.status !== 200) return;
     try { TEMAS_DISP = (JSON.parse(x.responseText) || {}).temas || []; }
     catch (e) { return; }
-    // Se os créditos já estavam abertos quando a resposta chegou, redesenha:
-    // o quadro tinha nascido com o aviso de "sem lista".
-    if (telaAberta === 'sobre') $('tela-corpo').innerHTML = telaSobre();
+    if (menuAberto) desenharMenu();
   };
   x.send();
-}
-
-function diluir(hex, alfa) {
-  var h = (hex || '').replace('#', '');
-  if (h.length !== 6) return 'transparent';
-  return 'rgba(' + parseInt(h.substr(0, 2), 16) + ',' +
-                   parseInt(h.substr(2, 2), 16) + ',' +
-                   parseInt(h.substr(4, 2), 16) + ',' + alfa + ')';
 }
 
 function temaAtual() {
   return (estado.ajustes && estado.ajustes.tema) || 'escuro';
 }
 
-function blocoTemas() {
-  if (!TEMAS_DISP.length) {
-    return quadro('Tema',
-      '<div class="uso-ausente">a lista de temas não chegou do Mac</div>', 'temas');
-  }
-  var atual = temaAtual();
-  var botoes = TEMAS_DISP.map(function (t) {
-    var c = t.cores || {};
-    // A cor de identidade pinta a pílula inteira — a faixa cheia à esquerda e
-    // o fundo bem diluído — em vez de virar três quadradinhos para decifrar.
-    // As três amostras ficam, mas como confirmação, não como legenda.
-    return '<button class="tema-btn' + (t.slug === atual ? ' ativo' : '') +
-             '" data-tema-slug="' + t.slug + '" style="border-color:' +
-             diluir(t.cor, t.slug === atual ? 1 : 0.35) + ';background:' +
-             diluir(t.cor, t.slug === atual ? 0.26 : 0.12) + '">' +
-             '<span class="faixa" style="background:' + t.cor + '"></span>' +
-             '<span class="amostra">' +
-               '<i style="background:' + c.fundo + '"></i>' +
-               '<i style="background:' + c.cartao + '"></i>' +
-               '<i style="background:' + c.ciano + '"></i>' +
-             '</span>' + escapar(t.nome) +
-           '</button>';
-  }).join('');
+/* O quadradinho de cada tema. Dois tipos, escolhidos pelo próprio tema em
+ * temas.py: quem tem marca mostra a marca, quem não tem mostra a hora.
+ *
+ * A hora é a de AGORA, não uma fixa bonita. Num painel que existe para dizer
+ * as horas, um relógio de enfeite marcando 12:17 às três da tarde seria a
+ * primeira coisa a mentir na tela.
+ *
+ * A marca vem de web/marcas/<slug>.png quando o arquivo está no disco, com o
+ * desenho de SUFIXO como reserva. É a mesma regra do sufixo do nome: a pasta
+ * é opcional e fica fora do git, então o painel cai no desenho sem reclamar.
+ */
+function previaDe(t) {
+  var c = t.cores || {};
 
-  return quadro('Tema', '<div class="tema-lista">' + botoes + '</div>', 'temas');
+  if (t.previa === 'marca') {
+    /* Dois nomes de arquivo, na ordem em que servem. O `-topo.png` é o
+     * logotipo cheio que ancora o canto da barra — é ele que a prévia quer.
+     * O `<slug>.png` é a versão miúda que cola no nome, e serve de reserva.
+     * Sem nenhum dos dois, cai no desenho de SUFIXO, e sem ele na inicial. */
+    var tem = estado.marcas || [];
+    var arq = tem.indexOf(t.slug + '-topo.png') >= 0 ? t.slug + '-topo.png'
+            : (tem.indexOf(t.slug + '.png') >= 0 ? t.slug + '.png' : '');
+    var dentro = arq
+      ? '<img src="marcas/' + arq + '" alt="">'
+      : (String(SUFIXO[t.slug] || '').indexOf('<svg') === 0
+          ? SUFIXO[t.slug]
+          : '<span class="menu-sigla">' + escapar(SUFIXO[t.slug] || t.nome.charAt(0)) + '</span>');
+    // A marca desenhada usa fill:currentColor, então herda a cor de destaque
+    // do tema — o polegar do Facebook sai azul, não cinza.
+    return '<span class="menu-previa" style="background:' + c.fundo +
+           ';color:' + c.ciano + '">' + dentro + '</span>';
+  }
+
+  // A hora é a de AGORA, não uma fixa bonita. Num painel que existe para dizer
+  // as horas, um relógio de enfeite marcando 12:17 às quatro da tarde seria a
+  // primeira coisa a mentir na tela.
+  var d = new Date(Date.now() + deslocamento);
+  return '<span class="menu-previa previa-hora" style="background:' + c.fundo +
+         ';color:' + (t.slug === 'matrix' ? c.ciano : c.texto) + '">' +
+           dois(d.getHours()) + ':' + dois(d.getMinutes()) +
+         '</span>';
 }
 
-/* Os créditos e o seletor são DUAS coisas — ler sobre o painel e mexer nele —
- * e por isso viraram dois quadros em vez de duas faixas do mesmo. No Windows
- * 95 e no XP cada um é uma janela de verdade, pousada no papel de parede, e a
- * tela por baixo se apaga para deixar as duas aparecerem; nos outros temas
- * são dois cartões soltos, a mesma linguagem do painel.
- *
- * `dica` só aparece na janela de cima, e só no 95 e no XP: lá a moldura da
- * tela some junto com o "toque para voltar" dela, e sem essa linha a saída
- * ficaria sem aviso nenhum.
- */
-function quadro(titulo, dentro, classe, dica) {
-  return '<section class="quadro quadro-' + classe + '">' +
-           '<header class="quadro-topo">' +
-             '<h3>' + titulo + '</h3>' +
-             (dica ? '<span class="voltar so-janela">toque para voltar</span>' : '') +
-           '</header>' +
-           '<div class="quadro-corpo">' + dentro + '</div>' +
-         '</section>';
+function desenharMenu() {
+  var lista = $('menu-lista');
+  if (!TEMAS_DISP.length) {
+    lista.innerHTML = '<div class="menu-vazio">a lista de temas não chegou do Mac</div>';
+    return;
+  }
+  var atual = temaAtual();
+  lista.innerHTML = TEMAS_DISP.map(function (t) {
+    return '<button class="menu-item' + (t.slug === atual ? ' ativo' : '') +
+             '" data-tema-slug="' + t.slug + '">' +
+             previaDe(t) +
+             '<span class="menu-rot">' +
+               '<span class="menu-nome">' + escapar(t.nome) + '</span>' +
+               '<span class="menu-ativo">ativo</span>' +
+             '</span>' +
+           '</button>';
+  }).join('');
+}
+
+function abrirMenu() {
+  menuAberto = true;
+  desenharMenu();
+  $('menu').hidden = false;
+  // Mesma marca que a tela de detalhe usa: os temas do Windows precisam saber
+  // que há algo aberto para manter a barra de tarefas visível por baixo.
+  document.documentElement.classList.add('menu-aberto');
+}
+
+function fecharMenu() {
+  if (!menuAberto) return;
+  menuAberto = false;
+  $('menu').hidden = true;
+  document.documentElement.classList.remove('menu-aberto');
 }
 
 function escolherTema(slug) {
+  // Escolheu, fecha. O menu existe para tomar uma decisão, e depois de tomada
+  // ele vira obstáculo entre você e o painel que acabou de mudar de cara.
+  fecharMenu();
   if (slug === temaAtual()) return;
 
   /* Pinta antes de perguntar. A resposta volta pelo SSE em menos de um
@@ -1347,31 +1382,16 @@ function escolherTema(slug) {
    * falhar o próximo empurrão devolve o tema de verdade — a mentira dura um
    * ciclo e se desfaz sozinha. */
   document.documentElement.setAttribute('data-tema', slug);
-  marcarTemaAtivo(slug);
 
   var x = new XMLHttpRequest();
   x.open('POST', '/tema', true);
   x.setRequestHeader('Content-Type', 'application/json');
   x.onload = function () {
     if (x.status === 200) return;
-    // Não deu: desfaz na hora em vez de deixar a forma de um tema com a cor
-    // de outro até o próximo empurrão.
     document.documentElement.setAttribute('data-tema', temaAtual());
-    marcarTemaAtivo(temaAtual());
   };
   x.onerror = x.onload;
   x.send(JSON.stringify({ tema: slug }));
-}
-
-// A tela de créditos é desenhada uma vez e não se redesenha a cada empurrão,
-// então a pílula ativa é acertada à mão — inclusive quando quem trocou o tema
-// foi o painel de controle, do outro lado.
-function marcarTemaAtivo(slug) {
-  var bs = document.querySelectorAll('[data-tema-slug]');
-  for (var i = 0; i < bs.length; i++) {
-    var meu = bs[i].getAttribute('data-tema-slug') === slug;
-    bs[i].className = 'tema-btn' + (meu ? ' ativo' : '');
-  }
 }
 
 function telaSobre() {
@@ -1385,7 +1405,7 @@ function telaSobre() {
            '<span class="val">' + escapar(c[1]) + '</span></div>';
   }).join('');
 
-  var corpo = '<div class="sobre">' +
+  return '<div class="sobre">' +
     '<div class="sobre-txt">' +
       '<p class="lead">Um tablet Android de 2015 virou painel de mesa.</p>' +
       '<p>O Mac reúne agenda, clima, mensagens, pull requests e o estado das ' +
@@ -1405,11 +1425,6 @@ function telaSobre() {
       links +
     '</div>' +
   '</div>';
-
-  return '<div class="tela-sobre">' +
-           quadro('O projeto', corpo, 'sobre', true) +
-           blocoTemas() +
-         '</div>';
 }
 
 /* A tela do monitor: quem está comendo a máquina.
@@ -1723,6 +1738,7 @@ function fecharTela() {
 var modoHora = false;
 
 function entrarModoHora() {
+  fecharMenu();   // a hora toma a tela inteira; o menu ficaria flutuando nela
   modoHora = true;
   document.documentElement.classList.add('modo-hora-on');
   $('modo-hora').hidden = false;
@@ -1741,11 +1757,15 @@ document.addEventListener('click', function (ev) {
   // clique que importa é o que sai dele.
   if (modoHora) { sairModoHora(); return; }
 
-  // O seletor de tema vem antes do "clique em tela aberta fecha a tela".
-  // Depois dele, escolher um tema só fecharia os créditos.
+  /* A ordem aqui é a ordem das camadas na tela, da mais de cima para a mais
+   * de baixo. Escolher um tema tem que ser lido ANTES de "clique com algo
+   * aberto fecha o que está aberto", senão o toque no tema só fecharia o
+   * menu; e fechar o menu tem que vir antes da tela, porque o menu abre por
+   * cima dela. */
   var btn = subirAte(ev.target, 'data-tema-slug');
   if (btn) { escolherTema(btn.getAttribute('data-tema-slug')); return; }
 
+  if (menuAberto) { fecharMenu(); return; }
   if (telaAberta) { fecharTela(); return; }
 
   var alvo = ev.target;
@@ -1756,6 +1776,9 @@ document.addEventListener('click', function (ev) {
     }
     alvo = alvo.parentNode;
   }
+  var config = subirAte(ev.target, 'data-menu');
+  if (config) { abrirMenu(); return; }
+
   var aberto = subirAte(ev.target, 'data-tela');
   if (aberto) abrirTela(aberto.getAttribute('data-tela'));
 });

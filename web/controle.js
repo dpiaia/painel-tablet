@@ -72,7 +72,7 @@ const GRUPOS_COR = [
 /* A tabela de temas NÃO mora mais aqui.
  *
  * Ela morava, enquanto o controle era a única tela que trocava tema. Agora a
- * tela de créditos do tablet também troca, e duas cópias das mesmas oito
+ * menu de configurações do tablet também troca, e duas cópias das mesmas oito
  * paletas em dois arquivos JS divergem na primeira vez que alguém acerta um
  * verde e esquece a outra. O dono passou a ser temas.py, no servidor; as duas
  * telas buscam de /temas.json e nenhuma tem opinião sobre o assunto.
