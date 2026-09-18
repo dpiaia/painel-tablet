@@ -31,10 +31,31 @@ h1{font-size:19px;font-weight:650;letter-spacing:-.01em}
 
 /* --------------------------------------------------------- coluna fixa */
 aside{position:sticky;top:20px;background:var(--painel);
-      border:1px solid var(--linha);border-radius:var(--r);padding:16px}
+      border:1px solid var(--linha);border-radius:var(--r);padding:14px;
+      display:flex;flex-direction:column;gap:14px}
+
+/* ------------------------------------------------------------ navegação
+   Sete seções empilhadas viravam uma página de rolagem longa, e mexer numa
+   cor exigia passar por tudo. Uma de cada vez, escolhida aqui. */
+nav{display:flex;flex-direction:column;gap:2px}
+nav button{display:flex;align-items:center;gap:10px;width:100%;
+           background:none;border:0;border-radius:8px;cursor:pointer;
+           padding:9px 10px;color:var(--mudo);font:14px/1 system-ui,sans-serif;
+           text-align:left;transition:background .12s,color .12s}
+nav button:hover{background:var(--alto);color:var(--txt)}
+nav button.ativo{background:var(--alto);color:var(--txt);font-weight:600;
+                 box-shadow:inset 2px 0 0 var(--ciano)}
+nav button .ico{width:18px;text-align:center;font-size:14px;opacity:.85}
+nav button .aviso{margin-left:auto;width:7px;height:7px;border-radius:50%;
+                  background:var(--laranja);display:none}
+nav button.tem-aviso .aviso{display:block}
+
+.divisor{height:1px;background:var(--linha);margin:2px 0}
+.rodape-lado{margin-top:auto;display:flex;flex-direction:column;gap:8px}
 
 /* ------------------------------------------------------------- seções */
 main{display:flex;flex-direction:column;gap:20px}
+section[hidden]{display:none}
 section{background:var(--painel);border:1px solid var(--linha);
         border-radius:var(--r);padding:18px 20px}
 h2{font:600 11px var(--mono);letter-spacing:.18em;color:var(--mudo);
@@ -146,53 +167,62 @@ button:disabled{opacity:.3;cursor:default}
 </div>
 
 <aside>
-  <h2>ESTADO</h2>
-  <p class="sobre">Atualiza sozinho a cada 15s.</p>
-  <div id="diag"></div>
-  <div class="acoes">
+  <nav id="nav"></nav>
+
+  <!-- Fora da navegação de propósito: são ações, não lugares. E as duas de
+       cima servem em qualquer seção — quem está mexendo em cor também quer
+       mandar para o tablet sem voltar ao "Estado". -->
+  <div class="rodape-lado">
+    <div class="divisor"></div>
     <button onclick="atualizarPainel()">Atualizar painel</button>
-    <button onclick="verDiag()">Rever diagnóstico</button>
     <button id="btRecarregar" onclick="recarregar()">Recarregar o tablet</button>
+    <div id="passos"></div>
   </div>
-  <div id="passos"></div>
 </aside>
 
 <main>
-  <section>
+  <section data-sec="estado">
+    <h2>ESTADO</h2>
+    <p class="sobre">Atualiza sozinho a cada 15s.</p>
+    <div id="diag"></div>
+    <div class="acoes"><button onclick="verDiag()">Rever agora</button></div>
+  </section>
+
+  <section data-sec="identidade">
     <h2>IDENTIDADE</h2>
     <div id="marca"></div>
   </section>
 
-  <section>
+  <section data-sec="cartoes">
     <h2>O QUE APARECE</h2>
     <p class="sobre">Ligue, desligue e reordene. Muda no tablet na hora.</p>
     <div id="cartoes"></div>
   </section>
 
-  <section>
+  <section data-sec="fontes">
     <h2>FONTES DE DADOS</h2>
     <p class="sobre">De onde vem o conteúdo e de quanto em quanto tempo.</p>
     <div id="fontes"></div>
   </section>
 
-  <section>
+  <section data-sec="recado">
     <h2>RECADO</h2>
     <p class="sobre">Um texto seu na tela. Ligue o cartão "Recado" acima.</p>
     <div id="recado"></div>
   </section>
 
-  <section>
+  <section data-sec="fundo">
     <h2>PAPEL DE PAREDE</h2>
     <div id="fundos"></div>
   </section>
 
-  <section>
+  <section data-sec="ritmo">
     <h2>RITMO</h2>
     <p class="sobre">Quanto tempo cada coisa fica antes de mudar.</p>
     <div id="tempos"></div>
   </section>
 
-  <section>
+  <section data-sec="cores">
     <h2>CORES</h2>
     <p class="sobre">A folha de estilo inteira usa estas variáveis.</p>
     <div id="temas" class="temas"></div>

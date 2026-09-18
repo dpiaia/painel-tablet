@@ -149,6 +149,56 @@ function atualizarPainel() {
   location.replace('/controle?r=' + Date.now());
 }
 
+/* ---------------------------------------------------------- navegação
+ *
+ * Sete seções empilhadas viravam uma rolagem longa: mexer numa cor exigia
+ * passar por identidade, cartões, fontes, recado, papel de parede e ritmo. A
+ * barra lateral mostra uma de cada vez.
+ *
+ * A escolha fica no localStorage porque "Atualizar painel" recarrega a página
+ * inteira — sem isso, toda atualização jogava você de volta na primeira seção,
+ * justamente quando você estava iterando numa.
+ */
+const SECOES = [
+  ['estado',     'Estado',          '\u25C9'],
+  ['identidade', 'Identidade',      '\u2318'],
+  ['cartoes',    'O que aparece',   '\u25A6'],
+  ['fontes',     'Fontes de dados', '\u21C4'],
+  ['recado',     'Recado',          '\u270E'],
+  ['fundo',      'Papel de parede', '\u25A3'],
+  ['ritmo',      'Ritmo',           '\u23F1'],
+  ['cores',      'Cores e temas',   '\u25D0'],
+];
+
+function secaoGuardada() {
+  try { return localStorage.getItem('controle-secao') || 'estado'; }
+  catch (e) { return 'estado'; }
+}
+
+function mostrarSecao(id) {
+  document.querySelectorAll('main section').forEach(s => {
+    s.hidden = s.getAttribute('data-sec') !== id;
+  });
+  document.querySelectorAll('#nav button').forEach(b => {
+    b.classList.toggle('ativo', b.getAttribute('data-sec') === id);
+  });
+  try { localStorage.setItem('controle-secao', id); } catch (e) {}
+}
+
+function desenharNav() {
+  const nav = document.getElementById('nav');
+  nav.innerHTML = '';
+  SECOES.forEach(([id, nome, ico]) => {
+    const b = document.createElement('button');
+    b.setAttribute('data-sec', id);
+    b.innerHTML = '<span class="ico">' + ico + '</span>' + nome +
+                  '<span class="aviso"></span>';
+    b.onclick = () => mostrarSecao(id);
+    nav.appendChild(b);
+  });
+  mostrarSecao(secaoGuardada());
+}
+
 /* ------------------------------------------------------------- pedaços */
 function chave(ligado, aoMudar) {
   const l = document.createElement('label');
@@ -483,6 +533,13 @@ async function verDiag() {
     '<span class="txt">' + i.texto + '</span>' +
     '<span class="quando">' + (i.idade == null ? '' : idade(i.idade)) + '</span></div>'
   ).join('');
+
+  // Antes o diagnóstico ficava sempre à vista na lateral. Agora é uma seção
+  // entre sete, e um adb caído passaria despercebido até alguém ir olhar — o
+  // ponto no menu devolve o aviso que a barra dava de graça.
+  const ruim = d.itens.some(i => i.estado === 'ruim' || i.estado === 'aviso');
+  const bt = document.querySelector('#nav button[data-sec="estado"]');
+  if (bt) bt.classList.toggle('tem-aviso', ruim);
 }
 
 // O adb cai sozinho o tempo todo. Antes o botão piscava e nada acontecia;
@@ -520,6 +577,7 @@ async function iniciar() {
     headers:{'Content-Type':'application/json'}, body:'{}'})).json();
   fontes = d.fontes || {};
 
+  desenharNav();
   desenharMarca(); desenharCartoes(); desenharFontes(); desenharRecado();
   desenharFundos();
   desenharTempos(); desenharTemas(); desenharCores(); verDiag();
