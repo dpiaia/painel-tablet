@@ -665,18 +665,19 @@ PR antigo volta ao topo só porque alguém comentou nele. Por isso o `mergedAt`
 também tem que ser da última hora — sem isso, comentário em PR de semana
 passada viraria comemoração de merge.
 
-### Os octocats ficam fora do repositório
+### Os octocats vêm junto, mas não sob a MIT
 
-`ferramentas/baixar_octodex.py` traz os octocats do Octodex para
-`web/octodex/`, usados no cartão vazio e nas cenas de pull request. A pasta
-está no `.gitignore`, de propósito.
+Os octocats do Octodex vêm no repositório, para o painel funcionar assim que
+alguém clona. Eles aparecem no cartão vazio e nas cenas de pull request.
 
-O FAQ do Octodex permite usar as imagens para **se referir à GitHub** — que é
-exatamente o que o painel faz, já que elas só aparecem em contexto de GitHub.
-Mas o mesmo FAQ diz que tudo ali é "official GitHub artwork and is under
-GitHub's trademark license". Commitar as imagens aqui seria republicar arte de
-terceiros sob a licença MIT deste repositório, que não é nossa para dar. O
-script resolve os dois lados: o código circula, e cada um busca as imagens na
+Mas **não estão sob a licença MIT**, e isso está escrito em `TERCEIROS.md` e no
+próprio `LICENSE`. O FAQ do Octodex permite usar as imagens para *se referir à
+GitHub* — que é o que o painel faz, já que elas só aparecem em contexto de
+GitHub — e diz que tudo ali é "official GitHub artwork under GitHub's trademark
+license". Incluir os arquivos sem dizer isso seria relicenciar arte de terceiros
+por omissão; com a ressalva escrita, quem clona sabe o que está pegando.
+
+`ferramentas/baixar_octodex.py` continua ali para atualizar ou rebaixar tudo da
 fonte.
 
 Elas também ficam **locais** em vez de apontar para `octodex.github.com`. O

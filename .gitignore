@@ -10,13 +10,6 @@ web/modo.txt
 .DS_Store
 __pycache__/
 
-# Octocats do Octodex: arte da GitHub, não nossa para relicenciar sob MIT.
-# O FAQ deles permite usar para se referir à GitHub — que é o que o painel faz
-# — mas as imagens continuam sendo "official GitHub artwork under GitHub's
-# trademark license". Então o repositório traz o script e cada um busca na
-# fonte: python3 ferramentas/baixar_octodex.py
-web/octodex/
-
 # Papéis de parede: imagens do usuário, não do projeto.
 web/fundos/*
 !web/fundos/LEIA-ME.md
