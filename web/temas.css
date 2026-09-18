@@ -828,3 +828,111 @@
   color: #ffffff;
   text-shadow: 0 0.12vw 0.6vw rgba(0, 0, 0, 0.55);
 }
+
+
+/* ==================================== créditos: duas janelas no 95 e no XP
+ *
+ * A tela dos créditos é a única que já chega com dois quadros próprios — o
+ * texto e o seletor de tema. Nestes dois temas eles viram janelas de verdade
+ * sobre o papel de parede, e para isso a moldura da TELA precisa sair da
+ * frente: uma janela dentro de outra janela não é o que o Windows fazia.
+ *
+ * Some a moldura e some junto o "toque para voltar" dela — por isso a janela
+ * de cima acende o aviso próprio (.so-janela), que fica escondido nos outros
+ * temas, onde a barra da tela continua no lugar.
+ */
+[data-tema="win95"] .tela[data-tela-tipo="sobre"],
+[data-tema="xp"]    .tela[data-tela-tipo="sobre"] {
+  background: none;
+  border: 0;
+  padding: 0;
+  box-shadow: none;
+}
+[data-tema="win95"] .tela[data-tela-tipo="sobre"] > header,
+[data-tema="xp"]    .tela[data-tela-tipo="sobre"] > header { display: none; }
+[data-tema="win95"] .tela[data-tela-tipo="sobre"] .tela-corpo,
+[data-tema="xp"]    .tela[data-tela-tipo="sobre"] .tela-corpo { padding: 0; }
+
+[data-tema="win95"] .quadro-topo .so-janela,
+[data-tema="xp"]    .quadro-topo .so-janela { display: block; }
+
+[data-tema="win95"] .quadro-sobre,
+[data-tema="xp"]    .quadro-sobre { margin-bottom: 1.6vw; }
+[data-tema="win95"] .quadro-corpo,
+[data-tema="xp"]    .quadro-corpo { padding: 0 1.2vw 1.2vw; }
+[data-tema="win95"] .quadro-topo::after,
+[data-tema="xp"]    .quadro-topo::after {
+  content: '\00d7';
+  margin-left: 1vw;
+  line-height: 1;
+  flex: none;
+}
+
+/* ---------------------------------------------------------- Windows 95 */
+[data-tema="win95"] .quadro {
+  background: var(--cartao);
+  border: 0;
+  border-radius: 0;
+  padding: 0.35vw;
+  box-shadow: inset -1px -1px 0 #000000, inset 1px 1px 0 #ffffff,
+              inset -2px -2px 0 #808080, inset 2px 2px 0 #dfdfdf,
+              0.3vw 0.3vw 0 rgba(0, 0, 0, 0.35);
+}
+[data-tema="win95"] .quadro-topo {
+  background: var(--azul);
+  padding: 0.4vw 0.7vw;
+  margin: 0 0 0.9vw;
+}
+[data-tema="win95"] .quadro-topo h3 {
+  color: #ffffff;
+  font-family: var(--mono);
+  font-size: 1.05vw;
+  letter-spacing: 0.08em;
+}
+[data-tema="win95"] .quadro-topo .voltar { color: rgba(255, 255, 255, 0.75); }
+[data-tema="win95"] .quadro-topo::after {
+  width: 1.5vw; height: 1.5vw;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--cartao);
+  color: #000000;
+  font-size: 1.1vw;
+  box-shadow: inset -1px -1px 0 #000000, inset 1px 1px 0 #ffffff,
+              inset -2px -2px 0 #808080, inset 2px 2px 0 #dfdfdf;
+}
+
+/* ---------------------------------------------------------- Windows XP */
+[data-tema="xp"] .quadro {
+  background: var(--cartao);
+  border: 3px solid var(--azul);
+  border-radius: 0.7vw 0.7vw 0.3vw 0.3vw;
+  padding: 0;
+  box-shadow: 0 0.4vw 1.2vw rgba(0, 0, 0, 0.35);
+}
+[data-tema="xp"] .quadro-topo {
+  background: linear-gradient(to bottom,
+              rgba(255,255,255,0.35) 0%, rgba(255,255,255,0.05) 45%,
+              rgba(0,0,0,0.10) 55%, rgba(0,0,0,0.20) 100%), var(--azul);
+  padding: 0.5vw 1vw;
+  margin: 0 0 0.9vw;
+}
+[data-tema="xp"] .quadro-topo h3 {
+  color: #ffffff;
+  font-family: var(--sans);
+  font-size: 1.1vw;
+  letter-spacing: 0.02em;
+  text-transform: none;
+  text-shadow: 1px 1px 1px rgba(0, 0, 0, 0.45);
+}
+[data-tema="xp"] .quadro-topo .voltar {
+  color: rgba(255, 255, 255, 0.8);
+  text-shadow: 1px 1px 1px rgba(0, 0, 0, 0.4);
+}
+[data-tema="xp"] .quadro-topo::after {
+  width: 1.7vw; height: 1.4vw;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 0.3vw;
+  background: linear-gradient(to bottom, #e86a5a 0%, #c8351f 100%);
+  color: #ffffff;
+  font-size: 1.1vw;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.5);
+}

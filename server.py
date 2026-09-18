@@ -23,6 +23,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 import agenda
 import claude_uso
+import temas
 import claude
 import github
 import maquina
@@ -599,6 +600,36 @@ class Handler(BaseHTTPRequestHandler):
         return self._json({"ok": True, "painel": painel,
                            "fontes": {k: cfg.get(k) for k in FONTES_EDITAVEIS}})
 
+    def _trocar_tema(self):
+        """Troca o tema inteiro a partir do slug. É o ÚNICO POST que a rede faz.
+
+        Por que ele foge do `eh_local` que protege /ajustes: o seletor mora na
+        tela de créditos do TABLET, e o tablet chega pelo Wi-Fi. Sem exceção
+        não haveria seletor.
+
+        A exceção é estreita de propósito, e o estreito é o que a torna
+        aceitável. Este endpoint não aceita um corpo de ajustes: aceita UM
+        slug, confere contra a lista fechada de temas.py e escreve duas
+        chaves. Não dá para desligar cartão, mudar token, apontar outro repo
+        nem gravar arquivo. O pior que alguém na rede de casa consegue é
+        deixar o painel verde.
+
+        Escreve `cores` junto com `tema` porque são as duas metades da mesma
+        escolha — a paleta e a forma. Quem quiser continuar no Windows 95 e
+        mexer só no verde faz isso depois, pelo controle: `cores` continua
+        sendo uma seção própria.
+        """
+        pedido = self._corpo(1024)
+        if not isinstance(pedido, dict):
+            return self.send_error(400, "json invalido")
+        tema = temas.por_slug(pedido.get("tema"))
+        if not tema:
+            return self.send_error(400, "tema desconhecido")
+
+        with _trava_config:
+            return self._gravar_ajustes({"tema": tema["slug"],
+                                         "cores": dict(tema["cores"])})
+
     def _uso_empurrado(self):
         """Uma sessão do Claude Code manda o que o disco não sabe.
 
@@ -703,6 +734,8 @@ class Handler(BaseHTTPRequestHandler):
             return self._ajustes()
         if rota == "/acao":
             return self._acao()
+        if rota == "/tema":
+            return self._trocar_tema()
         if rota == "/uso":
             return self._uso_empurrado()
         if rota == "/fundo":
@@ -744,6 +777,13 @@ class Handler(BaseHTTPRequestHandler):
             return self._sse()
         if rota == "/api/estado":
             return self._json(retrato())
+        if rota == "/temas.json":
+            # Aberto de propósito: é catálogo, não configuração. Quem desenha
+            # o seletor — o controle no Mac e a tela de créditos no tablet —
+            # busca uma vez e guarda. Fora do SSE porque não muda: mandar as
+            # oito paletas em cada empurrão custaria mais de um KB a cada
+            # quinze segundos para dizer sempre a mesma coisa.
+            return self._json({"temas": temas.LISTA, "padrao": temas.PADRAO})
         if rota == "/controle":
             if not eh_local(self):
                 return self.send_error(403, "o controle so abre no proprio Mac")

@@ -1248,6 +1248,132 @@ var LINKS = [
   ['e-mail',    'denis@piaianet.com']
 ];
 
+
+/* ------------------------------------------------ seletor de tema (créditos)
+ *
+ * Este é o único lugar do tablet onde um toque MUDA alguma coisa. A regra da
+ * casa é "toque expande, nunca age" — o tablet é vidro, e nada nele marca
+ * e-mail como lido nem responde ao Claude. A troca de tema é a exceção porque
+ * não age sobre o mundo: muda como o próprio vidro se parece, para quem já
+ * está na frente dele. Levantar da mesa e ir até o Mac para trocar uma cor
+ * era a única coisa que o painel pedia e não precisava pedir.
+ *
+ * A tabela não mora aqui. O servidor manda as oito paletas em /temas.json,
+ * buscadas uma vez, e o tablet devolve só o SLUG — ele nunca precisa saber
+ * que "Windows 95" tem um teal no fundo.
+ */
+var TEMAS_DISP = [];
+
+function carregarTemas() {
+  var x = new XMLHttpRequest();
+  x.open('GET', '/temas.json', true);
+  x.onload = function () {
+    if (x.status !== 200) return;
+    try { TEMAS_DISP = (JSON.parse(x.responseText) || {}).temas || []; }
+    catch (e) { return; }
+    // Se os créditos já estavam abertos quando a resposta chegou, redesenha:
+    // o quadro tinha nascido com o aviso de "sem lista".
+    if (telaAberta === 'sobre') $('tela-corpo').innerHTML = telaSobre();
+  };
+  x.send();
+}
+
+function diluir(hex, alfa) {
+  var h = (hex || '').replace('#', '');
+  if (h.length !== 6) return 'transparent';
+  return 'rgba(' + parseInt(h.substr(0, 2), 16) + ',' +
+                   parseInt(h.substr(2, 2), 16) + ',' +
+                   parseInt(h.substr(4, 2), 16) + ',' + alfa + ')';
+}
+
+function temaAtual() {
+  return (estado.ajustes && estado.ajustes.tema) || 'escuro';
+}
+
+function blocoTemas() {
+  if (!TEMAS_DISP.length) {
+    return quadro('Tema',
+      '<div class="uso-ausente">a lista de temas não chegou do Mac</div>', 'temas');
+  }
+  var atual = temaAtual();
+  var botoes = TEMAS_DISP.map(function (t) {
+    var c = t.cores || {};
+    // A cor de identidade pinta a pílula inteira — a faixa cheia à esquerda e
+    // o fundo bem diluído — em vez de virar três quadradinhos para decifrar.
+    // As três amostras ficam, mas como confirmação, não como legenda.
+    return '<button class="tema-btn' + (t.slug === atual ? ' ativo' : '') +
+             '" data-tema-slug="' + t.slug + '" style="border-color:' +
+             diluir(t.cor, t.slug === atual ? 1 : 0.35) + ';background:' +
+             diluir(t.cor, t.slug === atual ? 0.26 : 0.12) + '">' +
+             '<span class="faixa" style="background:' + t.cor + '"></span>' +
+             '<span class="amostra">' +
+               '<i style="background:' + c.fundo + '"></i>' +
+               '<i style="background:' + c.cartao + '"></i>' +
+               '<i style="background:' + c.ciano + '"></i>' +
+             '</span>' + escapar(t.nome) +
+           '</button>';
+  }).join('');
+
+  return quadro('Tema', '<div class="tema-lista">' + botoes + '</div>', 'temas');
+}
+
+/* Os créditos e o seletor são DUAS coisas — ler sobre o painel e mexer nele —
+ * e por isso viraram dois quadros em vez de duas faixas do mesmo. No Windows
+ * 95 e no XP cada um é uma janela de verdade, pousada no papel de parede, e a
+ * tela por baixo se apaga para deixar as duas aparecerem; nos outros temas
+ * são dois cartões soltos, a mesma linguagem do painel.
+ *
+ * `dica` só aparece na janela de cima, e só no 95 e no XP: lá a moldura da
+ * tela some junto com o "toque para voltar" dela, e sem essa linha a saída
+ * ficaria sem aviso nenhum.
+ */
+function quadro(titulo, dentro, classe, dica) {
+  return '<section class="quadro quadro-' + classe + '">' +
+           '<header class="quadro-topo">' +
+             '<h3>' + titulo + '</h3>' +
+             (dica ? '<span class="voltar so-janela">toque para voltar</span>' : '') +
+           '</header>' +
+           '<div class="quadro-corpo">' + dentro + '</div>' +
+         '</section>';
+}
+
+function escolherTema(slug) {
+  if (slug === temaAtual()) return;
+
+  /* Pinta antes de perguntar. A resposta volta pelo SSE em menos de um
+   * segundo, mas num tablet de 2015 um botão que só reage quando a rede reage
+   * parece quebrado, e o dedo aperta de novo. Aqui só a forma é antecipada
+   * (data-tema); a paleta vem do servidor junto com o resto, e se o POST
+   * falhar o próximo empurrão devolve o tema de verdade — a mentira dura um
+   * ciclo e se desfaz sozinha. */
+  document.documentElement.setAttribute('data-tema', slug);
+  marcarTemaAtivo(slug);
+
+  var x = new XMLHttpRequest();
+  x.open('POST', '/tema', true);
+  x.setRequestHeader('Content-Type', 'application/json');
+  x.onload = function () {
+    if (x.status === 200) return;
+    // Não deu: desfaz na hora em vez de deixar a forma de um tema com a cor
+    // de outro até o próximo empurrão.
+    document.documentElement.setAttribute('data-tema', temaAtual());
+    marcarTemaAtivo(temaAtual());
+  };
+  x.onerror = x.onload;
+  x.send(JSON.stringify({ tema: slug }));
+}
+
+// A tela de créditos é desenhada uma vez e não se redesenha a cada empurrão,
+// então a pílula ativa é acertada à mão — inclusive quando quem trocou o tema
+// foi o painel de controle, do outro lado.
+function marcarTemaAtivo(slug) {
+  var bs = document.querySelectorAll('[data-tema-slug]');
+  for (var i = 0; i < bs.length; i++) {
+    var meu = bs[i].getAttribute('data-tema-slug') === slug;
+    bs[i].className = 'tema-btn' + (meu ? ' ativo' : '');
+  }
+}
+
 function telaSobre() {
   var links = LINKS.map(function (l) {
     return '<div class="link"><span class="rot">' + l[0] + '</span>' +
@@ -1259,7 +1385,7 @@ function telaSobre() {
            '<span class="val">' + escapar(c[1]) + '</span></div>';
   }).join('');
 
-  return '<div class="sobre">' +
+  var corpo = '<div class="sobre">' +
     '<div class="sobre-txt">' +
       '<p class="lead">Um tablet Android de 2015 virou painel de mesa.</p>' +
       '<p>O Mac reúne agenda, clima, mensagens, pull requests e o estado das ' +
@@ -1279,6 +1405,11 @@ function telaSobre() {
       links +
     '</div>' +
   '</div>';
+
+  return '<div class="tela-sobre">' +
+           quadro('O projeto', corpo, 'sobre', true) +
+           blocoTemas() +
+         '</div>';
 }
 
 /* A tela do monitor: quem está comendo a máquina.
@@ -1556,6 +1687,10 @@ function abrirTela(tipo) {
   telaAte = Date.now() + T.tela * 1000;
   $('tela-titulo').textContent = t.titulo;
   $('tela-corpo').innerHTML = t.render();
+  // Qual tela está aberta vira atributo: é assim que o Windows 95 e o XP
+  // sabem apagar a própria moldura só nos créditos, onde o conteúdo já traz
+  // duas janelas suas.
+  $('tela').setAttribute('data-tela-tipo', tipo);
   $('tela').hidden = false;
   // Classe em vez de estilo embutido: assim um tema pode decidir o contrário.
   // No Windows 95 e no XP a tela vira uma janela, e a barra de tarefas tem que
@@ -1605,6 +1740,12 @@ document.addEventListener('click', function (ev) {
   // O modo relógio vem antes de tudo: enquanto ele está ligado, o único
   // clique que importa é o que sai dele.
   if (modoHora) { sairModoHora(); return; }
+
+  // O seletor de tema vem antes do "clique em tela aberta fecha a tela".
+  // Depois dele, escolher um tema só fecharia os créditos.
+  var btn = subirAte(ev.target, 'data-tema-slug');
+  if (btn) { escolherTema(btn.getAttribute('data-tema-slug')); return; }
+
   if (telaAberta) { fecharTela(); return; }
 
   var alvo = ev.target;
@@ -1615,15 +1756,19 @@ document.addEventListener('click', function (ev) {
     }
     alvo = alvo.parentNode;
   }
-  alvo = ev.target;
-  while (alvo && alvo !== document.body) {
-    if (alvo.getAttribute && alvo.getAttribute('data-tela')) {
-      abrirTela(alvo.getAttribute('data-tela'));
-      return;
-    }
-    alvo = alvo.parentNode;
-  }
+  var aberto = subirAte(ev.target, 'data-tela');
+  if (aberto) abrirTela(aberto.getAttribute('data-tela'));
 });
+
+// Sobe do que foi tocado até quem carrega o atributo. O dedo acerta o texto
+// ou o ícone dentro do botão, quase nunca o botão.
+function subirAte(el, atributo) {
+  while (el && el !== document.body) {
+    if (el.getAttribute && el.getAttribute(atributo)) return el;
+    el = el.parentNode;
+  }
+  return null;
+}
 
 /* ================================================================ ajustes */
 // O que o painel de controle define chega pelo mesmo SSE do resto. Aplicar é
@@ -2317,6 +2462,7 @@ window.addEventListener('resize', function () {
 })();
 
 ultimoSinal = Date.now();
+carregarTemas();
 conectar();
 tique();
 setInterval(tique, 1000);

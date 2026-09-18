@@ -574,7 +574,11 @@ body { display: flex; flex-direction: column; }
 
 /* ===================================================== tela de detalhe */
 /* Toque expande, nunca age: o tablet é só vidro. Nenhum controle daqui
-   altera nada — nem marca e-mail como lido, nem responde ao Claude. */
+   altera nada — nem marca e-mail como lido, nem responde ao Claude.
+
+   A única exceção é o seletor de tema nos créditos (.tema-btn), e ela cabe na
+   regra em vez de quebrá-la: ele não age sobre o mundo, muda como o próprio
+   vidro se parece, para quem já está na frente dele. */
 .toque { cursor: pointer; }
 .toque:active { border-color: var(--ciano); }
 
@@ -1324,6 +1328,88 @@ body { display: flex; flex-direction: column; }
   line-height: 1.5;
 }
 .nota-proc b { color: var(--apagado); font-weight: 600; }
+
+
+/* ------------------------------------------ créditos + seletor de tema */
+/* A tela dos créditos são dois quadros empilhados: o texto em cima, tomando o
+   que sobra, e o seletor embaixo com a altura do conteúdo. Sem este pai em
+   coluna, .sobre (height:100%) comia a tela inteira e o seletor morria no
+   overflow:hidden do .tela-corpo. */
+.tela-sobre { display: flex; flex-direction: column; height: 100%; }
+.quadro {
+  display: flex;
+  flex-direction: column;
+  flex: none;
+  min-height: 0;
+  background: var(--cartao);
+  border: 1px solid var(--borda);
+  border-radius: var(--raio);
+  overflow: hidden;
+}
+.quadro-sobre { flex: 1; margin-bottom: 1.2vw; }   /* sem gap: Chrome 64 */
+.quadro-corpo { flex: 1; min-height: 0; padding: 1.4vw 1.6vw; }
+.quadro-sobre .sobre { height: 100%; }
+
+.quadro-topo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex: none;
+  padding: 0.9vw 1.6vw 0;
+}
+.quadro-topo h3 {
+  font-family: var(--mono);
+  font-size: 0.9vw;
+  font-weight: 400;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--apagado);
+}
+/* Só as janelas do 95 e do XP mostram a saída: nos outros temas ela continua
+   na barra da própria tela, e repetir seria dizer duas vezes. */
+.quadro-topo .so-janela { display: none; }
+
+.tema-lista { display: flex; flex-wrap: wrap; }
+
+/* Alvo de dedo, não de mouse: 3.4vw de altura dá ~39px no Tab E, acima do
+   mínimo confortável de toque. A cor do próprio tema pinta a pílula — faixa
+   cheia à esquerda, fundo bem diluído — em vez de virar três quadradinhos
+   para decifrar. As amostras ficam como confirmação, não como legenda.
+
+   O tom diluído vem do JS, em rgba(): color-mix() é do Chrome 111 e este
+   painel roda em 64. */
+.tema-btn {
+  display: flex;
+  align-items: center;
+  position: relative;
+  overflow: hidden;
+  height: 3.4vw;
+  padding: 0 1.1vw 0 1.4vw;
+  margin: 0 0.7vw 0.7vw 0;   /* sem gap: Chrome 64 */
+  border: 1px solid var(--borda);
+  border-radius: 10vw;
+  background: var(--dentro);
+  color: var(--texto);
+  font-family: var(--sans);
+  font-size: 1.05vw;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.tema-btn .faixa {
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 0.5vw;
+}
+.tema-btn .amostra {
+  display: flex;
+  border-radius: 10vw;
+  overflow: hidden;
+  flex: none;
+  margin-right: 0.7vw;
+}
+.tema-btn .amostra i { width: 0.75vw; height: 1.5vw; }
+.tema-btn.ativo { font-weight: 700; }
+.tema-btn:active { transform: scale(0.97); }
 
 
 /* -------------------------------------------- monitor do Claude (tela) */

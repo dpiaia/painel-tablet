@@ -69,71 +69,16 @@ const GRUPOS_COR = [
                    ['vermelho','Ruim'],['azul','Crachá']]],
 ];
 
-const PADRAO_CORES = {fundo:'#000000',cartao:'#0c0d10',dentro:'#131620',borda:'#1d1f26',
-  texto:'#ffffff',apagado:'#7c8089',fraco:'#4a4d55',ciano:'#22d3ee',azul:'#3b82f6',
-  verde:'#22c55e',laranja:'#f59e0b',vermelho:'#ef4444'};
-
-// Cada tema é só um conjunto dos 12 tokens. Nada no painel sabe que temas
-// existem — ele recebe cores e obedece.
-const TEMAS = [
-  ['Escuro', 'escuro', {fundo:'#000000',cartao:'#0c0d10',dentro:'#131620',borda:'#1d1f26',
-    texto:'#ffffff',apagado:'#7c8089',fraco:'#4a4d55',ciano:'#22d3ee',
-    azul:'#3b82f6',verde:'#22c55e',laranja:'#f59e0b',vermelho:'#ef4444'}],
-
-  ['Claro', 'claro', {fundo:'#eef1f5',cartao:'#ffffff',dentro:'#f6f8fa',borda:'#d8dee6',
-    texto:'#14181d',apagado:'#59616c',fraco:'#98a1ac',ciano:'#0e7490',
-    azul:'#2563eb',verde:'#15803d',laranja:'#b45309',vermelho:'#b91c1c'}],
-
-  ['Apple', 'apple', {fundo:'#f5f5f7',cartao:'#ffffff',dentro:'#fbfbfd',borda:'#d2d2d7',
-    texto:'#1d1d1f',apagado:'#6e6e73',fraco:'#a1a1a6',ciano:'#0071e3',
-    azul:'#0071e3',verde:'#248a3d',laranja:'#c04c00',vermelho:'#d70015'}],
-
-  // Orkut: o azul dos perfis e o rosa das comunidades, sobre fundo claro
-  ['Orkut', 'orkut', {fundo:'#e6eef8',cartao:'#ffffff',dentro:'#f2f7fd',borda:'#b8cce4',
-    texto:'#1c3d6b',apagado:'#4d76ab',fraco:'#8ba7ca',ciano:'#c0187a',
-    azul:'#6699cc',verde:'#5c8a00',laranja:'#d98c00',vermelho:'#c00000'}],
-
-  // Facebook clássico, o azul #3b5998 de antes do redesenho
-  ['Facebook', 'facebook', {fundo:'#e9ebee',cartao:'#ffffff',dentro:'#f6f7f9',borda:'#dfe3ee',
-    texto:'#1d2129',apagado:'#4b4f56',fraco:'#8d949e',ciano:'#3b5998',
-    azul:'#4267b2',verde:'#2e9e1e',laranja:'#c98a00',vermelho:'#e02a34'}],
-
-  // Windows XP Luna: o azul da barra de título sobre o bege das janelas
-  ['Windows XP', 'xp', {fundo:'#3a6ea5',cartao:'#ece9d8',dentro:'#ffffff',borda:'#7f9db9',
-    texto:'#0b0b0b',apagado:'#4a4a45',fraco:'#8a8a80',ciano:'#0054e3',
-    azul:'#0054e3',verde:'#2f8a2f',laranja:'#d07b00',vermelho:'#c00000'}],
-
-  // Matrix: fósforo verde sobre preto. Duotone total — a gravidade vira
-  // brilho, não matiz: "tudo bem" é o verde mais apagado da tela e "quebrado"
-  // é quase branco, que é como um monitor monocromático sempre avisou.
-  ['Matrix', 'matrix', {fundo:'#000000',cartao:'#020803',dentro:'#04140a',borda:'#0c4f22',
-    texto:'#33ff66',apagado:'#1f9e45',fraco:'#0f5c28',ciano:'#39ff14',
-    azul:'#00b34a',verde:'#148f3a',laranja:'#4dff7a',vermelho:'#b9ffcb'}],
-
-  // Windows 95: o cinza das janelas sobre o teal da área de trabalho
-  ['Windows 95', 'win95', {fundo:'#008080',cartao:'#c0c0c0',dentro:'#dfdfdf',borda:'#808080',
-    texto:'#000000',apagado:'#404040',fraco:'#6b6b6b',ciano:'#000080',
-    azul:'#000080',verde:'#006400',laranja:'#806000',vermelho:'#800000'}],
-];
-
-/* A cor que identifica cada tema, para a pílula no painel.
+/* A tabela de temas NÃO mora mais aqui.
  *
- * É uma DECISÃO, não um campo da paleta: no Matrix e no Apple quem identifica
- * é o destaque, no Windows 95 e no XP é a área de trabalho (o teal e o azul
- * que todo mundo lembra), e no Orkut é o rosa das comunidades, que marca mais
- * que o azul do cabeçalho. Derivar isso de uma chave fixa acertaria em uns e
- * erraria justo nos que têm cara própria.
+ * Ela morava, enquanto o controle era a única tela que trocava tema. Agora a
+ * tela de créditos do tablet também troca, e duas cópias das mesmas oito
+ * paletas em dois arquivos JS divergem na primeira vez que alguém acerta um
+ * verde e esquece a outra. O dono passou a ser temas.py, no servidor; as duas
+ * telas buscam de /temas.json e nenhuma tem opinião sobre o assunto.
  */
-const COR_DO_TEMA = {
-  escuro:   '#22d3ee',
-  claro:    '#2563eb',
-  apple:    '#0071e3',
-  orkut:    '#c0187a',
-  facebook: '#3b5998',
-  matrix:   '#39ff14',
-  win95:    '#008080',
-  xp:       '#245edb',
-};
+let PADRAO_CORES = {};
+let TEMAS = [];
 
 let painel = null, fontes = {}, pendente = null;
 
@@ -555,10 +500,9 @@ function desenharCores() {
 function desenharTemas() {
   const alvo = document.getElementById('temas');
   alvo.innerHTML = '';
-  TEMAS.forEach(([nome, slug, cores]) => {
+  TEMAS.forEach(({nome, slug, cor, cores}) => {
     const b = document.createElement('button');
     b.className = 'tema tema-cor';
-    const cor = COR_DO_TEMA[slug] || cores.ciano;
     // A cor do tema pinta a própria pílula, em vez de virar cinco quadradinhos
     // que a gente precisa decodificar. A faixa da esquerda é a cor cheia; o
     // fundo é a mesma cor bem diluída, para a pílula inteira já dizer de qual
@@ -632,7 +576,7 @@ function desenharFundos() {
   const alvo = document.getElementById('fundos');
   alvo.innerHTML = '';
   const tema = painel.tema || 'escuro';
-  const nomeTema = (TEMAS.find(t => t[1] === tema) || ['este tema'])[0];
+  const nomeTema = (TEMAS.find(t => t.slug === tema) || {nome: 'este tema'}).nome;
   const lista = disponiveis.fundos || [];
 
   const campo = document.createElement('div');
@@ -820,6 +764,12 @@ async function iniciar() {
   painel.tempos = painel.tempos || {};
   painel.cores = painel.cores || {};
   disponiveis.fundos = e.fundos || [];
+
+  // O catálogo vem do servidor, não do disco do navegador: é ele que expande
+  // o slug quando o tablet troca de tema, então é ele que tem a palavra.
+  const cat = await (await fetch('/temas.json')).json();
+  TEMAS = cat.temas || [];
+  PADRAO_CORES = cat.padrao || {};
 
   const d = await (await fetch('/ajustes', {method:'POST',
     headers:{'Content-Type':'application/json'}, body:'{}'})).json();
