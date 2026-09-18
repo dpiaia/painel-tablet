@@ -178,6 +178,56 @@
 [data-tema="facebook"] .pilula,
 [data-tema="facebook"] .chip { border-radius: 0.2vw; }
 
+/* ------------------------------------------- a barra branca do Facebook
+   Barra branca com filete embaixo, o polegar num disco azul ANTES do nome, e
+   o wifi e a bateria numa pílula cinza — o mesmo cinza de fundo que aquela
+   interface usava para separar blocos sem desenhar borda. */
+[data-tema="facebook"] .topo {
+  background: #ffffff;
+  border-bottom: 1px solid var(--borda);
+  padding: 0.5vw 1.4vw;
+  align-items: center;
+}
+
+[data-tema="facebook"] .marca {
+  display: flex;
+  align-items: center;
+  color: var(--ciano);
+}
+
+/* `order` e não `row-reverse`: reverter a direção também mudaria o lado para
+   onde os itens se empacotam, e isso morde quando o conteúdo cresce. Aqui só
+   um item muda de lugar, então é ele que carrega a instrução. */
+[data-tema="facebook"] .marca #marca-fim {
+  order: -1;
+  width: 2vw;
+  height: 2vw;
+  margin: 0 0.7vw 0 0;
+  border-radius: 50%;
+  background: var(--ciano);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+[data-tema="facebook"] .marca .sufixo {
+  width: 1.1vw;
+  height: 1.1vw;
+  margin: 0;
+  fill: #ffffff;
+  vertical-align: 0;
+}
+
+[data-tema="facebook"] .sist {
+  background: #f0f2f5;
+  border-radius: 10vw;
+  padding: 0.3vw 0.9vw;
+}
+[data-tema="facebook"] .sist .div { color: #c9ccd1; }
+[data-tema="facebook"] .selo {
+  background: #f0f2f5;
+  color: var(--verde);
+}
+
 
 /* ============================================================== Windows XP
    Cada cartão é uma janela do Luna: moldura azul de 3px, barra de título com
