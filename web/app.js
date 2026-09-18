@@ -273,6 +273,43 @@ function linhaAgenda(e) {
  * ser lido de longe. O tom do texto é uma versão bem escura da mesma cor, que
  * combina com o fundo e ainda passa longe do limite de contraste.
  */
+/* O que vem depois do nome, por tema.
+ *
+ * "OS" é o padrão; cada tema que tem uma marca própria troca por ela. Os
+ * ícones são desenhados com `fill: currentColor`, então pegam sozinhos a cor
+ * de destaque do tema — inclusive o verde do Matrix, sem nenhuma regra extra.
+ *
+ * Sobre a maçã: é uma maçã, não O logotipo. Sem a mordida e sem a proporção
+ * do original, porque a marca da Apple é registrada e este repositório é
+ * público sob MIT — desenhar o logotipo aqui seria distribuir marca alheia
+ * sob uma licença que não é nossa para dar. Fruta lê igual e não é de ninguém.
+ */
+var ICONE = {
+  // Curtida: polegar genérico. O logotipo do Facebook é o "f" azul, que não
+  // está aqui; polegar para cima é gesto, não marca.
+  curtir: '<path d="M2.5 10h3.2v9.5H2.5zM7.6 10l3.4-6.4c.6-1.1 2.3-.7 2.2.6L12.6 9h5.6c1 0 1.8.9 1.6 1.9l-1.3 6.2c-.2 1-1 1.6-2 1.6H7.6z"/>',
+  // Orkut: confiável, legal e sexy. Carinha, cubo de gelo e coração.
+  carinha: '<path d="M8 1.2a6.8 6.8 0 1 0 0 13.6A6.8 6.8 0 0 0 8 1.2zm-2.6 4.6a1 1 0 1 1 0 2 1 1 0 0 1 0-2zm5.2 0a1 1 0 1 1 0 2 1 1 0 0 1 0-2zM8 12.2c-1.9 0-3.4-1.1-3.9-2.6h7.8c-.5 1.5-2 2.6-3.9 2.6z"/>',
+  gelo:    '<path d="M8 .9 14.2 4.5v7.1L8 15.2 1.8 11.6V4.5zM8 3 4 5.3v4.6L8 12.2l4-2.3V5.3z"/>',
+  coracao: '<path d="M8 14.6 2.7 9.4C1 7.7 1.1 4.9 2.9 3.4c1.6-1.3 3.8-1 5.1.6 1.3-1.6 3.5-1.9 5.1-.6 1.8 1.5 1.9 4.3.2 6z"/>',
+  // Maçã (fruta), não o logotipo. Ver o comentário acima.
+  maca: '<path d="M12 6.6c1.3-1 3.1-1 4.4.1 1.8 1.5 2.1 4.3 1 7.1-.9 2.3-2.5 4.2-3.9 4.2-.9 0-1.4-.4-2-.4s-1.1.4-2 .4c-1.4 0-3-1.9-3.9-4.2-1.1-2.8-.8-5.6 1-7.1 1.3-1.1 3.1-1.1 4.4-.1z"/>' +
+        '<path d="M12.3 6c-.1-1.9 1.3-3.5 3.2-3.7.2 1.9-1.3 3.5-3.2 3.7z"/>'
+};
+
+function svg(caixa, d, classe) {
+  return '<svg class="sufixo' + (classe ? ' ' + classe : '') + '" viewBox="0 0 ' +
+         caixa + ' ' + caixa + '">' + d + '</svg>';
+}
+
+var SUFIXO = {
+  win95:    '95',
+  xp:       'XP',
+  facebook: svg(24, ICONE.curtir),
+  orkut:    svg(16, ICONE.carinha) + svg(16, ICONE.gelo) + svg(16, ICONE.coracao),
+  apple:    'OS' + svg(24, ICONE.maca, 'depois')
+};
+
 var CORES_RECADO = {
   amarelo: { fundo: '#fde68a', borda: '#f0c74a', texto: '#422006', fraco: '#7c5312' },
   verde:   { fundo: '#bbf7d0', borda: '#7fd6a0', texto: '#052e16', fraco: '#16603a' },
@@ -1080,6 +1117,9 @@ function aplicarAjustes() {
   if (marca && marca.firstChild) {
     var nome = (a.marca === undefined || a.marca === null) ? 'PIAIA' : a.marca;
     if (marca.firstChild.nodeValue !== nome) marca.firstChild.nodeValue = nome;
+    var fim = marca.querySelector('span');
+    var suf = SUFIXO[a.tema] || 'OS';
+    if (fim && fim.innerHTML !== suf) fim.innerHTML = suf;
   }
 
   // --- recado

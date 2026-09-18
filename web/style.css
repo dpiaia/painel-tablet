@@ -1088,3 +1088,17 @@ body { display: flex; flex-direction: column; }
   92%  { opacity: 0.9; }
   100% { transform: translate3d(0, 114vh, 0); opacity: 0; }
 }
+
+
+/* O sufixo do nome muda por tema: "95", "XP", um polegar, três ícones do
+   Orkut, uma maçã. `fill: currentColor` faz cada um pegar a cor de destaque do
+   tema sozinho — o verde do Matrix inclusive, sem regra extra. */
+.marca .sufixo {
+  width: 1.5vw;
+  height: 1.5vw;
+  fill: currentColor;
+  vertical-align: -0.22vw;
+  margin-left: 0.25vw;
+}
+.marca .sufixo:first-child { margin-left: 0; }
+.marca .sufixo.depois { margin-left: 0.35vw; }
