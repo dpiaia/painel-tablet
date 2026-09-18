@@ -61,6 +61,22 @@
   font-weight: 600;
   letter-spacing: 0.04em;
   font-size: 1vw;
+  line-height: 1.2;
+}
+
+/* O ícone estava com 17px ao lado de uma letra de 11px — metade maior, e era
+   ele que ditava a altura da linha. Verticalmente já estava centrado; o que
+   destoava era a escala. Agora ele acompanha a altura da letra maiúscula, que
+   é como um ícone ao lado de um rótulo deve se comportar.
+
+   O traço também subiu um pouco: o 1.5 do resto do tema é fino demais num
+   ícone deste tamanho ao lado de texto semibold — o ícone sumia e a linha
+   parecia torta por causa do peso, não da posição. */
+[data-tema="apple"] .cartao h2 .ic {
+  width: 1.15vw;
+  height: 1.15vw;
+  margin-right: 0.5vw;
+  stroke-width: 1.8;
 }
 [data-tema="apple"] .hora { font-weight: 600; letter-spacing: -0.04em; }
 [data-tema="apple"] .marca { font-weight: 600; letter-spacing: -0.03em; }
