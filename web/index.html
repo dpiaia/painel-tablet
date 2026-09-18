@@ -115,6 +115,16 @@
 <!-- Varredura do tubo, só no tema Matrix. Fica fora do .painel porque cobre a
      tela toda, e abaixo das cenas: elas têm cor própria e ficariam esverdeadas
      por cima. Quem liga e desliga é o CSS pelo data-tema, não o JS. -->
+<!-- Modo relógio: os cartões somem e a hora ocupa a tela. É um relógio NOVO,
+     não o do painel movido para cá — mover o nó obrigaria o motor de layout a
+     saber deste modo, e um segundo dono do mesmo elemento é onde essas coisas
+     quebram. São dois campos de texto; duplicar custa menos que acoplar. -->
+<div class="modo-hora" id="modo-hora" hidden>
+  <div class="hora-grande" id="hora-grande">--:--</div>
+  <div class="data-grande" id="data-grande"></div>
+  <button class="voltar-hora" id="voltar-hora">voltar</button>
+</div>
+
 <div class="crt" aria-hidden="true"><i></i></div>
 
 <div class="festa" id="festa" hidden>

@@ -1312,3 +1312,57 @@ body { display: flex; flex-direction: column; }
   line-height: 1.5;
 }
 .nota-proc b { color: var(--apagado); font-weight: 600; }
+
+
+/* ============================================================ modo relógio
+   Os cartões somem e a hora ocupa a tela. A barra do topo fica: ela carrega a
+   identidade do tema e o wifi/bateria, e some daria uma tela órfã.
+
+   Nada anima aqui de propósito. Este é o modo que pode ficar horas ligado na
+   mesa, e é justamente onde um efeito bonito vira consumo permanente. */
+.modo-hora-on .painel { display: none; }
+
+.modo-hora {
+  position: fixed;
+  left: 0; right: 0;
+  top: 0; bottom: 0;
+  z-index: 40;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: transparent;   /* deixa o papel de parede do tema aparecer */
+}
+.modo-hora[hidden] { display: none; }
+
+.hora-grande {
+  font-size: 19vw;
+  font-weight: 800;
+  line-height: 0.92;
+  letter-spacing: -0.04em;
+  font-variant-numeric: tabular-nums;
+  color: var(--texto);
+}
+.data-grande {
+  margin-top: 1vw;
+  font-size: 2.1vw;
+  color: var(--apagado);
+}
+
+.voltar-hora {
+  position: absolute;
+  right: 2.5vw;
+  bottom: 2.5vw;
+  padding: 0.7vw 1.8vw;
+  border: 1px solid var(--borda);
+  border-radius: 10vw;
+  background: var(--cartao);
+  color: var(--apagado);
+  font-family: var(--mono);
+  font-size: 1vw;
+  letter-spacing: 0.12em;
+  cursor: pointer;
+}
+
+/* O relógio do painel vira alvo de toque, como os cartões. */
+.relogio { cursor: pointer; }

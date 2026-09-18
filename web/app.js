@@ -64,8 +64,14 @@ function tique() {
   if ($('hora').textContent !== hora) $('hora').textContent = hora;
 
   var dia = DIAS[d.getDay()];
-  $('data').textContent = dia.charAt(0).toUpperCase() + dia.slice(1) + ', ' +
-                          d.getDate() + ' de ' + MESES[d.getMonth()];
+  var dataTxt = dia.charAt(0).toUpperCase() + dia.slice(1) + ', ' +
+                d.getDate() + ' de ' + MESES[d.getMonth()];
+  $('data').textContent = dataTxt;
+
+  if (modoHora) {
+    if ($('hora-grande').textContent !== hora) $('hora-grande').textContent = hora;
+    $('data-grande').textContent = dataTxt;
+  }
 
   // O aviso de compromisso depende do relógio andar, não de o servidor mandar
   // coisa nova — por isso mora aqui, no tique, e não em conferirCenas.
@@ -1306,9 +1312,46 @@ function fecharTela() {
   desenhar();
 }
 
+/* ------------------------------------------------------------ modo relógio
+ *
+ * Tocar no relógio esconde os cartões e deixa só a hora, grande, no meio.
+ *
+ * Ao contrário das telas de detalhe, este modo NÃO volta sozinho. Elas
+ * respondem a uma curiosidade ("quero ver a semana") e devolvem o painel
+ * depois de T.tela; este responde a uma decisão ("agora quero só a hora"), e
+ * um painel que reaparece sozinho desfaz a decisão de quem pediu.
+ */
+var modoHora = false;
+
+function entrarModoHora() {
+  modoHora = true;
+  document.documentElement.classList.add('modo-hora-on');
+  $('modo-hora').hidden = false;
+  tique();                       // preenche antes de aparecer, sem piscar --:--
+  desenhar();
+}
+
+function sairModoHora() {
+  modoHora = false;
+  document.documentElement.classList.remove('modo-hora-on');
+  $('modo-hora').hidden = true;
+}
+
 document.addEventListener('click', function (ev) {
+  // O modo relógio vem antes de tudo: enquanto ele está ligado, o único
+  // clique que importa é o que sai dele.
+  if (modoHora) { sairModoHora(); return; }
   if (telaAberta) { fecharTela(); return; }
+
   var alvo = ev.target;
+  while (alvo && alvo !== document.body) {
+    if (alvo.className && String(alvo.className).indexOf('relogio') >= 0) {
+      entrarModoHora();
+      return;
+    }
+    alvo = alvo.parentNode;
+  }
+  alvo = ev.target;
   while (alvo && alvo !== document.body) {
     if (alvo.getAttribute && alvo.getAttribute('data-tela')) {
       abrirTela(alvo.getAttribute('data-tela'));
