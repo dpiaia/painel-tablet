@@ -1316,13 +1316,17 @@ function aplicarAjustes() {
   // que ele já tem, sem precisar remontar nada.
   // .marca é CLASSE, não id — $() é getElementById e devolvia nulo, pulando o
   // bloco inteiro sem erro nenhum. O nome ficava eternamente em PIAIA OS.
-  var marca = document.querySelector('.marca');
-  if (marca && marca.firstChild) {
+  // O nome tem elemento próprio. Antes eu mexia no primeiro nó de texto do
+  // .marca, o que funcionava só enquanto ele era o primeiro — e no Windows o
+  // logo entra ANTES dele, dentro do botão Iniciar.
+  var nomeEl = $('marca-nome'), fim = $('marca-fim');
+  if (nomeEl) {
     var nome = (a.marca === undefined || a.marca === null) ? 'PIAIA' : a.marca;
-    if (marca.firstChild.nodeValue !== nome) marca.firstChild.nodeValue = nome;
-    var fim = marca.querySelector('span');
+    if (nomeEl.textContent !== nome) nomeEl.textContent = nome;
+  }
+  if (fim) {
     var suf = sufixoDe(a.tema);
-    if (fim && fim.innerHTML !== suf) fim.innerHTML = suf;
+    if (fim.innerHTML !== suf) fim.innerHTML = suf;
   }
 
   // --- selo do tema, na ponta direita da barra
@@ -1337,6 +1341,17 @@ function aplicarAjustes() {
     seloTema.hidden = !tem;
     if (tem && seloTema.getAttribute('src') !== 'marcas/' + arq) {
       seloTema.src = 'marcas/' + arq;
+    }
+
+    // No Windows o logo mora DENTRO do botão Iniciar, à esquerda do nome. Nos
+    // outros temas ele é um selo de canto. É a única coisa aqui que muda de
+    // lugar no DOM por causa do tema — CSS move aparência, não elemento.
+    var noBotao = (a.tema === 'win95' || a.tema === 'xp');
+    var marcaEl = document.querySelector('.marca');
+    var ondeDeveria = noBotao ? marcaEl : $('topo-barra');
+    if (ondeDeveria && seloTema.parentNode !== ondeDeveria) {
+      if (noBotao) marcaEl.insertBefore(seloTema, marcaEl.firstChild);
+      else ondeDeveria.appendChild(seloTema);
     }
   }
 

@@ -425,14 +425,25 @@
   background: var(--cartao);
   box-shadow: inset 0 1px 0 #ffffff, inset 0 2px 0 #dfdfdf;
 }
+/* O botão Iniciar: logo à esquerda, nome ao lado, e altura de botão de
+   verdade — encostando nas bordas da barra, como era. */
 [data-tema="win95"] .marca {
-  padding: 0.3vw 0.9vw;
+  display: flex;
+  align-items: center;
+  gap: 0.5vw;
+  height: 2.6vw;
+  padding: 0 1vw 0 0.55vw;
   background: var(--cartao);
   box-shadow: inset -1px -1px 0 #000000, inset 1px 1px 0 #ffffff,
               inset -2px -2px 0 #808080, inset 2px 2px 0 #dfdfdf;
   color: #000000;
+  font-size: 1.35vw;
 }
 [data-tema="win95"] .marca span { color: #000080; text-shadow: none; }
+[data-tema="win95"] .marca .selo-tema {
+  height: 1.7vw;
+  margin: 0;
+}
 [data-tema="win95"] .sist,
 [data-tema="win95"] .selo-tema-caixa {
   padding: 0.25vw 0.7vw;
@@ -446,14 +457,31 @@
   background: linear-gradient(to bottom, #3f8cf3 0%, #245edb 9%, #1941a5 100%);
   box-shadow: inset 0 1px 0 rgba(255,255,255,0.55);
 }
+/* O botão do XP é mais alto que a barra e sangra para fora dela, com o canto
+   direito arredondado — era a marca registrada daquele desenho. */
 [data-tema="xp"] .marca {
-  padding: 0.28vw 1.1vw;
-  border-radius: 0 0.9vw 0.9vw 0;
+  display: flex;
+  align-items: center;
+  gap: 0.6vw;
+  height: 3.1vw;
+  margin: -0.45vw 0.8vw -0.45vw -0.7vw;
+  padding: 0 1.6vw 0 0.9vw;
+  border-radius: 0 1.4vw 1.4vw 0;
   color: #ffffff;
-  text-shadow: 0 0.1vw 0.2vw rgba(0,0,0,0.5);
-  background: linear-gradient(to bottom, #59b23f 0%, #3c8a2a 45%, #2f7a20 100%);
-  box-shadow: inset 0 1px 0 rgba(255,255,255,0.5);
+  font-size: 1.5vw;
+  font-style: italic;
+  text-shadow: 0 0.12vw 0.2vw rgba(0,0,0,0.55);
+  background: linear-gradient(to bottom, #6dc04d 0%, #4d9e33 8%, #3c8a2a 45%,
+                              #2f7a20 92%, #276b1a 100%);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.55),
+              inset -1px 0 0 rgba(0,0,0,0.25);
 }
+[data-tema="xp"] .marca .selo-tema {
+  height: 1.9vw;
+  margin: 0;
+  filter: drop-shadow(0 0.1vw 0.15vw rgba(0,0,0,0.4));
+}
+[data-tema="xp"] .marca span { text-shadow: 0 0.12vw 0.2vw rgba(0,0,0,0.55); }
 [data-tema="xp"] .sist {
   padding: 0.25vw 0.8vw;
   border-radius: 0.3vw;
