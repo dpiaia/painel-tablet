@@ -1431,3 +1431,28 @@ body { display: flex; flex-direction: column; }
   min-width: 5.2vw;
   white-space: nowrap;
 }
+
+
+/* Cartão de conteúdo curto (os dois monitores) não estica: ele tem três ou
+   quatro linhas e pronto. A altura vem do palco, que o Slider mede pelo slide
+   mais alto — ver Slider.prototype.medirAltura. */
+.coluna > .cartao.curto { flex: none; }
+
+/* Num cartão curto os slides deixam de ser absolutos e passam a se empilhar
+   numa célula de grade. É isso que dá ALTURA PRÓPRIA ao palco: ele passa a
+   medir o slide mais alto, e o cartão abraça esse tamanho — sem JavaScript
+   medindo nada.
+   
+   Só nos curtos. Nos outros a posição absoluta é o que faz uma lista longa ser
+   CORTADA em vez de esticar o cartão, e é dela que depende o "mostra quantos
+   couberem". Empilhar por grade ali tiraria a restrição e a lista cresceria
+   sem limite. */
+.cartao.curto .palco {
+  flex: none;
+  display: grid;
+  height: auto;
+}
+.cartao.curto .slide {
+  position: relative;
+  grid-area: 1 / 1;
+}

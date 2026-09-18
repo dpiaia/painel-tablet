@@ -222,7 +222,15 @@ def diagnostico(cfg):
     fontes = [fotos.get(k) for k in FONTES_EXTERNAS]
     marcas = [f.get("atualizado_em") for f in fontes if isinstance(f, dict) and f.get("atualizado_em")]
     if not marcas:
-        linha("extensao", "Extensão do Opera", "ruim", "nunca reportou")
+        # Sem token, TODO /ingest volta 403 e a extensão fica muda — mas o
+        # sintoma é idêntico ao de uma extensão desinstalada. Já custou uma
+        # investigação: o config tinha perdido a chave e o diagnóstico só
+        # sabia dizer "nunca reportou", que aponta para o lugar errado.
+        if not TOKEN:
+            linha("extensao", "Extensão do Opera", "ruim",
+                  "falta 'token' no config.json — todo envio dela é recusado")
+        else:
+            linha("extensao", "Extensão do Opera", "ruim", "nunca reportou")
     else:
         seg = idade(max(marcas))
         linha("extensao", "Extensão do Opera",

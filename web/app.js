@@ -889,6 +889,15 @@ var sliderMsg = new Slider($('palco'), $('pontos'));
  * por isso não existem dois caminhos.
  */
 var WIDGETS_NO = ['relogio', 'clima', 'recado', 'agenda', 'mensagens'];
+
+/* Widgets de conteúdo CURTO: três ou quatro linhas e acabou.
+ *
+ * Um cartão com eles não deve esticar — esticado, viram quatro linhas no topo
+ * e meia tela de vazio embaixo, roubando altura de quem tem o que mostrar (a
+ * agenda, em geral). Num grupo, o mais alto dos slides define a altura: ela
+ * fica estável enquanto o slider gira, em vez de o cartão pular de tamanho a
+ * cada troca. */
+var WIDGETS_CURTOS = ['monitor', 'uso'];
 var WIDGETS_SLIDE = {
   'claude':     slideClaude,
   'git-meus':   slideGitMeus,
@@ -980,6 +989,8 @@ function pecaDe(id) {
 function hospedeiro(ids) {
   var el = document.getElementById('molde-host').content
              .firstElementChild.cloneNode(true);
+  var curto = ids.every(function (id) { return WIDGETS_CURTOS.indexOf(id) >= 0; });
+  if (curto) el.className += ' curto';
   el.setAttribute('data-cartao', ids.join('+'));
   var slider = new Slider(el.querySelector('.palco'), el.querySelector('.pontos'));
   var cabeca = el.querySelector('h2'), selo = el.querySelector('.etq');
