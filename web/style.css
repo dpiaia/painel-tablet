@@ -515,20 +515,24 @@ body { display: flex; flex-direction: column; }
 /* --------------------------------------------------------------- monitor */
 /* Centralizado na vertical: com 3 linhas num cartão desta altura, alinhar no
    topo deixava um vazio grande embaixo. */
-.monitor .corpo {
+.monitor .corpo,
+.monitor-slide .corpo {
   display: flex;
   flex-direction: column;
   justify-content: center;
 }
 
-.monitor .linha {
+.monitor .linha,
+.monitor-slide .linha {
   display: flex;
   align-items: center;
   margin-bottom: 1.1vw;
 }
-.monitor .linha:last-child { margin-bottom: 0; }
+.monitor .linha:last-child,
+.monitor-slide .linha:last-child { margin-bottom: 0; }
 
-.monitor .rot {
+.monitor .rot,
+.monitor-slide .rot {
   font-family: var(--mono);
   font-size: 0.9vw;
   letter-spacing: 0.08em;
@@ -536,30 +540,37 @@ body { display: flex; flex-direction: column; }
   width: 3.6vw;
   flex: none;
 }
-.monitor .val {
+.monitor .val,
+.monitor-slide .val {
   font-size: 1.3vw;
   font-weight: 700;
   width: 4.2vw;
   flex: none;
   font-variant-numeric: tabular-nums;
 }
-.monitor .barra {
+.monitor .barra,
+.monitor-slide .barra {
   flex: 1;
   height: 0.45vw;
   border-radius: 10vw;
   background: var(--borda);
   overflow: hidden;
 }
-.monitor .barra span {
+.monitor .barra,
+.monitor-slide .barra span {
   display: block;
   height: 100%;
   background: var(--ciano);
   border-radius: 10vw;
 }
-.monitor .atencao .val { color: var(--laranja); }
-.monitor .atencao .barra span { background: var(--laranja); }
-.monitor .critico .val { color: var(--vermelho); }
-.monitor .critico .barra span { background: var(--vermelho); }
+.monitor .atencao .val,
+.monitor-slide .atencao .val { color: var(--laranja); }
+.monitor .atencao .barra,
+.monitor-slide .atencao .barra span { background: var(--laranja); }
+.monitor .critico .val,
+.monitor-slide .critico .val { color: var(--vermelho); }
+.monitor .critico .barra,
+.monitor-slide .critico .barra span { background: var(--vermelho); }
 
 /* ===================================================== tela de detalhe */
 /* Toque expande, nunca age: o tablet é só vidro. Nenhum controle daqui
@@ -1236,7 +1247,8 @@ body { display: flex; flex-direction: column; }
 .coluna > [data-widget="monitor"] { flex: none; }
 
 /* E o conteúdo fica centrado na vertical, para quando ele ESTIVER esticado. */
-.monitor .corpo {
+.monitor .corpo,
+.monitor-slide .corpo {
   flex: 1;
   min-height: 0;
   display: flex;
@@ -1395,3 +1407,27 @@ body { display: flex; flex-direction: column; }
 
 /* O relógio do painel vira alvo de toque, como os cartões. */
 .relogio { cursor: pointer; }
+
+
+/* Os dois monitores (Mac e Claude) são widgets de slide, então o conteúdo
+   deles mora dentro de um `.slide`. Alinhar ao topo, e não ao centro como os
+   mascotes, porque são listas de linhas. */
+.slide.monitor-slide { justify-content: flex-start; align-items: stretch; }
+.slide.monitor-slide .corpo {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+
+/* Os rótulos do monitor do Claude são mais longos que CPU/MEM/SWAP ("5 HORAS",
+   "CONTEXTO"), e na largura fixa do monitor do Mac eles quebravam em duas
+   linhas. Aqui a coluna acompanha o texto, com um mínimo para as barras ainda
+   começarem alinhadas entre si. */
+.monitor-slide .rot {
+  width: auto;
+  min-width: 5.2vw;
+  white-space: nowrap;
+}

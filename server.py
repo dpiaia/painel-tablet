@@ -22,6 +22,7 @@ import urllib.parse
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 import agenda
+import claude_uso
 import claude
 import github
 import maquina
@@ -58,6 +59,7 @@ _estado = {
     "whatsapp": None,  # fase 4 — vem da extensão
     "sistema": None,   # bateria e Wi-Fi do tablet, pelo adb
     "maquina": None,   # saúde do Mac: carga, memória, swap
+    "uso": None,       # uso do plano do Claude Code
     "git": None,       # pull requests, pelo gh
     "ajustes": None,   # o que o painel de controle define
 }
@@ -589,6 +591,36 @@ class Handler(BaseHTTPRequestHandler):
         return self._json({"ok": True, "painel": painel,
                            "fontes": {k: cfg.get(k) for k in FONTES_EDITAVEIS}})
 
+    def _uso_empurrado(self):
+        """Uma sessão do Claude Code manda o que o disco não sabe.
+
+        O arquivo do app só tem o limite de 5 horas e o semanal. O semanal do
+        Fable e o contexto da janela vivem dentro do processo de uma sessão, e
+        só de lá saem. Quem tiver a ferramenta à mão manda para cá:
+
+            POST /uso  {"fable": 0, "contexto": {"pct": 90, "tokens": 902975,
+                        "janela": 1000000, "compacta_em": 97}}
+
+        Só do próprio Mac. E o que chega aqui não apaga o que veio do arquivo:
+        as duas fontes preenchem campos diferentes do mesmo cartão.
+        """
+        if not eh_local(self):
+            return self.send_error(403, "so do proprio Mac")
+        novos = self._corpo(16 * 1024)
+        if not isinstance(novos, dict):
+            return self.send_error(400, "json invalido")
+
+        atual = dict(_estado.get("uso") or {})
+        if "fable" in novos:
+            atual["fable"] = novos["fable"]
+            atual["fable_em"] = time.time()
+        if isinstance(novos.get("contexto"), dict):
+            ctx = dict(novos["contexto"])
+            ctx["em"] = time.time()
+            atual["contexto"] = ctx
+        publicar(uso=atual)
+        return self._json({"ok": True, "uso": atual})
+
     def _subir_fundo(self):
         """Recebe um papel de parede do painel de controle.
 
@@ -663,6 +695,8 @@ class Handler(BaseHTTPRequestHandler):
             return self._ajustes()
         if rota == "/acao":
             return self._acao()
+        if rota == "/uso":
+            return self._uso_empurrado()
         if rota == "/fundo":
             return self._subir_fundo()
         if rota == "/claude":
@@ -925,6 +959,27 @@ def laco_github(cfg):
         esperar(intervalo)
 
 
+def laco_uso():
+    """Uso do plano, do histórico que o app do Claude grava em disco.
+
+    A cada minuto, e não mais: o app só escreve uma amostra a cada ~15 minutos,
+    então ler mais rápido não traz nada — só gasta disco à toa.
+
+    O que vem de uma sessão pelo /uso (Fable e contexto) é preservado: aqui só
+    entram as duas chaves que o arquivo tem.
+    """
+    while True:
+        try:
+            lido = claude_uso.ler()
+            if lido:
+                atual = dict(_estado.get("uso") or {})
+                atual.update(lido)
+                publicar(uso=atual)
+        except Exception as erro:
+            print("uso falhou: %s" % erro)
+        esperar(60)
+
+
 def laco_maquina(cfg):
     # Mais frequente que os outros porque carga de CPU muda em segundos, e o
     # ponto deste número é justamente pegar o aperto enquanto ele acontece.
@@ -1003,6 +1058,7 @@ def main():
     srv.daemon_threads = True
 
     threading.Thread(target=laco_clima, args=(cfg,), daemon=True).start()
+    threading.Thread(target=laco_uso, daemon=True).start()
     threading.Thread(target=laco_agenda, args=(cfg,), daemon=True).start()
     threading.Thread(target=laco_sistema, args=(cfg,), daemon=True).start()
     threading.Thread(target=laco_maquina, args=(cfg,), daemon=True).start()

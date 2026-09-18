@@ -16,7 +16,8 @@ const WIDGETS = [
   ['git-design', 'PRs do repositório', 'o repositório vigiado'],
   ['agenda',     'Agenda',             'compromissos de hoje e da semana'],
   ['mensagens',  'Mensagens',          'Gmail, Chat e WhatsApp pela extensão'],
-  ['monitor',    'Monitor do Mac',     'CPU, memória e swap'],
+  ['monitor',    'Monitor do Mac',     'CPU, memória e swap; processos no toque'],
+  ['uso',        'Monitor do Claude',  'limite de 5 horas e semanal do plano'],
 ];
 
 // Espelha o LAYOUT_PADRAO do app.js. Duplicado de propósito: o painel de
@@ -30,7 +31,8 @@ const LAYOUT_PADRAO = {
   ],
   direita: [
     { tipo: 'solo',   ids: ['agenda'] },
-    { tipo: 'par',    ids: ['mensagens', 'monitor'] }
+    { tipo: 'solo',   ids: ['mensagens'] },
+    { tipo: 'slider', ids: ['monitor', 'uso'] }
   ]
 };
 

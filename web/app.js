@@ -511,7 +511,10 @@ function arquivoDe(m, sessao) {
   return descansando ? GIFS.asterisco : m.gif;
 }
 
-var ICONE_CLAUDE = '<svg class="ic" viewBox="0 0 24 24"><path d="M9 7l-5 5 5 5M15 7l5 5-5 5"/></svg>';
+/* O símbolo do Claude (Anthropic), em traçado único. Vai com `ic cheio`, que
+   preenche com a cor de destaque do tema — então ele fica verde no Matrix,
+   rosa no Orkut, azul no Facebook, sem nenhuma regra por tema. */
+var ICONE_CLAUDE = '<svg class="ic cheio" viewBox="0 0 100 100"><path d="m19.6 66.5 19.7-11 .3-1-.3-.5h-1l-3.3-.2-11.2-.3L14 53l-9.5-.5-2.4-.5L0 49l.2-1.5 2-1.3 2.9.2 6.3.5 9.5.6 6.9.4L38 49.1h1.6l.2-.7-.5-.4-.4-.4L29 41l-10.6-7-5.6-4.1-3-2-1.5-2-.6-4.2 2.7-3 3.7.3.9.2 3.7 2.9 8 6.1L37 36l1.5 1.2.6-.4.1-.3-.7-1.1L33 25l-6-10.4-2.7-4.3-.7-2.6c-.3-1-.4-2-.4-3l3-4.2L28 0l4.2.6L33.8 2l2.6 6 4.1 9.3L47 29.9l2 3.8 1 3.4.3 1h.7v-.5l.5-7.2 1-8.7 1-11.2.3-3.2 1.6-3.8 3-2L61 2.6l2 2.9-.3 1.8-1.1 7.7L59 27.1l-1.5 8.2h.9l1-1.1 4.1-5.4 6.9-8.6 3-3.5L77 13l2.3-1.8h4.3l3.1 4.7-1.4 4.9-4.4 5.6-3.7 4.7-5.3 7.1-3.2 5.7.3.4h.7l12-2.6 6.4-1.1 7.6-1.3 3.5 1.6.4 1.6-1.4 3.4-8.2 2-9.6 2-14.3 3.3-.2.1.2.3 6.4.6 2.8.2h6.8l12.6 1 3.3 2 1.9 2.7-.3 2-5.1 2.6-6.8-1.6-16-3.8-5.4-1.3h-.8v.4l4.6 4.5 8.3 7.5L89 80.1l.5 2.4-1.3 2-1.4-.2-9.2-7-3.6-3-8-6.8h-.5v.7l1.8 2.7 9.8 14.7.5 4.5-.7 1.4-2.6 1-2.7-.6-5.8-8-6-9-4.7-8.2-.5.4-2.9 30.2-1.3 1.5-3 1.2-2.5-2-1.4-3 1.4-6.2 1.6-8 1.3-6.4 1.2-7.9.7-2.6v-.2H49L43 72l-9 12.3-7.2 7.6-1.7.7-3-1.5.3-2.8L24 86l10-12.8 6-7.9 4-4.6-.1-.5h-.3L17.2 77.4l-4.7.6-2-2 .2-3 1-1 8-5.5Z"/></svg>';
 var ICONE_GITHUB = '<svg class="ic cheio" viewBox="0 0 24 24"><path d="M12 .3a12 12 0 0 0-3.8 23.4c.6.1.8-.3.8-.6v-2c-3.3.7-4-1.6-4-1.6-.6-1.4-1.4-1.8-1.4-1.8-1-.7.1-.7.1-.7 1.2.1 1.8 1.2 1.8 1.2 1 1.8 2.8 1.3 3.5 1 0-.8.4-1.3.7-1.6-2.7-.3-5.5-1.3-5.5-6 0-1.2.5-2.3 1.3-3.1-.2-.4-.6-1.6.1-3.2 0 0 1-.3 3.3 1.2a11.5 11.5 0 0 1 6 0c2.3-1.5 3.3-1.2 3.3-1.2.7 1.6.2 2.8.1 3.2.8.8 1.3 1.9 1.3 3.2 0 4.6-2.8 5.6-5.5 5.9.5.4.9 1.1.9 2.3v3.3c0 .3.1.7.8.6A12 12 0 0 0 12 .3"/></svg>';
 
 
@@ -702,20 +705,66 @@ function nivel(v, atencao, critico) {
   return v >= critico ? 'critico' : (v >= atencao ? 'atencao' : '');
 }
 
-function desenharMaquina() {
+var ICONE_MONITOR = '<svg class="ic" viewBox="0 0 24 24"><path d="M3 13h3l2.5-7 4 14L15.5 13H21"/></svg>';
+var ICONE_USO = '<svg class="ic" viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 9 9h-9z"/><path d="M12 3v9h9"/></svg>';
+
+// O monitor virou widget de SLIDE, como os do Claude e do GitHub: é o que
+// permite agrupá-lo com o uso do Claude num cartão que alterna. Sozinho ele
+// continua sendo um cartão comum — grupo de um.
+function slideMonitor() {
   var m = estado.maquina;
-  if (!m) { $('corpo-mac').innerHTML = '<div class="vazio">sem leitura</div>'; return; }
+  var corpo;
+  if (!m) {
+    corpo = '<div class="vazio">sem leitura</div>';
+  } else {
+    // O swap é o que avisa que a máquina vai engasgar. CPU e memória altas são
+    // rotina; swap cheio não é.
+    var livre = m.swap_total_gb - m.swap_gb;
+    var nivelSwap = livre < 1 ? 'critico' : (m.swap_gb >= 2 ? 'atencao' : '');
+    var pctSwap = m.swap_total_gb ? (m.swap_gb / m.swap_total_gb * 100) : 0;
+    corpo = linhaMac('CPU', m.cpu + '%', m.cpu, nivel(m.cpu, 85, 95)) +
+            linhaMac('MEM', m.ram + '%', m.ram, nivel(m.ram, 85, 92)) +
+            linhaMac('SWAP', m.swap_gb + 'G', pctSwap, nivelSwap);
+  }
+  return { classe: 'monitor-slide', titulo: 'MONITOR DO MAC', icone: ICONE_MONITOR,
+           html: '<div class="corpo">' + corpo + '</div>', tela: 'monitor' };
+}
 
-  // O swap fica, mesmo não estando no mockup: é ele que avisa que a máquina
-  // vai engasgar. CPU e memória altas são rotina; swap cheio não é.
-  var livre = m.swap_total_gb - m.swap_gb;
-  var nivelSwap = livre < 1 ? 'critico' : (m.swap_gb >= 2 ? 'atencao' : '');
-  var pctSwap = m.swap_total_gb ? (m.swap_gb / m.swap_total_gb * 100) : 0;
+/* O uso do plano do Claude Code.
+ *
+ * Duas barras, não quatro. O app grava em disco só o limite de 5 horas e o
+ * semanal; o semanal do Fable e o contexto vivem dentro do processo de uma
+ * sessão e nunca são escritos. Uma sessão pode empurrá-los para /uso, e aí
+ * eles aparecem — até lá, não existem no cartão.
+ *
+ * O selo mostra a IDADE da leitura porque o app só grava enquanto está aberto:
+ * "12%" de três horas atrás é outra informação que "12%" de agora, e sem a
+ * idade as duas seriam indistinguíveis.
+ */
+function slideUso() {
+  var u = estado.uso;
+  if (!u || (u.cinco_horas === undefined && u.semanal === undefined)) {
+    return { classe: 'monitor-slide', titulo: 'MONITOR DO CLAUDE', icone: ICONE_USO,
+             html: '<div class="vazio">sem leitura do plano</div>' };
+  }
 
-  $('corpo-mac').innerHTML =
-    linhaMac('CPU', m.cpu + '%', m.cpu, nivel(m.cpu, 85, 95)) +
-    linhaMac('MEM', m.ram + '%', m.ram, nivel(m.ram, 85, 92)) +
-    linhaMac('SWAP', m.swap_gb + 'G', pctSwap, nivelSwap);
+  function barra(rot, pct) {
+    if (pct === undefined || pct === null) return '';
+    return linhaMac(rot, pct + '%', pct, nivel(pct, 75, 90));
+  }
+
+  var corpo = barra('5 HORAS', u.cinco_horas) + barra('SEMANA', u.semanal);
+  if (u.fable !== undefined && u.fable !== null) corpo += barra('FABLE', u.fable);
+  if (u.contexto && u.contexto.pct !== undefined) {
+    corpo += linhaMac('CONTEXTO', u.contexto.pct + '%', u.contexto.pct,
+                      nivel(u.contexto.pct, 80, 93));
+  }
+
+  var idade = u.em ? Math.round((agoraS() - u.em) / 60) : null;
+  var selo = idade === null ? '' : (idade < 2 ? 'AGORA' : idade + ' MIN');
+
+  return { classe: 'monitor-slide', titulo: 'MONITOR DO CLAUDE', icone: ICONE_USO,
+           selo: selo, html: '<div class="corpo">' + corpo + '</div>' };
 }
 
 /* ============================================================== mensagens */
@@ -839,11 +888,13 @@ var sliderMsg = new Slider($('palco'), $('pontos'));
  * um cartão comum, agrupados viram um slider. Um grupo de um é o caso solo, e
  * por isso não existem dois caminhos.
  */
-var WIDGETS_NO = ['relogio', 'clima', 'recado', 'agenda', 'mensagens', 'monitor'];
+var WIDGETS_NO = ['relogio', 'clima', 'recado', 'agenda', 'mensagens'];
 var WIDGETS_SLIDE = {
   'claude':     slideClaude,
   'git-meus':   slideGitMeus,
-  'git-design': slideGitDesign
+  'git-design': slideGitDesign,
+  'monitor':    slideMonitor,
+  'uso':        slideUso
 };
 
 var LAYOUT_PADRAO = {
@@ -854,7 +905,8 @@ var LAYOUT_PADRAO = {
   ],
   direita: [
     { tipo: 'solo',   ids: ['agenda'] },
-    { tipo: 'par',    ids: ['mensagens', 'monitor'] }
+    { tipo: 'solo',   ids: ['mensagens'] },
+    { tipo: 'slider', ids: ['monitor', 'uso'] }
   ]
 };
 
@@ -928,11 +980,15 @@ function pecaDe(id) {
 function hospedeiro(ids) {
   var el = document.getElementById('molde-host').content
              .firstElementChild.cloneNode(true);
-  el.setAttribute('data-tela', 'claude');
   el.setAttribute('data-cartao', ids.join('+'));
   var slider = new Slider(el.querySelector('.palco'), el.querySelector('.pontos'));
   var cabeca = el.querySelector('h2'), selo = el.querySelector('.etq');
   slider.aoTrocar = function (slide) {
+    // A tela de detalhe segue o slide VISÍVEL. Antes era fixa em 'claude', o
+    // que só funcionava enquanto o único slider da tela era aquele — agora o
+    // monitor também mora num, e tocar nele tem que abrir a tela dele.
+    if (slide.tela) el.setAttribute('data-tela', slide.tela);
+    else el.removeAttribute('data-tela');
     cabeca.innerHTML = (slide.icone || '') + (slide.titulo || '');
     selo.textContent = slide.selo || '';
     selo.style.visibility = slide.selo ? '' : 'hidden';
@@ -1564,7 +1620,6 @@ function desenhar() {
   // estava no estoque — dava um piscar do arranjo largo antes de assentar.
   montarLayout((estado.ajustes || {}).layout);
   aplicarAjustes();
-  desenharMaquina();
   desenharSistema();
   desenharClima();
   desenharAgenda();
