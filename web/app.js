@@ -61,7 +61,12 @@ function hhmm(ts) {
 function tique() {
   var d = new Date(Date.now() + deslocamento);
   var hora = dois(d.getHours()) + ':' + dois(d.getMinutes());
-  if ($('hora').textContent !== hora) $('hora').textContent = hora;
+  // Hora e minuto em pedaços separados, como no relógio grande: os
+  // dois-pontos piscam, e reescrever o elemento inteiro a cada minuto
+  // reiniciaria a animação bem no momento em que o número muda.
+  var hh = hora.slice(0, 2), mm = hora.slice(3);
+  if ($('h-h').textContent !== hh) $('h-h').textContent = hh;
+  if ($('h-m').textContent !== mm) $('h-m').textContent = mm;
 
   var dia = DIAS[d.getDay()];
   var dataTxt = dia.charAt(0).toUpperCase() + dia.slice(1) + ', ' +

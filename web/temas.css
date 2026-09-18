@@ -811,25 +811,9 @@
   text-shadow: 0 0.1vw 0.5vw rgba(0, 0, 0, 0.55);
 }
 
-/* Orkut: os dois-pontos em rosa, piscando. É o único lugar do modo relógio
-   com animação, e ela cabe porque é um elemento minúsculo mudando só opacity
-   — o compositor resolve sem repintar. A hora inteira pulsando seria repaint
-   de meia tela a cada ciclo. */
-[data-tema="orkut"] .hora-grande .dp {
-  color: var(--ciano);
-  -webkit-animation: piscar-dp 3s steps(1, end) infinite;
-          animation: piscar-dp 3s steps(1, end) infinite;
-}
-@-webkit-keyframes piscar-dp {
-  0%, 82%  { opacity: 1; }
-  83%, 99% { opacity: 0.12; }
-  100%     { opacity: 1; }
-}
-@keyframes piscar-dp {
-  0%, 82%  { opacity: 1; }
-  83%, 99% { opacity: 0.12; }
-  100%     { opacity: 1; }
-}
+/* Orkut: os dois-pontos em rosa. A piscada em si virou regra de todos os
+   temas e mora no style.css; aqui fica só a cor. */
+[data-tema="orkut"] .dp { color: var(--ciano); }
 
 /* Facebook: a hora no azul da marca. */
 [data-tema="facebook"] .hora-grande { color: var(--ciano); }

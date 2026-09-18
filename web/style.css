@@ -1368,7 +1368,30 @@ body { display: flex; flex-direction: column; }
   cursor: pointer;
 }
 
-.hora-grande .dp { font-style: normal; }
+/* Os dois-pontos piscam, nos dois relógios e em todos os temas.
+   
+   É a única animação permanente da tela principal além dos mascotes, e ela
+   cabe porque é um elemento de dois pixels mudando só `opacity` — o
+   compositor resolve sem repintar nada. A hora inteira pulsando seria repaint
+   de área grande a cada ciclo, e num Mali-400 isso se sente.
+
+   `steps(1, end)` e não uma curva: relógio de ponteiro não esmaece, ele
+   apaga e acende. Interpolar deixaria a piscada com cara de respiração. */
+.dp {
+  font-style: normal;
+  -webkit-animation: piscar-dp 3s steps(1, end) infinite;
+          animation: piscar-dp 3s steps(1, end) infinite;
+}
+@-webkit-keyframes piscar-dp {
+  0%, 82%  { opacity: 1; }
+  83%, 99% { opacity: 0.12; }
+  100%     { opacity: 1; }
+}
+@keyframes piscar-dp {
+  0%, 82%  { opacity: 1; }
+  83%, 99% { opacity: 0.12; }
+  100%     { opacity: 1; }
+}
 
 /* O relógio do painel vira alvo de toque, como os cartões. */
 .relogio { cursor: pointer; }
