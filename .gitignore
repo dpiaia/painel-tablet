@@ -16,3 +16,7 @@ __pycache__/
 # trademark license". Então o repositório traz o script e cada um busca na
 # fonte: python3 ferramentas/baixar_octodex.py
 web/octodex/
+
+# Papéis de parede: imagens do usuário, não do projeto.
+web/fundos/*
+!web/fundos/LEIA-ME.md

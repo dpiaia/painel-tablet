@@ -66,7 +66,8 @@ _estado = {
 # "agenda_web" é a reserva: quando o adb não alcança o tablet, a extensão lê a
 # agenda da aba do Google Agenda aberta no Opera e manda por aqui.
 FONTES_EXTERNAS = ("email", "chat", "whatsapp", "agenda_web")
-PADRAO_PAINEL = ("cartoes", "tempos", "cores", "recado", "ordem", "tema")
+PADRAO_PAINEL = ("cartoes", "tempos", "cores", "recado", "ordem", "tema",
+                 "marca", "fundos")
 
 # Chaves do topo do config que o painel de controle pode mudar. Lista fechada
 # de propósito: um POST não encosta em token, caminho de binário nem porta.
@@ -362,6 +363,33 @@ def octodex():
     return nomes
 
 
+_fundos_cache = (0, [])
+
+
+def fundos():
+    """Os papéis de parede que existem em web/fundos/.
+
+    Mesma ideia da pasta dos octocats: a lista sai do disco, não do código.
+    Soltar um arquivo na pasta já o faz aparecer no painel de controle, sem
+    reiniciar nada e sem editar lista nenhuma.
+    """
+    global _fundos_cache
+    pasta = os.path.join(WEB_DIR, "fundos")
+    try:
+        marca = os.stat(pasta).st_mtime
+    except OSError:
+        return []
+    if marca == _fundos_cache[0]:
+        return _fundos_cache[1]
+    try:
+        nomes = sorted(n for n in os.listdir(pasta)
+                       if n.lower().endswith((".png", ".jpg", ".jpeg", ".webp", ".gif")))
+    except OSError:
+        nomes = []
+    _fundos_cache = (marca, nomes)
+    return nomes
+
+
 def versao_web():
     """Impressão digital dos arquivos que o tablet carrega.
 
@@ -388,6 +416,7 @@ def retrato():
     dados["servidor_ts"] = time.time()
     dados["versao_web"] = versao_web()
     dados["octodex"] = octodex()
+    dados["fundos"] = fundos()
     return dados
 
 

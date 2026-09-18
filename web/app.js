@@ -31,6 +31,21 @@ function escapar(t) {
 }
 
 function agoraS() { return (Date.now() + deslocamento) / 1000; }
+
+// Preto ou branco por cima da imagem, conforme o tema seja escuro ou claro.
+// A conta é a luminância relativa do WCAG — a mesma que decide contraste de
+// texto —, e não a média dos canais: verde pesa muito mais que azul no olho, e
+// um fundo azul-escuro seria julgado claro pela média.
+function veu(hex) {
+  var h = (hex || '').replace('#', '');
+  if (h.length !== 6) return 'rgba(0,0,0,0.55)';
+  var c = [0, 2, 4].map(function (i) {
+    var x = parseInt(h.substr(i, 2), 16) / 255;
+    return x <= 0.03928 ? x / 12.92 : Math.pow((x + 0.055) / 1.055, 2.4);
+  });
+  var lum = 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
+  return lum > 0.4 ? 'rgba(255,255,255,0.62)' : 'rgba(0,0,0,0.58)';
+}
 function hhmm(ts) {
   var d = new Date(ts * 1000);
   return dois(d.getHours()) + ':' + dois(d.getMinutes());
@@ -1033,6 +1048,38 @@ function aplicarAjustes() {
   if (clima) {
     var dividindo = cartoes.clima !== false && cartoes.recado !== false;
     clima.className = clima.className.replace(/ ?estreito/, '') + (dividindo ? ' estreito' : '');
+  }
+
+  /* --- papel de parede, por tema
+   *
+   * O véu por cima da imagem acompanha o BRILHO do tema, não uma cor fixa:
+   * preto nos temas escuros, branco nos claros. Sem ele o relógio e a barra do
+   * topo, que ficam fora dos cartões, sumiriam sobre uma foto clara — e um véu
+   * preto num tema claro deixaria a tela suja.
+   */
+  var fundo = (a.fundos || {})[a.tema || 'escuro'];
+  var corpo = document.body;
+  if (fundo) {
+    var v = veu(((a.cores || {}).fundo) || '#000000');
+    corpo.style.backgroundImage =
+      'linear-gradient(' + v + ',' + v + '), url("fundos/' +
+      encodeURIComponent(fundo) + '")';
+    corpo.style.backgroundSize = 'cover';
+    corpo.style.backgroundPosition = 'center';
+    corpo.style.backgroundRepeat = 'no-repeat';
+  } else {
+    corpo.style.backgroundImage = '';
+  }
+
+  // --- nome no topo
+  //
+  // Só o pedaço antes do "OS" é seu. Mexo no primeiro nó de TEXTO em vez de no
+  // innerHTML do elemento: o <span> do "OS" fica de pé, com a cor de destaque
+  // que ele já tem, sem precisar remontar nada.
+  var marca = $('marca');
+  if (marca && marca.firstChild) {
+    var nome = (a.marca === undefined || a.marca === null) ? 'PIAIA' : a.marca;
+    if (marca.firstChild.nodeValue !== nome) marca.firstChild.nodeValue = nome;
   }
 
   // --- recado

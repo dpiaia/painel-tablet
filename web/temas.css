@@ -326,3 +326,20 @@
 [data-tema="matrix"].tremendo .painel { transform: translate3d(0.35vw, 0, 0); }
 [data-tema="matrix"].tremendo .topo  { transform: translate3d(-0.25vw, 0, 0); }
 [data-tema="matrix"].tremendo .crt   { opacity: 0.45; }
+
+
+/* As imagens dentro dos cartões entram no duotone. O Clawd terracota e os
+   octocats coloridos eram a única coisa fora do tubo.
+
+   A corrente: grayscale tira o matiz original, sepia devolve UM matiz (o
+   quente, por volta de 40°), hue-rotate empurra esse matiz para o verde e
+   saturate reforça. Fazer só hue-rotate no colorido não funcionaria — cada
+   imagem partiria de um matiz diferente e cairia num verde diferente.
+
+   Fora dos cartões nada é filtrado: as cenas de tela cheia têm cor própria e
+   ficariam esverdeadas por cima da mensagem. */
+[data-tema="matrix"] .cartao img,
+[data-tema="matrix"] .tela img {
+  -webkit-filter: grayscale(1) sepia(1) hue-rotate(75deg) saturate(3.2) brightness(0.95);
+          filter: grayscale(1) sepia(1) hue-rotate(75deg) saturate(3.2) brightness(0.95);
+}

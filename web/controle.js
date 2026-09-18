@@ -95,6 +95,10 @@ const TEMAS = [
 
 let painel = null, fontes = {}, pendente = null;
 
+// O que o servidor encontrou no disco: papéis de parede, octocats. Não é
+// configuração, é inventário — por isso vem do estado e não do painel.
+let disponiveis = { fundos: [] };
+
 // O que está esperando para ser enviado. Precisa ACUMULAR, e não ser
 // substituído: duas gravações seguidas (o tema grava cores e slug) caíam no
 // mesmo debounce, e a segunda cancelava a primeira. O tema chegava ao servidor
@@ -319,6 +323,7 @@ function aplicarTema(slug, cores) {
   salvar('tema', null, slug);
   desenharCores();
   desenharTemas();
+  desenharFundos();   // cada tema tem o seu; trocar de tema troca a escolha
 }
 
 function resetCores() {
@@ -339,6 +344,76 @@ const CORES_RECADO = [
   ['rosa',    'Rosa',    '#fbcfe8', '#500724'],
   ['lilas',   'Lilás',   '#ddd6fe', '#2e1065'],
 ];
+
+function desenharMarca() {
+  const alvo = document.getElementById('marca');
+  alvo.innerHTML = '';
+  const campo = document.createElement('div');
+  campo.className = 'campo';
+  campo.innerHTML = '<label><b>Nome no topo</b>' +
+                    '<span>o "OS" continua ao lado</span></label>';
+  const inp = document.createElement('input');
+  inp.type = 'text';
+  inp.maxLength = 18;          // mais que isso empurra o relógio do tablet
+  inp.value = painel.marca === undefined ? 'PIAIA' : painel.marca;
+  inp.placeholder = 'PIAIA';
+  inp.onchange = () => salvar('marca', null, inp.value.trim());
+  campo.appendChild(inp);
+  alvo.appendChild(campo);
+}
+
+function desenharFundos() {
+  const alvo = document.getElementById('fundos');
+  alvo.innerHTML = '';
+  const tema = painel.tema || 'escuro';
+  const nomeTema = (TEMAS.find(t => t[1] === tema) || ['este tema'])[0];
+  const lista = disponiveis.fundos || [];
+
+  const campo = document.createElement('div');
+  campo.className = 'campo';
+  campo.innerHTML = '<label><b>Papel de parede</b><span>vale para o tema ' +
+                    nomeTema + '; cada tema guarda o seu</span></label>';
+
+  if (!lista.length) {
+    const vazio = document.createElement('div');
+    vazio.className = 'dica-vazia';
+    vazio.textContent = 'Nenhuma imagem em web/fundos/. Solte arquivos ali e ' +
+                        'eles aparecem aqui, sem reiniciar nada.';
+    campo.appendChild(vazio);
+    alvo.appendChild(campo);
+    return;
+  }
+
+  const atual = (painel.fundos || {})[tema] || '';
+  const linha = document.createElement('div');
+  linha.className = 'temas';
+
+  const escolher = (nome) => {
+    const fundos = Object.assign({}, painel.fundos || {});
+    if (nome) fundos[tema] = nome; else delete fundos[tema];
+    salvar('fundos', null, fundos);
+    desenharFundos();
+  };
+
+  const nenhum = document.createElement('button');
+  nenhum.className = 'tema' + (atual ? '' : ' ativo');
+  nenhum.textContent = 'Nenhum';
+  nenhum.onclick = () => escolher('');
+  linha.appendChild(nenhum);
+
+  lista.forEach((nome) => {
+    const b = document.createElement('button');
+    b.className = 'tema' + (atual === nome ? ' ativo' : '');
+    b.innerHTML = '<span class="mini-fundo" style="background-image:url(\'fundos/' +
+                  encodeURIComponent(nome) + '\')"></span>' +
+                  nome.replace(/\.[a-z]+$/i, '');
+    b.onclick = () => escolher(nome);
+    linha.appendChild(b);
+  });
+
+  campo.appendChild(linha);
+  alvo.appendChild(campo);
+}
 
 function desenharRecado() {
   const alvo = document.getElementById('recado');
@@ -425,12 +500,14 @@ async function iniciar() {
   painel.cartoes = painel.cartoes || {};
   painel.tempos = painel.tempos || {};
   painel.cores = painel.cores || {};
+  disponiveis.fundos = e.fundos || [];
 
   const d = await (await fetch('/ajustes', {method:'POST',
     headers:{'Content-Type':'application/json'}, body:'{}'})).json();
   fontes = d.fontes || {};
 
-  desenharCartoes(); desenharFontes(); desenharRecado();
+  desenharMarca(); desenharCartoes(); desenharFontes(); desenharRecado();
+  desenharFundos();
   desenharTempos(); desenharTemas(); desenharCores(); verDiag();
   setInterval(verDiag, 15000);
 }
