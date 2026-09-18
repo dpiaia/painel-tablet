@@ -969,6 +969,18 @@ function telaClaude() {
  * até lá para trazê-lo de volta. Aqui o toque só abre e só fecha, como em todo
  * o resto — quem quiser o endereço lê e digita.
  */
+/* Créditos do que aparece na tela. Só o que tem origem conhecida — atribuir
+ * errado é pior do que não atribuir. */
+// Rótulos curtos de propósito: a coluna é estreita e qualquer um com mais de
+// oito letras quebra em duas linhas, desalinhando a lista inteira.
+var CREDITOS = [
+  ['Clawd',    'Anthropic, via Tenor · icons8'],
+  ['Octocats', 'Octodex, GitHub'],
+  ['Clima',    'Open-Meteo'],
+  ['Fundos',   'Microsoft — Windows 95 e XP'],
+  ['Ícones',   'icon-icons.com']
+];
+
 var LINKS = [
   ['site',      'www.piaianet.com'],
   ['linkedin',  'linkedin.com/in/denispiaia'],
@@ -983,6 +995,11 @@ function telaSobre() {
            '<span class="val">' + escapar(l[1]) + '</span></div>';
   }).join('');
 
+  var creditos = CREDITOS.map(function (c) {
+    return '<div class="link"><span class="rot">' + escapar(c[0]) + '</span>' +
+           '<span class="val">' + escapar(c[1]) + '</span></div>';
+  }).join('');
+
   return '<div class="sobre">' +
     '<div class="sobre-txt">' +
       '<p class="lead">Um tablet Android de 2015 virou painel de mesa.</p>' +
@@ -990,6 +1007,12 @@ function telaSobre() {
       'sessões do Claude Code. O tablet só mostra. Tudo na rede local — ' +
       'nada sobe para lugar nenhum.</p>' +
       '<p class="repo">Código aberto em <b>github.com/dpiaia/painel-tablet</b></p>' +
+    '</div>' +
+    '<div class="sobre-creditos">' +
+      '<div class="titulo-col">Créditos</div>' +
+      creditos +
+      '<p class="nota">As imagens são de seus autores e mantêm os termos de ' +
+      'origem. O código é MIT.</p>' +
     '</div>' +
     '<div class="sobre-autor">' +
       '<div class="quem">Denis Piaia</div>' +
