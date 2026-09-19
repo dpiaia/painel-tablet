@@ -76,6 +76,20 @@ async function coletar() {
 
     fontes[f.nome] = { aberto: true, contador: total, abas: detalhe };
   }
+  /* A música é relatada pelo content script da aba, não daqui — só ele
+   * enxerga o tocador. Mas quando NÃO HÁ aba, ninguém relata, e "ninguém
+   * relatou" é ambíguo: pode ser a aba fechada ou a extensão desatualizada,
+   * sem o musica.js carregado. São dois problemas com conserto diferente.
+   *
+   * Então aqui a ausência vira uma afirmação: sem aba, o painel recebe
+   * `aberto: false` e sabe dizer "YouTube Music fechado". Com aba, este
+   * relatório se cala e deixa o content script falar — dois donos do mesmo
+   * campo se sobrescreveriam a cada dois segundos.
+   */
+  const temMusica = abas.some((t) => t.url &&
+    /^https:\/\/music\.youtube\.com\//.test(t.url));
+  if (!temMusica) fontes.musica = { aberto: false, faixa: null };
+
   return fontes;
 }
 
@@ -166,26 +180,43 @@ chrome.alarms.onAlarm.addListener(enviar);
  * existir junto com a página, e dois timers na mesma aba só mandariam o mesmo
  * dado duas vezes.
  */
-async function injetarAgenda() {
-  try {
-    const abas = await chrome.tabs.query({ url: 'https://calendar.google.com/*' });
-    for (const t of abas) {
-      try {
-        await chrome.scripting.executeScript({ target: { tabId: t.id },
-                                               files: ['agenda.js'] });
-      } catch (e) {
-        // Aba descartada pelo navegador, ou sem permissão ainda concedida.
+/* Content script do manifesto só entra em aba CARREGADA DEPOIS. Quem já
+ * estava com o Google Agenda ou o YouTube Music aberto não receberia nada até
+ * recarregar a aba na mão — e ninguém recarrega a aba que está tocando música
+ * para descobrir por que o painel não mostra a música.
+ *
+ * Então na instalação, na atualização e a cada partida do navegador, os
+ * scripts são injetados nas abas que já existem. Injetar duas vezes na mesma
+ * aba é inofensivo: cada script monta o próprio ciclo e o anterior morre com
+ * o contexto antigo.
+ */
+const INJETAR = [
+  ['https://calendar.google.com/*',  'agenda.js'],
+  ['https://music.youtube.com/*',    'musica.js'],
+];
+
+async function injetarNasAbertas() {
+  for (const [padrao, arquivo] of INJETAR) {
+    try {
+      const abas = await chrome.tabs.query({ url: padrao });
+      for (const t of abas) {
+        try {
+          await chrome.scripting.executeScript({ target: { tabId: t.id },
+                                                 files: [arquivo] });
+        } catch (e) {
+          // Aba descartada pelo navegador, ou sem permissão ainda concedida.
+        }
       }
+    } catch (e) {
+      // Navegador sem a API de scripting: a injeção normal do manifesto
+      // continua valendo quando a aba recarregar.
     }
-  } catch (e) {
-    // Navegador sem a API de scripting: a injeção normal do manifesto continua
-    // valendo quando a aba recarregar.
   }
 }
 
-chrome.runtime.onStartup.addListener(injetarAgenda);
-chrome.runtime.onInstalled.addListener(injetarAgenda);
-injetarAgenda();
+chrome.runtime.onStartup.addListener(injetarNasAbertas);
+chrome.runtime.onInstalled.addListener(injetarNasAbertas);
+injetarNasAbertas();
 
 chrome.runtime.onStartup.addListener(enviar);
 chrome.runtime.onInstalled.addListener(enviar);

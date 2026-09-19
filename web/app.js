@@ -910,13 +910,59 @@ var sliderMsg = new Slider($('palco'), $('pontos'));
  * este Mac está no 27 — não há caminho ali para um serviço de fundo. A música
  * toca numa aba do Opera, e na aba a extensão já mora.
  *
- * A LEITURA TEM PRAZO. A extensão relata de dois em dois segundos; passou de
- * MUSICA_VELHA sem relatório, o navegador fechou, dormiu ou a aba sumiu — e
- * aí o cartão diz que não está vendo. Uma faixa de meia hora atrás com o
- * ícone de "tocando" seria a mentira mais fácil de acreditar deste painel:
- * parece certa, e você só descobre quando estranha o silêncio.
+ * A LEITURA TEM PRAZO, e são dois prazos porque são dois relatores. A aba
+ * relata de dois em dois segundos enquanto está aberta; o background relata
+ * "não tem aba" no batimento de um minuto. Cobrar 15 segundos do batimento
+ * marcaria como sumido quem está falando no ritmo combinado.
+ *
+ * Uma faixa de meia hora atrás com o ícone de "tocando" seria a mentira mais
+ * fácil de acreditar deste painel: parece certa, e você só descobre quando
+ * estranha o silêncio.
  */
-var MUSICA_VELHA = 15;
+var MUSICA_VELHA = 15;            // relatório da aba, de 2 em 2s
+var MUSICA_VELHA_FECHADO = 150;   // batimento do background, de 1 em 1 min
+
+/* Quatro respostas diferentes para quatro problemas diferentes, porque cada
+ * uma tem um conserto diferente:
+ *
+ *   sem-sensor   a extensão está viva (o e-mail chegou agora) mas nunca falou
+ *                de música -> ela é anterior ao musica.js. Recarregar no Opera.
+ *   sem-leitura  ninguém está falando -> Mac dormindo, painel fora do ar.
+ *   fechado      a extensão diz que não há aba -> abrir o YouTube Music.
+ *   parado       a aba está aberta e não há faixa -> fila vazia.
+ *
+ * O primeiro caso é o que mais custa quando falta: "não aparece nada" manda
+ * você procurar defeito no painel, quando o que faltava era um botão de
+ * recarregar no navegador.
+ */
+function extensaoViva() {
+  var e = estado.email;
+  return !!(e && e.atualizado_em && agoraS() - e.atualizado_em < MUSICA_VELHA_FECHADO);
+}
+
+function estadoMusica() {
+  var m = estado.musica;
+  if (!m || !m.atualizado_em) return extensaoViva() ? 'sem-sensor' : 'sem-leitura';
+
+  var idade = agoraS() - m.atualizado_em;
+  if (!m.aberto) return idade > MUSICA_VELHA_FECHADO ? 'sem-leitura' : 'fechado';
+  if (idade > MUSICA_VELHA) return extensaoViva() ? 'fechado' : 'sem-leitura';
+  if (m.faixa) return 'tocando';
+  // Tem som saindo e mesmo assim a aba não achou o texto: o YouTube mexeu na
+  // barra e o seletor ficou para trás. Dizer "nada tocando" aqui mandaria
+  // procurar defeito na playlist.
+  return m.cego ? 'cego' : 'parado';
+}
+
+var RECADO_MUSICA = {
+  'sem-sensor':  'a extensão do Opera ainda não tem o sensor de música — ' +
+                 'recarregue-a em opera://extensions',
+  'sem-leitura': 'sem leitura do navegador',
+  'fechado':     'YouTube Music fechado',
+  'parado':      'nada tocando',
+  'cego':        'tocando, mas não consigo ler a faixa — o YouTube deve ter ' +
+                 'mudado a barra do tocador'
+};
 
 var ICONE_MUSICA = '<svg class="ic" viewBox="0 0 24 24"><path d="M9 18V5l12-2v13"/>' +
   '<circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>';
@@ -935,10 +981,7 @@ var ICONE_TOCA = {
  * terem duas opiniões sobre a mesma coisa.
  */
 function musicaViva() {
-  var m = estado.musica;
-  if (!m || !m.atualizado_em) return null;
-  if (agoraS() - m.atualizado_em > MUSICA_VELHA) return null;
-  return m;
+  return estadoMusica() === 'tocando' ? estado.musica : null;
 }
 
 function tempoFaixa(seg) {
@@ -965,18 +1008,15 @@ function posicaoAgora(m) {
 function slideMusica() {
   var base = { classe: 'musica-slide', titulo: 'YOUTUBE MUSIC',
                icone: ICONE_MUSICA, tela: 'musica' };
-  var m = musicaViva();
+  var como = estadoMusica();
 
-  if (!m) {
-    base.html = '<div class="vazio">sem leitura do navegador</div>';
-    return base;
-  }
-  if (!m.faixa) {
-    base.html = '<div class="vazio">nada tocando</div>';
+  if (como !== 'tocando') {
+    base.html = '<div class="vazio">' + RECADO_MUSICA[como] + '</div>';
     return base;
   }
 
-  var f = m.faixa;
+  var f = estado.musica.faixa;
+  var m = estado.musica;
   base.selo = f.tocando ? 'TOCANDO' : 'PAUSADO';
   base.html =
     '<div class="corpo musica-cartao">' +
@@ -1002,13 +1042,12 @@ function capaHtml(f, classe) {
 }
 
 function telaMusica() {
-  var m = musicaViva();
-  if (!m) {
-    return '<div class="vazio">sem leitura do navegador — abra o YouTube Music ' +
-           'no Opera com a extensão do painel ligada</div>';
+  var como = estadoMusica();
+  if (como !== 'tocando') {
+    return '<div class="vazio">' + RECADO_MUSICA[como] + '</div>';
   }
-  if (!m.faixa) return '<div class="vazio">nada tocando</div>';
 
+  var m = estado.musica;
   var f = m.faixa;
   var pos = posicaoAgora(m);
   var pct = (f.duracao && pos !== null) ? Math.min(100, pos * 100 / f.duracao) : 0;

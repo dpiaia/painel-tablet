@@ -55,10 +55,17 @@ function ler() {
   const b = barra();
   const titulo = texto(b && b.querySelector('.title'));
 
-  // Sem título não há faixa. Pode ser a página ainda carregando, a fila
-  // vazia ou o seletor quebrado — nos três casos a resposta honesta é a
-  // mesma, e é o painel que decide o que dizer.
-  if (!titulo) return { aberto: true, faixa: null };
+  /* Sem título, duas coisas muito diferentes podem estar acontecendo: a fila
+   * está vazia, ou o YouTube mudou a barra e o seletor parou de achar. O
+   * <video> desempata — se há som rolando e mesmo assim não achei o texto, o
+   * quebrado sou eu, e o painel tem que dizer isso em vez de "nada tocando".
+   *
+   * É a diferença entre você olhar o painel e pensar "acabou a playlist" ou
+   * "o sensor quebrou". A primeira faz você não fazer nada. */
+  if (!titulo) {
+    const rolando = !!(v && !v.paused && !v.ended);
+    return { aberto: true, faixa: null, cego: rolando };
+  }
 
   const info = partes(texto(b.querySelector('.byline')));
   return {
