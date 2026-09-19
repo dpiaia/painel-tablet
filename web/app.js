@@ -923,8 +923,18 @@ var sliderMsg = new Slider($('palco'), $('pontos'));
  * fácil de acreditar deste painel: parece certa, e você só descobre quando
  * estranha o silêncio.
  */
-var MUSICA_VELHA = 15;            // relatório da aba, de 2 em 2s
+var MUSICA_VELHA = 15;            // aba tocando: relata de 2 em 2s
 var MUSICA_VELHA_FECHADO = 150;   // batimento do background, de 1 em 1 min
+
+/* Aba PARADA e em segundo plano relata muito mais devagar, e não é defeito
+ * nosso: o Chrome estrangula os temporizadores de aba escondida, e uma aba
+ * que está tocando som escapa do estrangulamento mais duro — parada, não. Na
+ * prática o relatório cai de 2 em 2 segundos para um por minuto.
+ *
+ * Cobrar 15 segundos dela fazia o cartão dizer "sem leitura do navegador"
+ * assim que você pausava a música, o que é falso duas vezes: a aba está lá e
+ * o painel sabe exatamente o que está tocando. */
+var MUSICA_VELHA_PARADO = 150;
 
 /* Quatro respostas diferentes para quatro problemas diferentes, porque cada
  * uma tem um conserto diferente:
@@ -950,7 +960,12 @@ function estadoMusica() {
 
   var idade = agoraS() - m.atualizado_em;
   if (!m.aberto) return idade > MUSICA_VELHA_FECHADO ? 'sem-leitura' : 'fechado';
-  if (idade > MUSICA_VELHA) return extensaoViva() ? 'fechado' : 'sem-leitura';
+
+  // Quem está tocando fala de dois em dois segundos; quem está pausado, uma
+  // vez por minuto. Dois ritmos, dois prazos — o mesmo que já vale para o
+  // batimento do background.
+  var limite = (m.faixa && m.faixa.tocando) ? MUSICA_VELHA : MUSICA_VELHA_PARADO;
+  if (idade > limite) return 'sem-leitura';
   if (m.faixa) return 'tocando';
   // Tem som saindo e mesmo assim a aba não achou o texto: o YouTube mexeu na
   // barra e o seletor ficou para trás. Dizer "nada tocando" aqui mandaria
@@ -1038,8 +1053,15 @@ function slideMusica() {
   }
 
   var f = estado.musica.faixa;
-  var m = estado.musica;
   base.selo = f.tocando ? 'TOCANDO' : 'PAUSADO';
+
+  /* O botão mostra o que vai ACONTECER, não o que está acontecendo: tocando,
+   * ele é uma pausa; parado, é um play. O selo no cabeçalho continua dizendo
+   * o estado — um informa, o outro age, e trocar os dois de papel é o engano
+   * clássico deste controle.
+   *
+   * O toque aqui não abre a tela cheia: o roteador de cliques lê `data-musica`
+   * antes de `data-tela`, e o cartão inteiro é um alvo de `data-tela`. */
   base.html =
     '<div class="corpo musica-cartao">' +
       capaHtml(f, 'musica-capa') +
@@ -1048,6 +1070,10 @@ function slideMusica() {
         '<div class="musica-artista">' + escapar(f.artista || 'artista desconhecido') + '</div>' +
         (f.album ? '<div class="musica-album">' + escapar(f.album) + '</div>' : '') +
       '</div>' +
+      '<button class="musica-bt" data-musica="tocar-pausar" aria-label="' +
+        (f.tocando ? 'pausar' : 'tocar') + '">' +
+        (f.tocando ? ICONE_TOCA.pausar : ICONE_TOCA.tocar) +
+      '</button>' +
     '</div>';
   return base;
 }
@@ -1136,6 +1162,25 @@ function telaMusica() {
   '</div>';
 }
 
+/* Os dois lugares onde tocar/pausar aparece como BOTÃO: o grupo da tela
+ * cheia, que mostra ou esconde o par certo, e o botão único do cartão, que
+ * troca de ícone. Pintar os dois de um lugar só evita apertar na tela e o
+ * cartão atrás continuar dizendo o contrário.
+ *
+ * É só a pintura adiantada. O desenho de verdade vem do próximo relatório,
+ * que reconstrói o slide quando o conteúdo muda.
+ */
+function pintarTocando(tocando) {
+  var grupo = document.querySelector('.tocador-botoes');
+  if (grupo) grupo.setAttribute('data-tocando', tocando ? '1' : '0');
+
+  var bt = document.querySelector('.musica-bt');
+  if (bt) {
+    bt.innerHTML = tocando ? ICONE_TOCA.pausar : ICONE_TOCA.tocar;
+    bt.setAttribute('aria-label', tocando ? 'pausar' : 'tocar');
+  }
+}
+
 /* Entre um segundo e outro só a barra anda — redesenhar a tela inteira
  * jogaria fora a capa e piscaria os botões debaixo do dedo.
  *
@@ -1183,9 +1228,10 @@ function mandarMusica(cmd) {
   var m = musicaViva();
   var tocando = !!(m && m.faixa && m.faixa.tocando);
 
-  if (cmd === 'tocar' || cmd === 'pausar') {
+  if (cmd === 'tocar' || cmd === 'pausar' || cmd === 'tocar-pausar') {
     // Apertar "tocar" já tocando não faz nada: a extensão só sabe alternar, e
-    // recomeçar a faixa não está no alcance dela.
+    // recomeçar a faixa não está no alcance dela. (O botão do cartão manda
+    // 'tocar-pausar' direto: lá é um botão só, e ele já mostra o estado.)
     if (cmd === 'tocar' && tocando) return;
     cmd = 'tocar-pausar';
 
@@ -1194,8 +1240,7 @@ function mandarMusica(cmd) {
      * play-pause-play. O próximo relatório confirma ou desfaz. */
     if (m && m.faixa) {
       m.faixa.tocando = !tocando;
-      var grupo = document.querySelector('.tocador-botoes');
-      if (grupo) grupo.setAttribute('data-tocando', m.faixa.tocando ? '1' : '0');
+      pintarTocando(m.faixa.tocando);
     }
   }
 
@@ -2254,7 +2299,7 @@ function aplicarAjustes() {
   // tem canto largo), então a conta de quantas linhas cabem tem que ser
   // refeita — e ela não roda sozinha, porque o conteúdo não mudou.
   setTimeout(function () { hostsSlide.forEach(function (h) { ajustarListas(h.slider.palco); });
-  ajustarListas(sliderMsg.palco); }, 60);
+  ajustarListas(sliderMsg.palco); medirBarra(); }, 60);
   agendarTremor();
 
   // --- cores: a folha inteira usa variáveis, então trocar a variável troca
@@ -2881,9 +2926,23 @@ function conectar() {
   };
 }
 
+/* A altura da barra do topo, medida e escrita como variável CSS.
+ *
+ * A tela de detalhe começa logo abaixo dela, e essa altura muda com o tema —
+ * o Facebook dá fundo próprio à barra, o XP usa outra fonte, o 95 tem relevo.
+ * Um valor chutado no CSS deixaria uma fresta em uns temas e sobreposição em
+ * outros. Medir custa uma leitura de layout e acontece só quando algo muda.
+ */
+function medirBarra() {
+  var barra = $('topo-barra');
+  if (!barra) return;
+  document.documentElement.style.setProperty('--barra', barra.offsetHeight + 'px');
+}
+
 // Virar o tablet, mudar a janela no Mac: a altura do cartão muda e a conta de
 // quantas linhas cabem precisa ser refeita.
 window.addEventListener('resize', function () {
+  medirBarra();
   hostsSlide.forEach(function (h) { ajustarListas(h.slider.palco); });
   ajustarListas(sliderMsg.palco);
 });
@@ -2904,6 +2963,7 @@ window.addEventListener('resize', function () {
 })();
 
 ultimoSinal = Date.now();
+medirBarra();
 carregarTemas();
 conectar();
 tique();

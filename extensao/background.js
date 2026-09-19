@@ -129,6 +129,14 @@ chrome.runtime.onMessage.addListener((msg, remetente, responder) => {
     enviarMusica(msg.dados).then(responder);
     return true;            // a resposta vem depois; segura o canal aberto
   }
+
+  // O endereço do painel mora no config.js, que só é carregado aqui. A aba
+  // pergunta em vez de ter uma segunda cópia para divergir quando a porta
+  // mudar — e o token continua sem sair daqui.
+  if (msg && msg.tipo === 'painel-base') {
+    responder({ base: PAINEL.replace(/\/ingest$/, '') });
+    return;
+  }
 });
 
 async function enviarMusica(dados) {

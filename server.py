@@ -100,6 +100,32 @@ _musicas = {}                   # fonte -> leitura (já com atualizado_em)
 _comando_musica = None          # (nome, fonte, quando)
 _trava_musica = threading.Lock()
 
+# Quem está esperando um toque de campainha para vir buscar comando.
+#
+# POR QUE ISTO EXISTE: o Chrome estrangula os temporizadores de uma aba
+# escondida e sem som. Uma aba PAUSADA relata uma vez por minuto — e um
+# comando que vale 12 segundos vence muito antes de ela aparecer. Na prática,
+# apertar play numa música pausada não fazia nada, que é justamente o caso
+# mais comum de quem olha o painel.
+#
+# O estrangulamento é de TEMPORIZADOR, não de rede: uma mensagem que chega por
+# uma conexão aberta acorda a aba na hora. Então a campainha não carrega o
+# comando — ela só diz "tem algo para você", e a aba responde fazendo o
+# relatório de sempre, que colhe o comando da caixa pelo caminho de sempre.
+# Um caminho de entrega só, e nenhum risco de executar duas vezes.
+_campainhas = set()
+_trava_campainha = threading.Lock()
+
+
+def tocar_campainha(fonte):
+    with _trava_campainha:
+        alvos = list(_campainhas)
+    for fila in alvos:
+        try:
+            fila.put_nowait(fonte)
+        except queue.Full:
+            pass   # já tem campainha na fila dele; uma basta
+
 
 def _musica_escolhida():
     """A leitura que vai para a tela. Chamar sempre com _trava_musica."""
@@ -700,6 +726,7 @@ class Handler(BaseHTTPRequestHandler):
             if not alvo:
                 return self._json({"ok": False, "motivo": "nenhum tocador relatando"})
             _comando_musica = (nome, alvo, time.time())
+        tocar_campainha(alvo)
         return self._json({"ok": True, "comando": nome, "para": alvo})
 
     def _trocar_tema(self):
@@ -915,6 +942,8 @@ class Handler(BaseHTTPRequestHandler):
             return self._sse()
         if rota == "/api/estado":
             return self._json(retrato())
+        if rota == "/campainha":
+            return self._campainha()
         if rota == "/temas.json":
             # Aberto de propósito: é catálogo, não configuração. Quem desenha
             # o seletor — o controle no Mac e o menu do nome no tablet —
@@ -1023,6 +1052,45 @@ class Handler(BaseHTTPRequestHandler):
             corpo = fh.read()
         self._cabecalho(tipo, len(corpo))
         self.wfile.write(corpo)
+
+    def _campainha(self):
+        """Fluxo SSE que a extensão escuta para saber quando vir buscar.
+
+        Só manda o nome do tocador, nunca o comando: quem guarda o comando é a
+        caixa, e ela continua sendo lida pelo relatório normal. Assim não há
+        dois caminhos de entrega para a mesma coisa.
+
+        Sem token na URL de propósito — token em querystring vaza em log e em
+        histórico. Esta rota não devolve nada além de um nome de tocador, que
+        não é segredo; e o que ela provoca (o relatório) continua exigindo o
+        token no POST.
+        """
+        fila = queue.Queue(maxsize=2)
+        with _trava_campainha:
+            _campainhas.add(fila)
+        try:
+            self.send_response(200)
+            self.send_header("Content-Type", "text/event-stream; charset=utf-8")
+            self.send_header("Cache-Control", "no-cache")
+            self._cors()
+            self.end_headers()
+            self.wfile.write(b"event: ola\ndata: {}\n\n")
+            self.wfile.flush()
+            while True:
+                try:
+                    fonte = fila.get(timeout=25)
+                except queue.Empty:
+                    self.wfile.write(b"event: ping\ndata: {}\n\n")
+                    self.wfile.flush()
+                    continue
+                self.wfile.write(("event: comando\ndata: " +
+                                  json.dumps({"fonte": fonte}) + "\n\n").encode("utf8"))
+                self.wfile.flush()
+        except (BrokenPipeError, ConnectionResetError, OSError):
+            pass
+        finally:
+            with _trava_campainha:
+                _campainhas.discard(fila)
 
     def _sse(self):
         fila = queue.Queue(maxsize=4)

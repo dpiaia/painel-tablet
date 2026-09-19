@@ -599,9 +599,13 @@ body { display: flex; flex-direction: column; }
 .toque { cursor: pointer; }
 .toque:active { border-color: var(--ciano); }
 
+/* `--barra` é a altura medida da barra do topo, escrita pelo JS a cada
+   montagem: ela muda com o tema (o Facebook tem fundo próprio, o XP tem outra
+   fonte) e chutar um valor deixaria uma fresta ou uma sobreposição em algum
+   deles. O padrão só vale até a primeira medição. */
 .tela {
   position: fixed;
-  top: 0; left: 0; right: 0; bottom: 0;
+  top: var(--barra, 4.6vw); left: 0; right: 0; bottom: 0;
   background: var(--fundo);
   z-index: 50;
   display: flex;
@@ -1276,10 +1280,19 @@ body { display: flex; flex-direction: column; }
 }
 
 
-/* Com a tela de detalhe aberta, o painel some de verdade — escondido, os gifs
-   param de decodificar; apenas coberto, continuariam gastando CPU atrás. */
-.tela-aberta .painel,
-.tela-aberta .topo { display: none; }
+/* Com a tela de detalhe aberta, o PAINEL some de verdade — escondido, os gifs
+   param de decodificar; apenas coberto, continuariam gastando CPU atrás.
+
+   A BARRA fica. Ela é a moldura do aparelho: carrega o nome, o relógio de
+   conexão, o wifi e a bateria, e são justamente as coisas que você quer
+   poder olhar sem sair de onde está. O Windows 95 e o XP já faziam assim com
+   a barra de tarefas; agora é regra de todos os temas.
+
+   Por isso a barra sobe acima da tela de detalhe (50) e do menu (55) em vez
+   de a tela ser reposicionada: assim nenhum tema precisa saber a altura dela
+   para não ser coberto. */
+.tela-aberta .painel { display: none; }
+.topo { position: relative; z-index: 57; }
 
 
 /* ------------------------------------------- monitor: conteúdo centrado
@@ -1546,6 +1559,27 @@ body { display: flex; flex-direction: column; }
 .tocador-capa .ic { width: 40%; height: 40%; stroke: var(--fraco); }
 
 .musica-txt { min-width: 0; flex: 1; }
+
+/* O botão do cartão. Redondo e do tamanho de um dedo (3.6vw dá ~41px no Tab
+   E), encostado na direita — é o único elemento do cartão que AGE, e misturá-lo
+   com o texto faria parecer mais informação. */
+.musica-bt {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 3.6vw;
+  height: 3.6vw;
+  margin-left: 0.9vw;
+  border: 1px solid var(--borda);
+  border-radius: 50%;
+  background: var(--dentro);
+  color: var(--texto);
+  cursor: pointer;
+}
+.musica-bt .ic { width: 42%; height: 42%; }
+.musica-bt .ic.cheio { fill: currentColor; }   /* ver .toca-bt: ciano some no ciano */
+.musica-bt:active { transform: scale(0.94); }
 .musica-faixa {
   font-size: 1.25vw;
   font-weight: 700;

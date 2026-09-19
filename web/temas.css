@@ -706,8 +706,8 @@
    A referência resolve os dois problemas de uma vez: vira uma janela, com
    barra de título, pousada no papel de parede. E a barra de tarefas continua
    aparecendo atrás, como continuaria de verdade. */
-[data-tema="win95"].tela-aberta .topo,
-[data-tema="xp"].tela-aberta .topo { display: flex; }
+/* (A regra que reacendia a barra aqui saiu: agora ela nunca apaga, em tema
+   nenhum. Estes dois só continuam sendo o caso onde ela vive embaixo.) */
 
 /* ---------------------------------------------------------- Windows 95 */
 [data-tema="win95"] .tela {
@@ -797,6 +797,39 @@
    negociável. */
 .sem-desfoque[data-tema="apple"] .cartao { background: rgba(255, 255, 255, 0.88); }
 .sem-desfoque[data-tema="apple"] .topo   { background: rgba(255, 255, 255, 0.94); }
+
+
+/* --------------------------------------- as telas que abrem também são vidro
+ *
+ * Tela de detalhe e menu de configurações usavam fundo sólido, e o efeito do
+ * tema morria justamente quando a tela inteira era dele. No macOS uma janela
+ * que cobre a tela continua deixando o papel de parede aparecer borrado por
+ * baixo — é isso que diz que ela está POR CIMA de alguma coisa, e não que
+ * virou o fundo.
+ *
+ * Os cartões somem quando a tela abre (o painel é escondido para os gifs
+ * pararem de gastar CPU), então o que aparece atrás do vidro é o papel de
+ * parede, limpo. */
+[data-tema="apple"] .tela {
+  background: rgba(255, 255, 255, 0.62);
+  -webkit-backdrop-filter: saturate(180%) blur(2.2vw);
+          backdrop-filter: saturate(180%) blur(2.2vw);
+}
+[data-tema="apple"] .menu-caixa {
+  background: rgba(255, 255, 255, 0.72);
+  border-color: rgba(255, 255, 255, 0.55);
+  -webkit-backdrop-filter: saturate(180%) blur(1.8vw);
+          backdrop-filter: saturate(180%) blur(1.8vw);
+}
+/* O véu do menu clareia: sobre vidro branco, o preto de 45% que serve aos
+   outros temas suja a foto inteira em vez de recuar o fundo. */
+[data-tema="apple"] .menu { background: rgba(0, 0, 0, 0.18); }
+
+/* Sem desfoque, fecha — pela mesma razão do cartão: sem o borrão, o texto
+   pousa na foto crua e sobre um trecho escuro some. A tela é o caso pior,
+   porque é onde há mais texto pequeno. */
+.sem-desfoque[data-tema="apple"] .tela       { background: rgba(255, 255, 255, 0.93); }
+.sem-desfoque[data-tema="apple"] .menu-caixa { background: rgba(255, 255, 255, 0.95); }
 
 
 /* ======================================== o relógio grande, por tema
@@ -1347,4 +1380,23 @@
   transform: rotate(-45deg) scale(0.62);
   fill: #f08020;
   stroke: none;
+}
+
+/* O botão do cartão de música, nos temas do Windows: quadrado e de relevo,
+   como todo botão deles. Nos outros ele fica redondo, que é a linguagem dos
+   cartões. */
+[data-tema="win95"] .musica-bt,
+[data-tema="xp"] .musica-bt {
+  border: 0;
+  border-radius: 0;
+  background: #d4d4d4;
+  color: #4a4a4a;
+  box-shadow: inset -1px -1px 0 #4a4a4a, inset 1px 1px 0 #ffffff,
+              inset -2px -2px 0 #8a8a8a, inset 2px 2px 0 #f0f0f0;
+}
+[data-tema="win95"] .musica-bt:active,
+[data-tema="xp"] .musica-bt:active {
+  transform: none;
+  box-shadow: inset 1px 1px 0 #4a4a4a, inset -1px -1px 0 #ffffff,
+              inset 2px 2px 0 #8a8a8a, inset -2px -2px 0 #f0f0f0;
 }

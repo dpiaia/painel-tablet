@@ -26,6 +26,7 @@
 
 const CADENCIA = 2000;   // o bastante para o play/pause não parecer travado
 
+
 function um(raiz, seletores) {
   for (const s of seletores) {
     const el = raiz && raiz.querySelector(s);
@@ -211,3 +212,54 @@ function mandar() {
 
 mandar();
 setInterval(mandar, CADENCIA);
+
+/* Play e pause também disparam o relatório na hora.
+ *
+ * O temporizador acima é estrangulado pelo Chrome quando a aba fica escondida
+ * e sem som — vira um por minuto. Os eventos do <video> não são: eles chegam
+ * no instante em que acontecem. Sem isto, pausar pela própria página deixava
+ * o painel com o ícone errado por até um minuto.
+ *
+ * Em captura porque eventos de mídia não sobem: só assim um listener no
+ * documento os enxerga, e não importa quantas vezes o site troque o elemento
+ * de vídeo entre uma faixa e outra.
+ */
+['play', 'pause', 'ended', 'loadedmetadata'].forEach(function (evento) {
+  document.addEventListener(evento, mandar, true);
+});
+
+/* A campainha: uma conexão aberta com o painel, só para saber quando vir
+ * buscar um comando.
+ *
+ * O temporizador lá em cima é estrangulado pelo Chrome quando a aba está
+ * escondida e sem som — vira um por minuto. Isso quebrava justamente o caso
+ * mais comum: música pausada, você aperta play no tablet, e o comando vencia
+ * na caixa antes de a aba aparecer para pegá-lo.
+ *
+ * O estrangulamento é de temporizador, não de rede. Uma mensagem que chega
+ * por uma conexão aberta acorda a aba na hora. A campainha não traz o
+ * comando — ela diz que existe um, e a resposta é o relatório de sempre, que
+ * já sabe colher o comando. Um caminho de entrega só.
+ *
+ * O endereço vem do background, que é onde o config.js mora: escrever
+ * "127.0.0.1:8766" aqui seria uma segunda cópia para divergir no dia em que a
+ * porta mudar. O token continua fora desta aba — a campainha não devolve nada
+ * além de um nome de tocador.
+ *
+ * O EventSource reconecta sozinho quando o Mac dorme ou o painel reinicia, e
+ * a aba volta a ser alcançável sem ninguém recarregar nada.
+ */
+chrome.runtime.sendMessage({ tipo: 'painel-base' }, function (resposta) {
+  if (chrome.runtime.lastError || !resposta || !resposta.base) return;
+  try {
+    const campainha = new EventSource(resposta.base + '/campainha');
+    campainha.addEventListener('comando', function (ev) {
+      let d;
+      try { d = JSON.parse(ev.data); } catch (e) { return; }
+      if (d && d.fonte === LEITOR.fonte) mandar();
+    });
+  } catch (e) {
+    // Sem campainha o tocador continua funcionando: o relatório periódico
+    // ainda colhe o comando, só que devagar quando a aba está pausada.
+  }
+});
