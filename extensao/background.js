@@ -24,6 +24,15 @@ const FONTES = [
   { nome: 'whatsapp', casa: (u) => /^https:\/\/web\.whatsapp\.com\//.test(u) },
 ];
 
+/* Os tocadores que o musica.js sabe ler. Aqui eles servem só para uma coisa:
+ * saber QUAL está sem aba. Com aba, quem relata é o content script — este
+ * relatório se cala e deixa ele falar, senão os dois escreveriam o mesmo
+ * campo a cada dois segundos. */
+const TOCADORES = [
+  ['ytm',     /^https:\/\/music\.youtube\.com\//],
+  ['spotify', /^https:\/\/open\.spotify\.com\//],
+];
+
 function contador(titulo) {
   const m = /\((\d+)\)/.exec(titulo || '');
   return m ? parseInt(m[1], 10) : 0;
@@ -86,9 +95,10 @@ async function coletar() {
    * relatório se cala e deixa o content script falar — dois donos do mesmo
    * campo se sobrescreveriam a cada dois segundos.
    */
-  const temMusica = abas.some((t) => t.url &&
-    /^https:\/\/music\.youtube\.com\//.test(t.url));
-  if (!temMusica) fontes.musica = { aberto: false, faixa: null };
+  const fechadas = TOCADORES
+    .filter(([, padrao]) => !abas.some((t) => t.url && padrao.test(t.url)))
+    .map(([fonte]) => ({ fonte: fonte, aberto: false, faixa: null }));
+  if (fechadas.length) fontes.musica = fechadas;
 
   return fontes;
 }
@@ -193,6 +203,7 @@ chrome.alarms.onAlarm.addListener(enviar);
 const INJETAR = [
   ['https://calendar.google.com/*',  'agenda.js'],
   ['https://music.youtube.com/*',    'musica.js'],
+  ['https://open.spotify.com/*',     'musica.js'],
 ];
 
 async function injetarNasAbertas() {

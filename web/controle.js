@@ -18,7 +18,7 @@ const WIDGETS = [
   ['mensagens',  'Mensagens',          'Gmail, Chat e WhatsApp pela extensão'],
   ['monitor',    'Monitor do Mac',     'CPU, memória e swap; processos no toque'],
   ['uso',        'Monitor do Claude',  'limite de 5 horas e semanal do plano'],
-  ['musica',     'YouTube Music',      'o que toca no Opera; tocador no toque'],
+  ['musica',     'Música',             'YouTube Music ou Spotify no Opera; tocador no toque'],
 ];
 
 // Espelha o LAYOUT_PADRAO do app.js. Duplicado de propósito: o painel de

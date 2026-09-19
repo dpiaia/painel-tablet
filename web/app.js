@@ -958,11 +958,29 @@ var RECADO_MUSICA = {
   'sem-sensor':  'a extensão do Opera ainda não tem o sensor de música — ' +
                  'recarregue-a em opera://extensions',
   'sem-leitura': 'sem leitura do navegador',
-  'fechado':     'YouTube Music fechado',
+  'fechado':     'nenhum tocador aberto',
   'parado':      'nada tocando',
-  'cego':        'tocando, mas não consigo ler a faixa — o YouTube deve ter ' +
+  'cego':        'tocando, mas não consigo ler a faixa — o site deve ter ' +
                  'mudado a barra do tocador'
 };
+
+/* Um widget só para os dois tocadores, e o cabeçalho diz qual é.
+ *
+ * Dois cartões seriam dois espaços onde um está sempre morto: você ouve uma
+ * coisa por vez. Quem escolhe é o servidor, pelo que está TOCANDO — trocar de
+ * tocador troca o cartão sozinho, sem preferência para configurar.
+ *
+ * Mas a fonte não pode sumir: "The Warning" no Spotify e no YouTube Music são
+ * a mesma faixa em dois lugares com filas diferentes, e é o cabeçalho que diz
+ * onde o botão vai bater.
+ */
+var NOMES_FONTE = { ytm: 'YouTube Music', spotify: 'Spotify' };
+
+function nomeFonte() {
+  var m = estado.musica;
+  var nome = m && NOMES_FONTE[m.fonte];
+  return nome || 'Música';
+}
 
 var ICONE_MUSICA = '<svg class="ic" viewBox="0 0 24 24"><path d="M9 18V5l12-2v13"/>' +
   '<circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>';
@@ -1006,9 +1024,9 @@ function posicaoAgora(m) {
 }
 
 function slideMusica() {
-  var base = { classe: 'musica-slide', titulo: 'YOUTUBE MUSIC',
-               icone: ICONE_MUSICA, tela: 'musica' };
   var como = estadoMusica();
+  var base = { classe: 'musica-slide', icone: ICONE_MUSICA, tela: 'musica',
+               titulo: (como === 'tocando' ? nomeFonte() : 'Música').toUpperCase() };
 
   if (como !== 'tocando') {
     base.html = '<div class="vazio">' + RECADO_MUSICA[como] + '</div>';
@@ -1098,9 +1116,13 @@ function andarMusica() {
   if (!m || !m.faixa) { fecharTela(); return; }
 
   var f = m.faixa;
-  var agora = f.titulo + '|' + f.artista + '|' + f.duracao + '|' + f.tocando + '|' + f.capa;
+  var agora = m.fonte + '|' + f.titulo + '|' + f.artista + '|' + f.duracao +
+              '|' + f.tocando + '|' + f.capa;
   if (agora !== assinaturaMusica) {
     assinaturaMusica = agora;
+    // O título entra na conta: trocar de tocador com a tela aberta tem que
+    // trocar o nome na barra também, senão o Spotify aparece como YouTube.
+    $('tela-titulo').textContent = nomeFonte();
     $('tela-corpo').innerHTML = telaMusica();
     return;
   }
@@ -1993,7 +2015,7 @@ function telaUso() {
 var TELAS = {
   monitor: { titulo: 'Monitor do Mac · processos', render: telaMaquina },
   uso:    { titulo: 'Monitor do Claude · plano', render: telaUso },
-  musica: { titulo: 'YouTube Music', render: telaMusica },
+  musica: { titulo: nomeFonte, render: telaMusica },
   sobre:  { titulo: 'Sobre o painel',   render: telaSobre },
   clima:  { titulo: 'Clima da semana',  render: telaClima },
   agenda: { titulo: 'Agenda da semana', render: telaAgenda },
@@ -2005,7 +2027,10 @@ function abrirTela(tipo) {
   if (!t) return;
   telaAberta = tipo;
   telaAte = Date.now() + T.tela * 1000;
-  $('tela-titulo').textContent = t.titulo;
+  // O título pode ser função: o do tocador depende de quem está tocando, e
+  // ele muda entre uma abertura e outra.
+  $('tela-titulo').textContent =
+    (typeof t.titulo === 'function') ? t.titulo() : t.titulo;
   $('tela-corpo').innerHTML = t.render();
   // Qual tela está aberta vira atributo: é assim que o Windows 95 e o XP
   // sabem apagar a própria moldura só nos créditos, onde o conteúdo já traz

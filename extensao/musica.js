@@ -1,111 +1,200 @@
-/* Sensor do Painel — o que está tocando no YouTube Music, e os três botões.
+/* Sensor do Painel — o que está tocando, e os três botões.
+ *
+ * Roda no YouTube Music e no Spotify. A canalização é uma só — ler, relatar,
+ * receber o comando de volta, clicar — e o que muda entre os dois é onde ficam
+ * as coisas na página. Por isso um LEITOR por site, escolhido pelo hostname,
+ * em vez de dois arquivos que iriam divergindo.
  *
  * POR QUE PELO NAVEGADOR: o jeito "certo" seria o Now Playing do macOS, que
- * sabe de qualquer tocador. Só que a Apple fechou o MediaRemote para processos
- * sem entitlement a partir do 15.4, e este Mac está no 27 — não há caminho ali
- * para um script de fundo. A música toca numa aba do Opera, e nesta aba a
- * extensão já é bem-vinda. É o caminho que existe.
+ * sabe de qualquer tocador. A Apple fechou o MediaRemote para processos sem
+ * entitlement a partir do 15.4 e este Mac está no 27 — não há caminho ali para
+ * um script de fundo. A música toca numa aba do Opera, e nesta aba a extensão
+ * já é bem-vinda.
  *
  * ESTE ARQUIVO CLICA, e é o único da extensão que clica. O background.js lê
  * títulos de aba e nunca encosta na página — essa regra continua valendo lá.
  * Aqui o clique é o recurso, não um efeito colateral: são os três botões do
  * próprio tocador, nada mais. Não abre aba, não muda fila, não curte faixa.
  *
- * O ESTADO VEM DO <video>, não do CSS. `paused`, `currentTime` e `duration`
- * são propriedades do elemento — mundo isolado enxerga o DOM igual — e não
- * mudam quando o YouTube redesenha a barra. O texto ainda precisa de seletor,
- * mas se ele quebrar o painel diz que não está vendo em vez de inventar.
+ * O ESTADO VEM DO <video>, não do texto do botão. `paused` é propriedade do
+ * elemento — mundo isolado enxerga o DOM igual — e não muda quando o site
+ * redesenha a barra nem quando você troca o idioma da interface. O texto ainda
+ * precisa de seletor, mas quando ele falha o painel diz que não está vendo em
+ * vez de inventar.
  */
 'use strict';
 
 const CADENCIA = 2000;   // o bastante para o play/pause não parecer travado
 
-function barra() {
-  return document.querySelector('ytmusic-player-bar');
+function um(raiz, seletores) {
+  for (const s of seletores) {
+    const el = raiz && raiz.querySelector(s);
+    if (el) return el;
+  }
+  return null;
 }
 
 function texto(el) {
   return (el && (el.textContent || '')).trim();
 }
 
+function tocandoNoVideo() {
+  const v = document.querySelector('video, audio');
+  if (!v) return null;                     // sem elemento: quem sabe é o site
+  return !v.paused && !v.ended;
+}
+
+/* "3:45" -> 225. O Spotify não expõe os segundos como número em lugar
+ * nenhum do DOM; o que ele mostra é o texto do relógio, e é dele que sai. */
+function segundos(txt) {
+  const p = (txt || '').trim().split(':').map(Number);
+  if (!p.length || p.some(isNaN)) return null;
+  return p.reduce((total, n) => total * 60 + n, 0);
+}
+
+/* ------------------------------------------------------- YouTube Music */
 /* A byline junta artista, álbum e ano com "•". Separar aqui e não no painel
- * porque é aqui que se sabe o formato; o painel recebe campos, não uma
- * string para adivinhar. Nem toda faixa tem álbum (single, upload próprio),
- * então o que falta volta vazio em vez de virar o ano.
- */
-function partes(linha) {
+ * porque é aqui que se sabe o formato; o painel recebe campos, não uma string
+ * para adivinhar. Nem toda faixa tem álbum (single, upload próprio), então o
+ * que falta volta vazio em vez de virar o ano. */
+function partesYtm(linha) {
   const p = linha.split('•').map((s) => s.trim()).filter(Boolean);
   const ano = p.length && /^\d{4}$/.test(p[p.length - 1]) ? p.pop() : '';
   return { artista: p[0] || '', album: p[1] || '', ano: ano };
 }
 
-/* A capa vem em miniatura de 60px na barra. O sufixo de tamanho é da própria
- * URL do Google, então pedir 544 é trocar dois números — e a tela cheia do
- * painel mostra a capa grande, onde 60px viraria um borrão.
- */
-function capa() {
-  const img = document.querySelector('#song-image img, ytmusic-player-bar img.image');
-  const src = (img && img.src) || '';
-  if (!src) return '';
-  return src.replace(/=w\d+-h\d+/, '=w544-h544');
-}
-
-function ler() {
-  const v = document.querySelector('video');
-  const b = barra();
-  const titulo = texto(b && b.querySelector('.title'));
-
-  /* Sem título, duas coisas muito diferentes podem estar acontecendo: a fila
-   * está vazia, ou o YouTube mudou a barra e o seletor parou de achar. O
-   * <video> desempata — se há som rolando e mesmo assim não achei o texto, o
-   * quebrado sou eu, e o painel tem que dizer isso em vez de "nada tocando".
-   *
-   * É a diferença entre você olhar o painel e pensar "acabou a playlist" ou
-   * "o sensor quebrou". A primeira faz você não fazer nada. */
-  if (!titulo) {
-    const rolando = !!(v && !v.paused && !v.ended);
-    return { aberto: true, faixa: null, cego: rolando };
-  }
-
-  const info = partes(texto(b.querySelector('.byline')));
-  return {
-    aberto: true,
-    faixa: {
+const YTM = {
+  fonte: 'ytm',
+  raiz: () => document.querySelector('ytmusic-player-bar'),
+  botoes: {
+    'tocar-pausar': ['#play-pause-button'],
+    'proxima':      ['.next-button'],
+    'anterior':     ['.previous-button']
+  },
+  ler(b) {
+    const titulo = texto(um(b, ['.title']));
+    if (!titulo) return null;
+    const info = partesYtm(texto(um(b, ['.byline'])));
+    const v = document.querySelector('video');
+    return {
       titulo: titulo,
       artista: info.artista,
       album: info.album,
       ano: info.ano,
-      capa: capa(),
+      capa: capaDe(['#song-image img', 'ytmusic-player-bar img.image']),
       tocando: !!(v && !v.paused && !v.ended),
       posicao: v && isFinite(v.currentTime) ? Math.round(v.currentTime) : null,
       duracao: v && isFinite(v.duration) ? Math.round(v.duration) : null
-    }
-  };
-}
-
-/* Clicar no botão do tocador, e não chamar video.play(). O YouTube Music
- * guarda o próprio estado (fila, scrobble, a cara do botão) e mexer no
- * <video> por baixo deixa a página dizendo uma coisa e o som fazendo outra.
- */
-const BOTAO = {
-  'tocar-pausar': '#play-pause-button',
-  'proxima':      '.next-button',
-  'anterior':     '.previous-button'
+    };
+  }
 };
 
+/* ------------------------------------------------------------- Spotify */
+/* O ÁLBUM NÃO VEM. A barra do Spotify mostra faixa e artista, e só: o álbum
+ * não está em lugar nenhum dela. Fica vazio, e o painel diz "sem álbum" em vez
+ * de repetir o nome da faixa ali como se fosse o disco.
+ *
+ * O tempo vem do texto do relógio porque é o único lugar onde o Spotify põe a
+ * posição — o <video> dele é do fluxo cifrado e o currentTime não acompanha a
+ * faixa. No YouTube Music é o contrário, e por isso cada leitor tem o seu. */
+const SPOTIFY = {
+  fonte: 'spotify',
+  raiz: () => document.querySelector('[data-testid="now-playing-widget"]') ||
+               document.querySelector('footer'),
+  botoes: {
+    'tocar-pausar': ['[data-testid="control-button-playpause"]'],
+    'proxima':      ['[data-testid="control-button-skip-forward"]'],
+    'anterior':     ['[data-testid="control-button-skip-back"]']
+  },
+  ler(b) {
+    const titulo = texto(um(b, [
+      '[data-testid="context-item-info-title"]',
+      '[data-testid="context-item-link"]'
+    ]));
+    if (!titulo) return null;
+
+    const artista = texto(um(b, [
+      '[data-testid="context-item-info-subtitles"]',
+      '[data-testid="context-item-info-artist"]'
+    ]));
+
+    const pos = segundos(texto(um(document, ['[data-testid="playback-position"]'])));
+    const dur = segundos(texto(um(document, ['[data-testid="playback-duration"]'])));
+
+    // O aria-label é reserva do <video>, e casa com "Pause" e "Pausar" — o
+    // mesmo prefixo nos dois idiomas em que este painel roda.
+    let tocando = tocandoNoVideo();
+    if (tocando === null) {
+      const bt = um(document, ['[data-testid="control-button-playpause"]']);
+      tocando = /paus/i.test((bt && bt.getAttribute('aria-label')) || '');
+    }
+
+    return {
+      titulo: titulo,
+      artista: artista,
+      album: '',
+      ano: '',
+      capa: capaDe(['[data-testid="cover-art-image"]',
+                    '[data-testid="now-playing-widget"] img']),
+      tocando: tocando,
+      posicao: pos,
+      duracao: dur
+    };
+  }
+};
+
+/* Os dois sites servem a capa em miniatura na barra, e nos dois o tamanho
+ * está na própria URL — então pedir a grande é trocar alguns caracteres, sem
+ * requisição extra nem API. Na tela cheia do painel a capa ocupa 26vw, e a
+ * miniatura viraria um borrão.
+ *
+ *   Google   =w60-h60-l90-rj      ->  =w544-h544-l90-rj
+ *   Spotify  ab67616d00004851...  ->  ab67616d0000b273...   (64px -> 640px)
+ *
+ * Conferido nos dois: o CDN devolve 200 com a imagem grande. Se um dia mudar
+ * o formato, a troca simplesmente não casa e a URL passa intacta — volta a
+ * miniatura, não uma imagem quebrada.
+ */
+function capaDe(seletores) {
+  const img = um(document, seletores);
+  const src = (img && img.src) || '';
+  if (!src) return '';
+  return src
+    .replace(/=w\d+-h\d+/, '=w544-h544')
+    .replace(/\/ab67616d[0-9a-f]{8}/, '/ab67616d0000b273');
+}
+
+const LEITOR = location.hostname.indexOf('spotify') >= 0 ? SPOTIFY : YTM;
+
+function ler() {
+  const b = LEITOR.raiz();
+  const faixa = b ? LEITOR.ler(b) : null;
+  if (faixa) return { fonte: LEITOR.fonte, aberto: true, faixa: faixa };
+
+  /* Sem faixa, duas coisas muito diferentes podem estar acontecendo: a fila
+   * está vazia, ou o site mudou a barra e o seletor parou de achar. O <video>
+   * desempata — se há som rolando e mesmo assim não achei o texto, o quebrado
+   * sou eu, e o painel tem que dizer isso em vez de "nada tocando".
+   *
+   * É a diferença entre você olhar o painel e pensar "acabou a playlist" ou
+   * "o sensor quebrou". A primeira faz você não fazer nada. */
+  return { fonte: LEITOR.fonte, aberto: true, faixa: null,
+           cego: tocandoNoVideo() === true };
+}
+
+/* Clicar no botão do tocador, e não chamar video.play(). Os dois sites guardam
+ * o próprio estado (fila, scrobble, a cara do botão) e mexer no <video> por
+ * baixo deixa a página dizendo uma coisa e o som fazendo outra. */
 function executar(comando) {
-  const seletor = BOTAO[comando];
-  if (!seletor) return;
-  const b = barra();
-  const alvo = b && b.querySelector(seletor);
+  const alvo = um(LEITOR.raiz() || document, LEITOR.botoes[comando] || []) ||
+               um(document, LEITOR.botoes[comando] || []);
   if (alvo) alvo.click();
 }
 
-/* Quem fala com o painel é o background, não esta aba: o token fica num
- * lugar só, em vez de ser injetado em toda página de música que você abrir.
- * A resposta dele traz o comando que o tablet apertou — este arquivo é a
- * única mão que o painel tem dentro do navegador.
- */
+/* Quem fala com o painel é o background, não esta aba: o token fica num lugar
+ * só, em vez de ser injetado em toda página de música que você abrir. A
+ * resposta dele traz o comando que o tablet apertou — este arquivo é a única
+ * mão que o painel tem dentro do navegador. */
 function mandar() {
   let leitura;
   try { leitura = ler(); } catch (e) { return; }

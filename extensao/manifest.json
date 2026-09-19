@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "Sensor do Painel",
   "version": "1.0",
-  "description": "Lê os contadores de Gmail, Google Chat e WhatsApp, a agenda da aba do Google Agenda e o que toca no YouTube Music, e envia para o painel do tablet. O painel pode mandar de volta play/pausa e trocar de faixa.",
+  "description": "Lê os contadores de Gmail, Google Chat e WhatsApp, a agenda da aba do Google Agenda e o que toca no YouTube Music e no Spotify, e envia para o painel do tablet. O painel pode mandar de volta play/pausa e trocar de faixa.",
   "permissions": [
     "tabs",
     "alarms",
@@ -12,7 +12,8 @@
     "http://127.0.0.1/*",
     "http://localhost/*",
     "https://calendar.google.com/*",
-    "https://music.youtube.com/*"
+    "https://music.youtube.com/*",
+    "https://open.spotify.com/*"
   ],
   "background": {
     "service_worker": "background.js"
@@ -29,7 +30,8 @@
     },
     {
       "matches": [
-        "https://music.youtube.com/*"
+        "https://music.youtube.com/*",
+        "https://open.spotify.com/*"
       ],
       "js": [
         "musica.js"

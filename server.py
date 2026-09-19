@@ -69,7 +69,7 @@ _estado = {
 # de propósito: um POST não pode inventar chave nova no estado.
 # "agenda_web" é a reserva: quando o adb não alcança o tablet, a extensão lê a
 # agenda da aba do Google Agenda aberta no Opera e manda por aqui.
-FONTES_EXTERNAS = ("email", "chat", "whatsapp", "agenda_web", "musica")
+FONTES_EXTERNAS = ("email", "chat", "whatsapp", "agenda_web")
 
 # ---------------------------------------------------------------- música
 #
@@ -86,8 +86,44 @@ FONTES_EXTERNAS = ("email", "chat", "whatsapp", "agenda_web", "musica")
 # você já nem lembra de ter apertado.
 VALIDADE_COMANDO = 12
 COMANDOS_MUSICA = ("tocar-pausar", "proxima", "anterior")
-_comando_musica = None          # (nome, quando)
+FONTES_MUSICA = ("ytm", "spotify")
+
+# Cada tocador relata sozinho, e o servidor escolhe qual vai para a tela. Sem
+# isto os dois escreveriam na mesma chave e se sobrescreveriam de dois em dois
+# segundos — o cartão piscaria entre um e outro.
+#
+# Quem ganha é quem está TOCANDO. É a resposta certa para a pergunta do
+# cartão ("o que estou ouvindo?") e dispensa qualquer preferência declarada:
+# a fonte muda sozinha quando você troca de tocador.
+_musicas = {}                   # fonte -> leitura (já com atualizado_em)
+_comando_musica = None          # (nome, fonte, quando)
 _trava_musica = threading.Lock()
+
+
+def _musica_escolhida():
+    """A leitura que vai para a tela. Chamar sempre com _trava_musica."""
+    vivas = list(_musicas.values())
+    if not vivas:
+        return None
+
+    agora = time.time()
+
+    def fresca(m):
+        # A aba relata de 2 em 2s; o batimento do background, que é quem diz
+        # "não tem aba", vem de minuto em minuto. Dois ritmos, dois prazos.
+        limite = 15 if m.get("aberto") else 150
+        return agora - m.get("atualizado_em", 0) <= limite
+
+    def ordem(m):
+        # Tocando ganha de pausado, que ganha de "tem aba", que ganha do resto.
+        # Empate desempata pelo relatório mais novo.
+        faixa = m.get("faixa") or {}
+        return (1 if (fresca(m) and faixa.get("tocando")) else 0,
+                1 if faixa else 0,
+                1 if m.get("aberto") else 0,
+                m.get("atualizado_em", 0))
+
+    return max(vivas, key=ordem)
 PADRAO_PAINEL = ("cartoes", "tempos", "cores", "recado", "agenda", "ordem", "tema",
                  "marca", "fundos", "layout")
 
@@ -474,18 +510,24 @@ def versao_web():
     return "|".join(marcas)
 
 
-def _pegar_comando():
-    """Tira o comando da caixa e o entrega uma vez só.
+def _pegar_comando(fonte):
+    """Tira o comando da caixa e o entrega uma vez só, ao tocador certo.
 
     Consumir na leitura é o que impede o botão de repetir: sem isso, um
     "próxima" ficaria na caixa e pularia uma faixa a cada relatório da
     extensão até alguém apertar outra coisa.
+
+    E vai endereçado. Com o Spotify e o YouTube Music abertos ao mesmo tempo,
+    um "pausar" sem destinatário pararia o primeiro que viesse buscar — que
+    pode ser justamente o que estava calado.
     """
     global _comando_musica
     with _trava_musica:
         if not _comando_musica:
             return None
-        nome, quando = _comando_musica
+        nome, alvo, quando = _comando_musica
+        if alvo != fonte:
+            return None                       # não é para você; fica na caixa
         _comando_musica = None
     return nome if time.time() - quando <= VALIDADE_COMANDO else None
 
@@ -652,8 +694,12 @@ class Handler(BaseHTTPRequestHandler):
 
         global _comando_musica
         with _trava_musica:
-            _comando_musica = (nome, time.time())
-        return self._json({"ok": True, "comando": nome})
+            escolhida = _musica_escolhida()
+            alvo = (escolhida or {}).get("fonte")
+            if not alvo:
+                return self._json({"ok": False, "motivo": "nenhum tocador relatando"})
+            _comando_musica = (nome, alvo, time.time())
+        return self._json({"ok": True, "comando": nome, "para": alvo})
 
     def _trocar_tema(self):
         """Troca o tema inteiro a partir do slug. É o ÚNICO POST que a rede faz.
@@ -810,20 +856,51 @@ class Handler(BaseHTTPRequestHandler):
             return self.send_error(403, "token invalido")
 
         agora = time.time()
+        fontes = dados.get("fontes") or {}
         aceitas = {}
         for nome in FONTES_EXTERNAS:
-            valor = (dados.get("fontes") or {}).get(nome)
+            valor = fontes.get(nome)
             if isinstance(valor, dict):
                 item = dict(valor)
                 item["atualizado_em"] = agora
                 aceitas[nome] = item
+
+        # A música não é uma fonte só: cada tocador relata a sua, e o que vai
+        # para a tela é o escolhido. Aceita um relatório ou uma lista deles —
+        # o content script fala do próprio tocador, e o background manda de
+        # uma vez os que estão com a aba fechada.
+        crus = fontes.get("musica")
+        if isinstance(crus, dict):
+            crus = [crus]
+        if isinstance(crus, list):
+            with _trava_musica:
+                for bruto in crus:
+                    if not isinstance(bruto, dict):
+                        continue
+                    if bruto.get("fonte") not in FONTES_MUSICA:
+                        continue          # lista fechada: ninguém inventa tocador
+                    item = dict(bruto)
+                    item["atualizado_em"] = agora
+                    _musicas[item["fonte"]] = item
+                escolhida = _musica_escolhida()
+            aceitas["musica"] = escolhida
+
         if aceitas:
             publicar(**aceitas)
 
         # A resposta leva o comando pendente de carona. A extensão não precisa
         # perguntar duas vezes, e o painel não precisa de porta aberta no
         # navegador.
-        corpo = json.dumps({"ok": True, "comando": _pegar_comando()}).encode("utf8")
+        # A resposta leva o comando pendente de carona, se for para este
+        # tocador. Quem relatou é quem pode executar.
+        comando = None
+        if isinstance(crus, list):
+            for bruto in crus:
+                if isinstance(bruto, dict) and bruto.get("aberto"):
+                    comando = _pegar_comando(bruto.get("fonte"))
+                    if comando:
+                        break
+        corpo = json.dumps({"ok": True, "comando": comando}).encode("utf8")
         self.send_response(200)
         self._cors()
         self.send_header("Content-Type", "application/json")
