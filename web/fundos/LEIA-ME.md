@@ -13,8 +13,7 @@ isso o relógio e a barra do topo, que ficam por fora dos cartões, sumiriam em
 cima de uma foto clara.
 
 Quatro imagens VÊM no repositório, para o painel não nascer sem papel de
-parede. Três foram geradas para o projeto e são nossas; a do Windows 95 ainda é
-a fotografia original da Microsoft — leia o `TERCEIROS.md` antes de republicar
-este projeto em qualquer lugar.
+parede. **Todas são nossas**: foram geradas para o projeto e estão sob a mesma
+licença do código. Você pode republicar este projeto sem trocar nenhuma.
 
 As que você acrescentar são suas, e o repositório não tem por que carregá-las.

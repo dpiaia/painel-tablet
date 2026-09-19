@@ -64,26 +64,24 @@ uma adaptação, feita para exibição.
 
 ## `web/fundos/` — papéis de parede
 
-| arquivo | de quem é |
+**Nenhum é de terceiro.** Os quatro foram gerados para este projeto e estão
+cobertos pela MIT como o resto do código.
+
+| arquivo | tema |
 |---|---|
-| `xp-colina.jpg` | **original**, gerado por IA para este projeto; MIT |
-| `apple-ponte.jpg` | **original**, gerado por IA para este projeto; MIT |
-| `matrix-chuva.jpg` | gerado para este projeto; MIT |
-| `win95-nuvens.jpg` | Microsoft — "Clouds", do Windows 95 |
+| `xp-colina.jpg` | Windows XP |
+| `win95-nuvens.jpg` | Windows 95 |
+| `apple-ponte.jpg` | Apple |
+| `matrix-chuva.jpg` | Matrix |
 
-**Três dos quatro são nossos, e isso foi de propósito.** As versões anteriores
-eram as fotografias originais da Microsoft ("Bliss") e da Apple, e fotografia
-redistribuída é mais delicada que logotipo: logotipo identificando um tema é
-uso nominativo, fotografia de terceiro num repositório público é republicação.
-Foram trocadas por imagens geradas para este projeto, que **evocam** aquelas
-áreas de trabalho sem ser a foto de ninguém.
+As versões anteriores eram as fotografias originais da Microsoft ("Bliss" e
+"Clouds") e da Apple. Fotografia redistribuída é mais delicada que logotipo:
+logotipo identificando um tema é uso nominativo; fotografia de terceiro num
+repositório público é republicação. Estas **evocam** aquelas áreas de trabalho
+sem ser a foto de ninguém, e o problema deixou de existir.
 
-Falta a do Windows 95. Enquanto não vem, `win95-nuvens.jpg` continua sendo a
-"Clouds" da Microsoft — quem for publicar uma versão deste projeto deve
-trocá-la, ou desligar o papel de parede desse tema no painel de controle.
-
-O do XP e o do Apple foram reduzidos para 1600px, porque o tablet tem 1,4 GB de
-RAM e o navegador descomprime a imagem inteira antes de escalar.
+Os três maiores foram reduzidos para 1600px, porque o tablet tem 1,4 GB de RAM
+e o navegador descomprime a imagem inteira antes de escalar.
 
 Qualquer imagem que você colocar nessa pasta aparece no painel de controle, e é
 sua — não deste repositório.
