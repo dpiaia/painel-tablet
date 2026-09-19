@@ -217,6 +217,12 @@ function desenharAgenda() {
   var hojeISO = meiaNoite.getFullYear() + '-' + dois(meiaNoite.getMonth() + 1) +
                 '-' + dois(meiaNoite.getDate());
 
+  /* O cartão obedece à mesma janela da tela expandida. Sem isso a lista
+   * mostrava tudo o que o coletor trouxe: escolher "próximos 3 dias" no
+   * controle encolhia a tela cheia e deixava o cartão listando a semana
+   * inteira — duas agendas com o mesmo nome. */
+  var ate = janelaAgenda().apos;
+
   // Dia inteiro ("Casa", férias) vira etiqueta ao lado da data: continua
   // visível sem ocupar uma linha da agenda, que é espaço nobre.
   var marcas = '';
@@ -226,8 +232,8 @@ function desenharAgenda() {
       if (e.inicio <= hojeISO && hojeISO < e.fim) {
         marcas += '<span class="marca-dia">' + escapar(e.titulo) + '</span>';
       }
-    } else if (e.fim_ts > agora) {
-      comHora.push(e);            // só o que ainda não acabou
+    } else if (e.fim_ts > agora && isoDe(new Date(e.inicio_ts * 1000)) < ate) {
+      comHora.push(e);            // só o que ainda não acabou, e dentro da janela
     }
   });
   $('marcas').innerHTML = marcas;
@@ -1095,9 +1101,53 @@ function dataLocal(iso) {           // "2026-09-16" -> Date local, sem fuso
   return new Date(+p[0], +p[1] - 1, +p[2]);
 }
 
-function hojeISO() {
-  var d = new Date(Date.now() + deslocamento);
+function isoDe(d) {
   return d.getFullYear() + '-' + dois(d.getMonth() + 1) + '-' + dois(d.getDate());
+}
+
+function hojeISO() {
+  return isoDe(new Date(Date.now() + deslocamento));
+}
+
+/* ------------------------------------------------------ a janela da agenda
+ *
+ * Quantos dias o painel olha para a frente. Era 7, escrito duas vezes — sete
+ * colunas na tela expandida e "o que ainda não acabou" no cartão, sem limite
+ * nenhum. Agora é uma decisão só, do painel de controle, e as duas leem daqui:
+ * mostrar cinco dias na tela e dez no cartão seriam duas agendas diferentes
+ * com o mesmo nome.
+ *
+ * Quatro modos: 3, 5, 7 dias a partir de hoje, ou a SEMANA do calendário.
+ *
+ * A semana é diferente em espécie, não em tamanho: ela inclui os dias que já
+ * passaram. Por isso cada dia sai marcado com `passado`, e não filtrado —
+ * quem pediu a semana quer ver a semana inteira, com a terça que já foi em
+ * cinza. Domingo a sábado, como o calendário de parede brasileiro se lê; para
+ * começar na segunda, é o `- hoje.getDay()` aqui embaixo que muda.
+ */
+function janelaAgenda() {
+  var modo = ((estado.ajustes && estado.ajustes.agenda) || {}).dias;
+  var hoje = dataLocal(hojeISO());
+  var inicio, quantos;
+
+  if (modo === 'semana') {
+    inicio = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate() - hoje.getDay());
+    quantos = 7;
+  } else {
+    inicio = hoje;
+    quantos = (+modo === 3 || +modo === 5 || +modo === 7) ? +modo : 7;
+  }
+
+  var hojeIso = isoDe(hoje), dias = [];
+  for (var i = 0; i < quantos; i++) {
+    var d = new Date(inicio.getFullYear(), inicio.getMonth(), inicio.getDate() + i);
+    dias.push({ iso: isoDe(d), dt: d, passado: isoDe(d) < hojeIso });
+  }
+
+  // `apos` é o dia seguinte ao último, para comparar com "<" sem erro de
+  // fronteira — um evento que começa 23:50 do último dia ainda está dentro.
+  var fim = new Date(inicio.getFullYear(), inicio.getMonth(), inicio.getDate() + quantos);
+  return { dias: dias, de: dias[0].iso, apos: isoDe(fim) };
 }
 
 /* ------------------------------------------------------------------ clima */
@@ -1128,19 +1178,11 @@ function telaAgenda() {
   if (!a || !(a.itens || []).length) return '<div class="vazio">semana vazia</div>';
   var agora = agoraS(), hoje = hojeISO();
 
-  // Sete colunas a partir de hoje, mesmo as vazias: dia sem compromisso é
+  // Uma coluna por dia da janela, mesmo as vazias: dia sem compromisso é
   // informação, e coluna que some faz a semana mudar de forma todo dia.
-  var dias = [];
-  var base = dataLocal(hoje);
-  for (var i = 0; i < 7; i++) {
-    var d = new Date(base.getFullYear(), base.getMonth(), base.getDate() + i);
-    dias.push({
-      iso: d.getFullYear() + '-' + dois(d.getMonth() + 1) + '-' + dois(d.getDate()),
-      dt: d, itens: []
-    });
-  }
+  var dias = janelaAgenda().dias;
   var porISO = {};
-  dias.forEach(function (d) { porISO[d.iso] = d; });
+  dias.forEach(function (d) { d.itens = []; porISO[d.iso] = d; });
 
   (a.itens || []).forEach(function (e) {
     if (e.dia_inteiro) {
@@ -1149,21 +1191,35 @@ function telaAgenda() {
       });
       return;
     }
-    var dt = new Date(e.inicio_ts * 1000);
-    var iso = dt.getFullYear() + '-' + dois(dt.getMonth() + 1) + '-' + dois(dt.getDate());
+    var iso = isoDe(new Date(e.inicio_ts * 1000));
     if (porISO[iso]) porISO[iso].itens.push(e);
   });
 
   return '<div class="agenda-semana">' + dias.map(function (d) {
+    /* Cada compromisso é um cartãozinho, não uma linha de texto. A coluna já
+     * é uma caixa; sem uma segunda borda, dois eventos seguidos viram um
+     * bloco de quatro linhas e você tem que contar horários para saber onde
+     * um acaba. A barra de cor à esquerda é o que separa de longe. */
+    /* Vazio não é sempre a mesma coisa. Quando a agenda vem da extensão (o
+     * adb caiu), a leitura começa em HOJE — a janela apertada é o que impede
+     * uma aba esquecida em março de virar "esta semana". Então os dias já
+     * passados não estão livres: estão sem leitura, e dizer "livre" numa
+     * terça cheia de reunião seria inventar. */
+    var cego = d.passado && (a.origem === 'navegador');
+    var vazio = cego ? '<div class="livre cego">sem leitura</div>'
+                     : '<div class="livre">livre</div>';
+
     var corpo = d.itens.length ? d.itens.map(function (e) {
       var passou = !e.dia_inteiro && e.fim_ts <= agora;
-      return '<div class="compromisso' + (passou ? ' passou' : '') + '">' +
+      return '<div class="compromisso' + (passou ? ' passou' : '') +
+               (e.dia_inteiro ? ' inteiro' : '') + '">' +
                '<div class="h">' + (e.dia_inteiro ? 'dia todo' : hhmm(e.inicio_ts)) + '</div>' +
                '<div class="t">' + escapar(e.titulo) + '</div>' +
              '</div>';
-    }).join('') : '<div class="livre">livre</div>';
+    }).join('') : vazio;
 
-    return '<div class="coluna-dia' + (d.iso === hoje ? ' hoje' : '') + '">' +
+    return '<div class="coluna-dia' + (d.iso === hoje ? ' hoje' : '') +
+             (d.passado ? ' passado' : '') + '">' +
              '<div class="cabeca">' + DIA_CURTO[d.dt.getDay()].toUpperCase() +
                ' ' + d.dt.getDate() + '</div>' + corpo +
            '</div>';

@@ -82,13 +82,21 @@ def _converter(c):
     }
 
 
-def eventos(adb, serial, dias=2):
-    """Instâncias de hoje até `dias` à frente, já sem as que você recusou."""
+def eventos(adb, serial, dias=2, atras=0):
+    """Instâncias de `atras` dias atrás até `dias` à frente, sem as recusadas.
+
+    `atras` existe por causa do modo "semana atual" da tela: ele mostra a
+    semana do calendário inteira, com os dias que já passaram apagados. Sem
+    buscar para trás, essas colunas viriam vazias — e coluna vazia diz
+    "livre", que numa terça cheia de reunião é mentira. Buscar seis dias a
+    mais custa uma consulta igual; mostrar um dia em branco custa confiança.
+    """
     if not _conectado(adb, serial):
         raise RuntimeError("tablet inalcançável pelo adb (%s)" % serial)
 
     hoje = datetime.date.today()
-    ini = int(datetime.datetime.combine(hoje, datetime.time.min).timestamp() * 1000)
+    ini = int(datetime.datetime.combine(
+        hoje - datetime.timedelta(days=atras), datetime.time.min).timestamp() * 1000)
     fim = int(datetime.datetime.combine(
         hoje + datetime.timedelta(days=dias), datetime.time.min).timestamp() * 1000)
 

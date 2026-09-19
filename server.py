@@ -70,7 +70,7 @@ _estado = {
 # "agenda_web" é a reserva: quando o adb não alcança o tablet, a extensão lê a
 # agenda da aba do Google Agenda aberta no Opera e manda por aqui.
 FONTES_EXTERNAS = ("email", "chat", "whatsapp", "agenda_web")
-PADRAO_PAINEL = ("cartoes", "tempos", "cores", "recado", "ordem", "tema",
+PADRAO_PAINEL = ("cartoes", "tempos", "cores", "recado", "agenda", "ordem", "tema",
                  "marca", "fundos", "layout")
 
 # Chaves do topo do config que o painel de controle pode mudar. Lista fechada
@@ -942,7 +942,12 @@ def laco_agenda(cfg):
     ultimos, ultimo_ts = [], None
     while True:
         try:
-            ultimos = agenda.eventos(adb, serial, dias=7)
+            # Sempre a semana inteira: sete dias à frente cobrem a maior
+            # janela que a tela pede, e seis para trás cobrem o começo da
+            # semana atual no pior caso (sábado). Quem recorta é a tela, com
+            # o ajuste do painel de controle — o coletor traz o bastante para
+            # qualquer escolha, em vez de ter que ser reiniciado a cada troca.
+            ultimos = agenda.eventos(adb, serial, dias=7, atras=6)
             ultimo_ts = time.time()
             publicar(agenda={"itens": ultimos, "atualizado_em": ultimo_ts,
                              "origem": "adb", "erro": None})

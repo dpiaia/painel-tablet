@@ -152,6 +152,7 @@ const SECOES = [
   ['cartoes',    'O que aparece',   '\u25A6'],
   ['fontes',     'Fontes de dados', '\u21C4'],
   ['recado',     'Recado',          '\u270E'],
+  ['agenda',     'Agenda',          '\u25F4'],
   ['fundo',      'Papel de parede', '\u25A3'],
   ['ritmo',      'Ritmo',           '\u23F1'],
   ['cores',      'Cores e temas',   '\u25D0'],
@@ -710,6 +711,51 @@ function desenharRecado() {
   alvo.appendChild(campo);
 }
 
+/* ---------------------------------------------------------------- agenda */
+/* Até onde o painel olha para a frente.
+ *
+ * Quatro opções e não um número livre: 1 dia deixa a tela cheia com uma
+ * coluna só, 30 deixa trinta colunas de 3vw. As três contagens cobrem o uso
+ * real, e a quarta é outra pergunta — "como está a semana?", que inclui o que
+ * já passou.
+ */
+const JANELAS_AGENDA = [
+  [3,        'Próximos 3 dias',  'hoje e mais dois'],
+  [5,        'Próximos 5 dias',  'a semana útil pela frente'],
+  [7,        'Próximos 7 dias',  'o padrão'],
+  ['semana', 'Semana atual',     'domingo a sábado; os dias que já passaram aparecem apagados'],
+];
+
+function desenharAgendaOpc() {
+  const alvo = document.getElementById('agenda-opc');
+  alvo.innerHTML = '';
+
+  const campo = document.createElement('div');
+  campo.className = 'campo';
+  campo.innerHTML = '<label><b>Dias listados</b>' +
+                    '<span>quantas colunas a tela cheia mostra, e até onde o cartão lista</span></label>';
+
+  const linha = document.createElement('div');
+  linha.className = 'temas';
+  const atual = (painel.agenda || {}).dias || 7;
+
+  JANELAS_AGENDA.forEach(([id, nome, dica]) => {
+    const b = document.createElement('button');
+    b.className = 'tema' + (atual === id ? ' ativo' : '');
+    b.title = dica;
+    b.textContent = nome;
+    b.onclick = () => { salvar('agenda', 'dias', id); desenharAgendaOpc(); };
+    linha.appendChild(b);
+  });
+
+  campo.appendChild(linha);
+  const nota = document.createElement('p');
+  nota.className = 'sobre';
+  nota.textContent = (JANELAS_AGENDA.find(j => j[0] === atual) || JANELAS_AGENDA[2])[2];
+  campo.appendChild(nota);
+  alvo.appendChild(campo);
+}
+
 /* ---------------------------------------------------------- diagnóstico */
 function idade(s) {
   if (s < 60) return Math.round(s) + 's';
@@ -763,6 +809,7 @@ async function iniciar() {
   painel.cartoes = painel.cartoes || {};
   painel.tempos = painel.tempos || {};
   painel.cores = painel.cores || {};
+  painel.agenda = painel.agenda || {};
   disponiveis.fundos = e.fundos || [];
 
   // O catálogo vem do servidor, não do disco do navegador: é ele que expande
@@ -777,6 +824,7 @@ async function iniciar() {
 
   desenharNav();
   desenharMarca(); desenharArranjo(); desenharFontes(); desenharRecado();
+  desenharAgendaOpc();
   desenharFundos();
   desenharTempos(); desenharTemas(); desenharCores(); verDiag();
   setInterval(verDiag, 15000);
