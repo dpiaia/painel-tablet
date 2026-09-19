@@ -17,6 +17,21 @@ várias sessões de uma vez (animar todas custaria caro à toa).
 Trocar qual arquivo vai em qual estado é uma linha no registro `GIFS` do
 `web/app.js`.
 
+## Um conserto que vale lembrar
+
+O `faiscas.gif` veio do Tenor com a faísca desenhada como um **quadriculado
+preto-e-branco**. Não era arte: era a grade que editores de imagem mostram
+atrás de área transparente, achatada dentro do arquivo por uma exportação sem
+alfa. No painel aparecia como um bloco xadrez colado no bichinho.
+
+Consertado com `ferramentas/tirar_xadrez.py`, que acha a mancha pela
+**saturação** (a grade é acromática, o corpo é terracota saturado) e a repinta
+com o mesmo dourado que o `fogos.gif` usa nas faíscas dele — dourado se lê
+tanto no cartão escuro quanto no bege do Windows XP, o que branco não faz.
+
+Se outro GIF chegar com o mesmo defeito, é o mesmo comando. Rode antes com
+`--conferir`: ele relata quantos pixels tocaria sem gravar nada.
+
 ## Créditos
 
 - As animações do Clawd vêm das que a **Anthropic** publica nas redes sociais,
