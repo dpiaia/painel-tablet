@@ -69,7 +69,25 @@ _estado = {
 # de propósito: um POST não pode inventar chave nova no estado.
 # "agenda_web" é a reserva: quando o adb não alcança o tablet, a extensão lê a
 # agenda da aba do Google Agenda aberta no Opera e manda por aqui.
-FONTES_EXTERNAS = ("email", "chat", "whatsapp", "agenda_web")
+FONTES_EXTERNAS = ("email", "chat", "whatsapp", "agenda_web", "musica")
+
+# ---------------------------------------------------------------- música
+#
+# O único comando que o painel manda para FORA do Mac — e ele não sai daqui
+# por conta própria: fica nesta caixa de uma posição até a extensão vir
+# buscar no próximo relatório. É um pombo-correio, não uma conexão.
+#
+# Por que assim: o tablet não alcança o navegador, e o navegador não aceita
+# conexão de entrada. O que existe é a extensão batendo aqui de dois em dois
+# segundos; pendurar a resposta nessa batida custa zero conexão nova.
+#
+# Uma posição só, e com prazo. Se a aba fechou no meio, o comando morre em
+# VALIDADE_COMANDO segundos em vez de disparar cinco minutos depois, quando
+# você já nem lembra de ter apertado.
+VALIDADE_COMANDO = 12
+COMANDOS_MUSICA = ("tocar-pausar", "proxima", "anterior")
+_comando_musica = None          # (nome, quando)
+_trava_musica = threading.Lock()
 PADRAO_PAINEL = ("cartoes", "tempos", "cores", "recado", "agenda", "ordem", "tema",
                  "marca", "fundos", "layout")
 
@@ -456,6 +474,22 @@ def versao_web():
     return "|".join(marcas)
 
 
+def _pegar_comando():
+    """Tira o comando da caixa e o entrega uma vez só.
+
+    Consumir na leitura é o que impede o botão de repetir: sem isso, um
+    "próxima" ficaria na caixa e pularia uma faixa a cada relatório da
+    extensão até alguém apertar outra coisa.
+    """
+    global _comando_musica
+    with _trava_musica:
+        if not _comando_musica:
+            return None
+        nome, quando = _comando_musica
+        _comando_musica = None
+    return nome if time.time() - quando <= VALIDADE_COMANDO else None
+
+
 def retrato():
     with _trava:
         dados = dict(_estado)
@@ -600,6 +634,27 @@ class Handler(BaseHTTPRequestHandler):
         return self._json({"ok": True, "painel": painel,
                            "fontes": {k: cfg.get(k) for k in FONTES_EDITAVEIS}})
 
+    def _mandar_comando(self):
+        """O tablet aperta play; quem clica é a extensão, no navegador.
+
+        Reachable pela rede, como /tema e pelo mesmo motivo: o botão está no
+        tablet, e o tablet chega pelo Wi-Fi. A exceção continua estreita —
+        aceita UM nome de uma lista de três, não guarda nada em disco e não
+        toca em configuração. O pior que alguém na rede de casa consegue é
+        pular a sua música.
+        """
+        pedido = self._corpo(1024)
+        if not isinstance(pedido, dict):
+            return self.send_error(400, "json invalido")
+        nome = pedido.get("comando")
+        if nome not in COMANDOS_MUSICA:
+            return self.send_error(400, "comando desconhecido")
+
+        global _comando_musica
+        with _trava_musica:
+            _comando_musica = (nome, time.time())
+        return self._json({"ok": True, "comando": nome})
+
     def _trocar_tema(self):
         """Troca o tema inteiro a partir do slug. É o ÚNICO POST que a rede faz.
 
@@ -736,6 +791,8 @@ class Handler(BaseHTTPRequestHandler):
             return self._acao()
         if rota == "/tema":
             return self._trocar_tema()
+        if rota == "/musica":
+            return self._mandar_comando()
         if rota == "/uso":
             return self._uso_empurrado()
         if rota == "/fundo":
@@ -763,7 +820,10 @@ class Handler(BaseHTTPRequestHandler):
         if aceitas:
             publicar(**aceitas)
 
-        corpo = b'{"ok":true}'
+        # A resposta leva o comando pendente de carona. A extensão não precisa
+        # perguntar duas vezes, e o painel não precisa de porta aberta no
+        # navegador.
+        corpo = json.dumps({"ok": True, "comando": _pegar_comando()}).encode("utf8")
         self.send_response(200)
         self._cors()
         self.send_header("Content-Type", "application/json")

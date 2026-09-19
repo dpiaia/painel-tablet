@@ -97,6 +97,10 @@ function tique() {
   // vezes por dia numa Mali-400 seria desperdício puro.
   if (telaAberta) {
     if (Date.now() > telaAte) fecharTela();
+    // O tocador é a única tela que muda sozinha: a faixa anda. Só dois nós
+    // são reescritos — redesenhar a tela inteira jogaria fora a capa e
+    // piscaria os botões debaixo do dedo.
+    else if (telaAberta === 'musica') andarMusica();
     return;                       // com a tela aberta o painel nem é tocado
   }
   sliderMsg.girar();
@@ -895,6 +899,206 @@ var sliderMsg = new Slider($('palco'), $('pontos'));
  * um cartão comum, agrupados viram um slider. Um grupo de um é o caso solo, e
  * por isso não existem dois caminhos.
  */
+
+/* ================================================================= música
+ *
+ * O que está tocando no YouTube Music, lido pela extensão do Opera, e os três
+ * botões que o tablet pode apertar de volta.
+ *
+ * POR QUE PELA EXTENSÃO: o Now Playing do macOS saberia de qualquer tocador,
+ * mas a Apple fechou o MediaRemote para processos sem entitlement no 15.4 e
+ * este Mac está no 27 — não há caminho ali para um serviço de fundo. A música
+ * toca numa aba do Opera, e na aba a extensão já mora.
+ *
+ * A LEITURA TEM PRAZO. A extensão relata de dois em dois segundos; passou de
+ * MUSICA_VELHA sem relatório, o navegador fechou, dormiu ou a aba sumiu — e
+ * aí o cartão diz que não está vendo. Uma faixa de meia hora atrás com o
+ * ícone de "tocando" seria a mentira mais fácil de acreditar deste painel:
+ * parece certa, e você só descobre quando estranha o silêncio.
+ */
+var MUSICA_VELHA = 15;
+
+var ICONE_MUSICA = '<svg class="ic" viewBox="0 0 24 24"><path d="M9 18V5l12-2v13"/>' +
+  '<circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>';
+
+var ICONE_TOCA = {
+  tocar:    '<svg class="ic cheio" viewBox="0 0 24 24"><path d="M7 4l13 8-13 8z"/></svg>',
+  pausar:   '<svg class="ic cheio" viewBox="0 0 24 24"><path d="M6 4h4v16H6zM14 4h4v16h-4z"/></svg>',
+  proxima:  '<svg class="ic cheio" viewBox="0 0 24 24"><path d="M5 4l10 8-10 8z"/><path d="M17 4h3v16h-3z"/></svg>',
+  anterior: '<svg class="ic cheio" viewBox="0 0 24 24"><path d="M19 4L9 12l10 8z"/><path d="M4 4h3v16H4z"/></svg>'
+};
+
+/* A leitura de agora, ou null quando o painel está cego.
+ *
+ * Um só lugar decide isso, e os dois — cartão e tela — perguntam aqui. Se a
+ * tela achasse que está tocando e o cartão achasse que não, a culpa seria de
+ * terem duas opiniões sobre a mesma coisa.
+ */
+function musicaViva() {
+  var m = estado.musica;
+  if (!m || !m.atualizado_em) return null;
+  if (agoraS() - m.atualizado_em > MUSICA_VELHA) return null;
+  return m;
+}
+
+function tempoFaixa(seg) {
+  if (seg === null || seg === undefined || !isFinite(seg)) return '--:--';
+  var s = Math.max(0, Math.round(seg));
+  return Math.floor(s / 60) + ':' + dois(s % 60);
+}
+
+/* Onde a faixa está AGORA, e não onde estava no último relatório.
+ *
+ * A extensão relata de dois em dois segundos; sem contar o tempo desde então,
+ * a barra andaria aos saltos. Só interpola enquanto está tocando — em pausa o
+ * relógio da faixa não anda, e somar ali inventaria progresso.
+ */
+function posicaoAgora(m) {
+  var f = m.faixa;
+  if (!f || f.posicao === null || f.posicao === undefined) return null;
+  if (!f.tocando) return f.posicao;
+  var passou = agoraS() - m.atualizado_em;
+  var p = f.posicao + Math.max(0, passou);
+  return f.duracao ? Math.min(p, f.duracao) : p;
+}
+
+function slideMusica() {
+  var base = { classe: 'musica-slide', titulo: 'YOUTUBE MUSIC',
+               icone: ICONE_MUSICA, tela: 'musica' };
+  var m = musicaViva();
+
+  if (!m) {
+    base.html = '<div class="vazio">sem leitura do navegador</div>';
+    return base;
+  }
+  if (!m.faixa) {
+    base.html = '<div class="vazio">nada tocando</div>';
+    return base;
+  }
+
+  var f = m.faixa;
+  base.selo = f.tocando ? 'TOCANDO' : 'PAUSADO';
+  base.html =
+    '<div class="corpo musica-cartao">' +
+      capaHtml(f, 'musica-capa') +
+      '<div class="musica-txt">' +
+        '<div class="musica-faixa">' + escapar(f.titulo) + '</div>' +
+        '<div class="musica-artista">' + escapar(f.artista || 'artista desconhecido') + '</div>' +
+        (f.album ? '<div class="musica-album">' + escapar(f.album) + '</div>' : '') +
+      '</div>' +
+    '</div>';
+  return base;
+}
+
+/* A capa vem direto do Google. Se não carregar — e no WebView 64 do Tab E há
+ * uma chance real disso, porque a lista de raízes dele é de 2018 — o onerror
+ * apaga a imagem e sobra o quadrado com a nota musical. Melhor um lugar vazio
+ * com desenho do que um ícone de imagem quebrada. */
+function capaHtml(f, classe) {
+  var img = f.capa
+    ? '<img src="' + escapar(f.capa) + '" alt="" onerror="this.hidden=true">'
+    : '';
+  return '<div class="' + classe + '">' + img + ICONE_MUSICA + '</div>';
+}
+
+function telaMusica() {
+  var m = musicaViva();
+  if (!m) {
+    return '<div class="vazio">sem leitura do navegador — abra o YouTube Music ' +
+           'no Opera com a extensão do painel ligada</div>';
+  }
+  if (!m.faixa) return '<div class="vazio">nada tocando</div>';
+
+  var f = m.faixa;
+  var pos = posicaoAgora(m);
+  var pct = (f.duracao && pos !== null) ? Math.min(100, pos * 100 / f.duracao) : 0;
+
+  function botao(cmd, icone, classe) {
+    return '<button class="toca-bt ' + (classe || '') + '" data-musica="' + cmd + '">' +
+             icone + '</button>';
+  }
+
+  return '<div class="tocador">' +
+    capaHtml(f, 'tocador-capa') +
+    '<div class="tocador-txt">' +
+      '<div class="tocador-faixa">' + escapar(f.titulo) + '</div>' +
+      '<div class="tocador-artista">' + escapar(f.artista || 'artista desconhecido') + '</div>' +
+      '<div class="tocador-album">' +
+        escapar(f.album || 'sem álbum') + (f.ano ? ' · ' + escapar(f.ano) : '') +
+      '</div>' +
+
+      '<div class="tocador-barra"><span id="toca-progresso" style="width:' + pct + '%"></span></div>' +
+      '<div class="tocador-tempos">' +
+        '<span id="toca-pos">' + tempoFaixa(pos) + '</span>' +
+        '<span>' + tempoFaixa(f.duracao) + '</span>' +
+      '</div>' +
+
+      '<div class="tocador-botoes">' +
+        botao('anterior', ICONE_TOCA.anterior) +
+        botao('tocar-pausar', f.tocando ? ICONE_TOCA.pausar : ICONE_TOCA.tocar, 'grande') +
+        botao('proxima', ICONE_TOCA.proxima) +
+      '</div>' +
+      '<div class="tocador-nota">quem aperta o botão é a extensão, no Opera — ' +
+        'pode levar um segundo</div>' +
+    '</div>' +
+  '</div>';
+}
+
+/* Entre um segundo e outro só a barra anda — redesenhar a tela inteira
+ * jogaria fora a capa e piscaria os botões debaixo do dedo.
+ *
+ * Mas quando a FAIXA muda, tudo muda: capa, título, artista, duração. Sem
+ * isto, pular uma música deixava a tela com o disco anterior e a barra
+ * correndo por baixo — e é exatamente o momento em que você está olhando,
+ * porque acabou de apertar o botão.
+ */
+var assinaturaMusica = '';
+
+function andarMusica() {
+  var m = musicaViva();
+  if (!m || !m.faixa) { fecharTela(); return; }
+
+  var f = m.faixa;
+  var agora = f.titulo + '|' + f.artista + '|' + f.duracao + '|' + f.tocando + '|' + f.capa;
+  if (agora !== assinaturaMusica) {
+    assinaturaMusica = agora;
+    $('tela-corpo').innerHTML = telaMusica();
+    return;
+  }
+
+  var barra = $('toca-progresso');
+  if (!barra) return;
+  var pos = posicaoAgora(m);
+  barra.style.width = (f.duracao && pos !== null ? Math.min(100, pos * 100 / f.duracao) : 0) + '%';
+  $('toca-pos').textContent = tempoFaixa(pos);
+}
+
+/* Aperta o botão. Quem clica de verdade é a extensão, na aba do Opera: o
+ * comando fica numa caixa no Mac até ela vir buscar, no próximo relatório.
+ *
+ * Por isso a tela responde antes da confirmação — o ícone vira pausa na hora
+ * e o relatório seguinte confirma ou desfaz. Dois segundos de espera com o
+ * botão parado num tablet de 2015 viram um segundo toque, e um segundo toque
+ * vira play-pause-play.
+ */
+function mandarMusica(cmd) {
+  telaAte = Date.now() + T.tela * 1000;   // mexer no tocador é continuar usando
+
+  if (cmd === 'tocar-pausar') {
+    var m = musicaViva();
+    var bt = document.querySelector('[data-musica="tocar-pausar"]');
+    if (m && m.faixa && bt) {
+      m.faixa.tocando = !m.faixa.tocando;
+      bt.innerHTML = m.faixa.tocando ? ICONE_TOCA.pausar : ICONE_TOCA.tocar;
+    }
+  }
+
+  var x = new XMLHttpRequest();
+  x.open('POST', '/musica', true);
+  x.setRequestHeader('Content-Type', 'application/json');
+  x.send(JSON.stringify({ comando: cmd }));
+}
+
 var WIDGETS_NO = ['relogio', 'clima', 'recado', 'agenda', 'mensagens'];
 
 /* Widgets de conteúdo CURTO: três ou quatro linhas e acabou.
@@ -910,7 +1114,12 @@ var WIDGETS_SLIDE = {
   'git-meus':   slideGitMeus,
   'git-design': slideGitDesign,
   'monitor':    slideMonitor,
-  'uso':        slideUso
+  'uso':        slideUso,
+  // Fora do LAYOUT_PADRAO de propósito: nasce na bandeja "fora da tela", e
+  // só entra no painel de quem arrastar. Não é dado que todo mundo tem — sem
+  // a extensão e sem o YouTube Music aberto, o cartão só sabe dizer que não
+  // está vendo.
+  'musica':     slideMusica
 };
 
 var LAYOUT_PADRAO = {
@@ -1745,6 +1954,7 @@ function telaUso() {
 var TELAS = {
   monitor: { titulo: 'Monitor do Mac · processos', render: telaMaquina },
   uso:    { titulo: 'Monitor do Claude · plano', render: telaUso },
+  musica: { titulo: 'YouTube Music', render: telaMusica },
   sobre:  { titulo: 'Sobre o painel',   render: telaSobre },
   clima:  { titulo: 'Clima da semana',  render: telaClima },
   agenda: { titulo: 'Agenda da semana', render: telaAgenda },
@@ -1761,6 +1971,7 @@ function abrirTela(tipo) {
   // Qual tela está aberta vira atributo: é assim que o Windows 95 e o XP
   // sabem apagar a própria moldura só nos créditos, onde o conteúdo já traz
   // duas janelas suas.
+  if (tipo === 'musica') assinaturaMusica = '';   // o primeiro tique acerta
   $('tela').setAttribute('data-tela-tipo', tipo);
   $('tela').hidden = false;
   // Classe em vez de estilo embutido: assim um tema pode decidir o contrário.
@@ -1820,6 +2031,9 @@ document.addEventListener('click', function (ev) {
    * cima dela. */
   var btn = subirAte(ev.target, 'data-tema-slug');
   if (btn) { escolherTema(btn.getAttribute('data-tema-slug')); return; }
+
+  var toca = subirAte(ev.target, 'data-musica');
+  if (toca) { mandarMusica(toca.getAttribute('data-musica')); return; }
 
   if (menuAberto) { fecharMenu(); return; }
   if (telaAberta) { fecharTela(); return; }

@@ -1513,6 +1513,134 @@ body { display: flex; flex-direction: column; }
 .menu-vazio { padding: 0 1.4vw 1.4vw; font-size: 0.95vw; color: var(--fraco); }
 
 
+/* ================================================================ música */
+/* O cartão: capa à esquerda, três linhas à direita. A capa é quadrada e fixa
+   porque é ela que se reconhece de longe — o texto você só lê depois de já
+   ter reconhecido o disco. */
+.musica-cartao { display: flex; align-items: center; }
+
+.musica-capa,
+.tocador-capa {
+  position: relative;
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--dentro);
+  border: 1px solid var(--borda);
+  border-radius: 0.8vw;
+  overflow: hidden;
+}
+.musica-capa { width: 6.4vw; height: 6.4vw; margin-right: 1.1vw; }
+.musica-capa img,
+.tocador-capa img {
+  position: absolute;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  object-fit: cover;
+}
+/* A nota fica ATRÁS da capa, não no lugar dela: quando a imagem carrega,
+   cobre; quando não carrega (o onerror esconde), ela já está ali. Sem
+   segundo estado para programar. */
+.musica-capa .ic,
+.tocador-capa .ic { width: 40%; height: 40%; stroke: var(--fraco); }
+
+.musica-txt { min-width: 0; flex: 1; }
+.musica-faixa {
+  font-size: 1.25vw;
+  font-weight: 700;
+  line-height: 1.25;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.musica-artista {
+  font-size: 1.05vw;
+  color: var(--ciano);
+  margin-top: 0.25vw;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.musica-album {
+  font-size: 0.9vw;
+  color: var(--fraco);
+  margin-top: 0.2vw;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ------------------------------------------------------------- o tocador */
+.tocador { display: flex; align-items: center; height: 100%; }
+.tocador-capa {
+  width: 26vw;
+  height: 26vw;
+  margin-right: 3vw;
+  border-radius: 1.2vw;
+}
+.tocador-txt { flex: 1; min-width: 0; }
+
+.tocador-faixa { font-size: 2.6vw; font-weight: 700; line-height: 1.15; }
+.tocador-artista { font-size: 1.6vw; color: var(--ciano); margin-top: 0.6vw; }
+.tocador-album { font-size: 1.1vw; color: var(--apagado); margin-top: 0.3vw; }
+
+.tocador-barra {
+  height: 0.5vw;
+  margin-top: 2vw;
+  border-radius: 10vw;
+  background: var(--borda);
+  overflow: hidden;
+}
+.tocador-barra span {
+  display: block;
+  height: 100%;
+  background: var(--ciano);
+  border-radius: 10vw;
+}
+.tocador-tempos {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 0.5vw;
+  font-family: var(--mono);
+  font-size: 0.95vw;
+  color: var(--apagado);
+}
+
+.tocador-botoes { display: flex; align-items: center; margin-top: 2vw; }
+
+/* Botão de dedo, não de mouse: 5vw são ~57px no Tab E, e o do meio é maior
+   porque é o que se aperta sem olhar. */
+.toca-bt {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 5vw;
+  height: 5vw;
+  margin-right: 1.4vw;   /* sem gap: Chrome 64 */
+  border: 1px solid var(--borda);
+  border-radius: 50%;
+  background: var(--dentro);
+  color: var(--texto);
+  cursor: pointer;
+}
+.toca-bt.grande {
+  width: 6.4vw;
+  height: 6.4vw;
+  background: var(--ciano);
+  border-color: var(--ciano);
+  color: var(--fundo);
+}
+/* currentColor e não a regra geral do .ic.cheio (que pinta de --ciano): o
+   botão do meio TEM fundo --ciano, e ícone ciano sobre ciano some. Assim cada
+   botão pinta o desenho com a própria cor de texto. */
+.toca-bt .ic { width: 45%; height: 45%; }
+.toca-bt .ic.cheio { fill: currentColor; }
+.toca-bt:active { transform: scale(0.94); }
+
+.tocador-nota { margin-top: 1.4vw; font-size: 0.9vw; color: var(--fraco); }
+
+
 /* -------------------------------------------- monitor do Claude (tela) */
 /* Mesma estrutura da tela de processos: blocos em cima, nota colada embaixo.
    O que muda é o miolo — lá são listas, aqui são dois números grandes e a

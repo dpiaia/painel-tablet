@@ -6,7 +6,10 @@
  * um seletor de CSS. O preço é só o contador — assunto e remetente ficam para
  * uma fase seguinte, isolada, que pode quebrar sem derrubar isto aqui.
  *
- * Só lê. Nunca clica, nunca marca como lido, nunca abre nada.
+ * Só lê. Nunca clica, nunca marca como lido, nunca abre nada. A exceção é o
+ * musica.js, que aperta os três botões do tocador do YouTube Music — e só
+ * eles, a pedido do tablet. A regra continua valendo para tudo o que é
+ * mensagem: o painel é vidro, não um controle remoto do seu e-mail.
  */
 'use strict';
 
@@ -84,12 +87,39 @@ let pendente = null;
 // ele.
 let agenda = null;
 
-chrome.runtime.onMessage.addListener((msg) => {
+chrome.runtime.onMessage.addListener((msg, remetente, responder) => {
   if (msg && msg.tipo === 'agenda' && msg.dados) {
     agenda = msg.dados;
     agendar();
+    return;
+  }
+
+  /* A música tem envio próprio, fora do ciclo dos contadores.
+   *
+   * Dois motivos. O ritmo é outro — contador de e-mail muda quando muda um
+   * título de aba; faixa muda a cada três minutos e o play/pause tem que
+   * responder já. E a RESPOSTA importa: é nela que vem o comando que o
+   * tablet apertou, e o envio dos contadores joga a resposta fora.
+   */
+  if (msg && msg.tipo === 'musica') {
+    enviarMusica(msg.dados).then(responder);
+    return true;            // a resposta vem depois; segura o canal aberto
   }
 });
+
+async function enviarMusica(dados) {
+  try {
+    const r = await fetch(PAINEL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token: TOKEN, fontes: { musica: dados } }),
+    });
+    const d = await r.json();
+    return { comando: (d && d.comando) || null };
+  } catch (e) {
+    return { comando: null };   // painel fora do ar; o próximo ciclo resolve
+  }
+}
 
 async function enviar() {
   try {

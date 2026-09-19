@@ -136,14 +136,20 @@ Carregam o token do painel.
 `/acao`, `/fundo`, `/uso` e `/diagnostico` verificam a origem. O resto é
 aberto na rede local de propósito — o painel é uma tela, não um cofre.
 
-**A única exceção é `POST /tema`, e ela é estreita de propósito.** O seletor de
-tema mora no menu de configurações do tablet, e o tablet chega pelo Wi-Fi: sem
-exceção não haveria seletor. O que a torna aceitável é o tamanho. A rota não
-aceita um corpo de ajustes — aceita UM slug, confere contra a lista fechada de
-`temas.py` e grava duas chaves (`tema` e `cores`). Chaves extras no corpo são
-ignoradas, não mescladas. O pior que alguém na rede de casa consegue é deixar
-o painel verde. Se um dia outra rota precisar sair do Mac, o teste é este: ela
-cabe numa frase que descreva o pior caso sem dar medo?
+**Duas exceções, e as duas são estreitas de propósito.** `POST /tema` e
+`POST /musica` respondem pela rede porque os botões deles estão no TABLET, e o
+tablet chega pelo Wi-Fi: sem exceção não haveria nem seletor de tema nem
+tocador. O que as torna aceitáveis é o tamanho.
+
+Nenhuma das duas aceita um corpo de ajustes. `/tema` aceita UM slug, confere
+contra a lista fechada de `temas.py` e grava duas chaves (`tema` e `cores`).
+`/musica` aceita UM nome de uma lista de três, não grava nada em disco e só
+deixa o comando numa caixa de uma posição, com prazo de 12 segundos, até a
+extensão vir buscar. Chaves extras no corpo são ignoradas, não mescladas.
+
+O pior que alguém na rede de casa consegue é deixar o painel verde e pular a
+sua música. **Se um dia outra rota precisar sair do Mac, o teste é este: ela
+cabe numa frase que descreva o pior caso sem dar medo?**
 
 **Meça o custo no aparelho, não suponha.** O README tem a metodologia e o
 resultado de três medições que contrariaram a intuição. Numa GPU velha, a taxa
