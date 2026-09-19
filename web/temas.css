@@ -1064,3 +1064,287 @@
   border-color: rgba(0, 0, 0, 0.18);
   color: var(--apagado);
 }
+
+/* ================================= o tocador vira Winamp (Windows 95 e XP)
+ *
+ * Nestes dois temas a tela de música deixa de ser um cartão e vira um
+ * aparelho: caixa cinza de relevo, visor preto de fósforo verde, botões
+ * chapados. A estrutura é a mesma dos outros temas — as linhas de rótulo e
+ * valor já existem, e aqui o rótulo acende.
+ *
+ * SOBRE O RAIO: o desenho no canto é um raio genérico, não o logotipo do
+ * Winamp. A estética é de época e não é de ninguém; a marca é. Mesma regra da
+ * maçã lá no app.js — este repositório é público sob MIT, e distribuir marca
+ * alheia sob uma licença que não é nossa para dar não dá.
+ */
+/* A caixa tem a altura do conteúdo, e não a da tela.
+ *
+ * O Winamp era uma janelinha compacta pousada na área de trabalho — esticado
+ * até o rodapé ele vira um painel cinza com um aparelho perdido no topo, que
+ * é o contrário do que a referência é. `bottom: auto` deixa o conteúdo mandar,
+ * e o resto centra na vertical, acima da barra de tarefas. */
+[data-tema="win95"] .tela[data-tela-tipo="musica"],
+[data-tema="xp"]    .tela[data-tela-tipo="musica"] {
+  top: 50%;
+  bottom: auto;
+  left: 7vw;
+  right: 7vw;
+  margin-top: -2.5vw;        /* sobe um tanto: a barra de tarefas come embaixo */
+  transform: translateY(-50%);
+  display: block;            /* sem flex: a coluna esticava os filhos */
+  background: #3f3f3f;
+  border: 0;
+  border-radius: 0;
+  padding: 0.7vw;
+  box-shadow: inset -1px -1px 0 #1a1a1a, inset 1px 1px 0 #6e6e6e,
+              inset -2px -2px 0 #2a2a2a, inset 2px 2px 0 #565656,
+              0.4vw 0.4vw 0 rgba(0, 0, 0, 0.45);
+}
+
+/* A barra de título: o nome no meio e as ranhuras douradas de cada lado,
+   esticando para preencher o que sobrar. É o detalhe que faz a caixa ser
+   reconhecida antes de qualquer texto ser lido. */
+[data-tema="win95"] .tela[data-tela-tipo="musica"] > header,
+[data-tema="xp"]    .tela[data-tela-tipo="musica"] > header {
+  background: none;
+  border: 0;
+  padding: 0.2vw 0.4vw 0.7vw;
+  margin: 0;
+  display: flex;
+  align-items: center;
+}
+[data-tema="win95"] .tela[data-tela-tipo="musica"] h2,
+[data-tema="xp"]    .tela[data-tela-tipo="musica"] h2 {
+  order: 2;
+  flex: none;
+  color: #ffffff;
+  font-family: var(--sans);
+  font-weight: 800;
+  font-size: 1.5vw;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  text-shadow: none;
+  padding: 0 1.2vw;
+}
+/* O nome do tocador não cabe na barra de título sem brigar com o "WINAMP", e
+   some dali. Ele reaparece no visor, onde o Winamp mostrava o kbps — a
+   informação de ONDE o botão vai bater não pode sumir só porque o tema
+   mudou. */
+[data-tema="win95"] .tela[data-tela-tipo="musica"] h2 { font-size: 0; }
+[data-tema="xp"]    .tela[data-tela-tipo="musica"] h2 { font-size: 0; }
+[data-tema="win95"] .tela[data-tela-tipo="musica"] h2::after,
+[data-tema="xp"]    .tela[data-tela-tipo="musica"] h2::after {
+  content: 'WINAMP';
+  font-size: 1.5vw;
+}
+[data-tema="win95"] .tela[data-tela-tipo="musica"] > header::before,
+[data-tema="xp"]    .tela[data-tela-tipo="musica"] > header::before,
+[data-tema="win95"] .tela[data-tela-tipo="musica"] > header::after,
+[data-tema="xp"]    .tela[data-tela-tipo="musica"] > header::after {
+  content: '';
+  flex: 1;
+  height: 1vw;
+  border-radius: 10vw;
+  background: linear-gradient(to bottom,
+              #6b5a20 0%, #f4e6a8 22%, #fffbe8 45%, #e8d488 70%, #7a6526 100%);
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.45);
+}
+[data-tema="win95"] .tela[data-tela-tipo="musica"] > header::before,
+[data-tema="xp"]    .tela[data-tela-tipo="musica"] > header::before { order: 1; }
+[data-tema="win95"] .tela[data-tela-tipo="musica"] > header::after,
+[data-tema="xp"]    .tela[data-tela-tipo="musica"] > header::after { order: 3; }
+/* O "toque para voltar" sai: numa caixa que imita aparelho, texto de ajuda
+   solto na moldura quebra a ilusão. Qualquer toque fora dos botões fecha,
+   como em toda tela do painel. */
+[data-tema="win95"] .tela[data-tela-tipo="musica"] .voltar,
+[data-tema="xp"]    .tela[data-tela-tipo="musica"] .voltar { display: none; }
+
+/* O corpo em dois painéis afundados: o de cima com capa, visor e barra; o de
+   baixo com os botões. */
+[data-tema="win95"] .tela[data-tela-tipo="musica"] .tela-corpo,
+[data-tema="xp"]    .tela[data-tela-tipo="musica"] .tela-corpo { padding: 0; }
+
+[data-tema="win95"] .tocador,
+[data-tema="xp"]    .tocador {
+  display: block;
+  padding: 1.2vw;
+  box-shadow: inset 1px 1px 0 #2a2a2a, inset -1px -1px 0 #6e6e6e;
+}
+
+[data-tema="win95"] .tocador-capa,
+[data-tema="xp"]    .tocador-capa {
+  float: left;
+  width: 18vw;
+  height: 18vw;
+  margin: 0 2vw 0 0;
+  border-radius: 0;
+  background: #000000;
+  border: 0;
+  box-shadow: inset 1px 1px 0 #2a2a2a, inset -1px -1px 0 #6e6e6e;
+}
+[data-tema="win95"] .tocador-capa .ic,
+[data-tema="xp"]    .tocador-capa .ic { stroke: #2f6f3f; }
+
+[data-tema="win95"] .tocador-txt,
+[data-tema="xp"]    .tocador-txt { overflow: hidden; }
+
+/* A linha do visor: rótulo branco à esquerda, campo preto de fósforo verde à
+   direita. O verde é fixo e não segue a paleta — é a cor do aparelho, não do
+   tema, e nos dois temas o --ciano é azul. */
+[data-tema="win95"] .lcd-linha,
+[data-tema="xp"]    .lcd-linha {
+  display: flex;
+  align-items: center;
+  margin-bottom: 0.7vw;
+}
+[data-tema="win95"] .lcd-rot,
+[data-tema="xp"]    .lcd-rot {
+  display: block;
+  flex: none;
+  width: 8vw;
+  text-align: right;
+  padding-right: 1.2vw;
+  color: #ffffff;
+  font-family: var(--sans);
+  font-weight: 800;
+  font-size: 1.2vw;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+[data-tema="win95"] .lcd-val,
+[data-tema="xp"]    .lcd-val {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  padding: 0.5vw 0.9vw;
+  background: #000000;
+  color: #22dd55;
+  font-family: var(--mono);
+  font-size: 1.5vw;
+  font-weight: 400;
+  line-height: 1.25;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  box-shadow: inset 1px 1px 0 #2a2a2a, inset -1px -1px 0 #6e6e6e;
+}
+
+/* A barra: trilho preto, preenchimento laranja e o cursor cinza na ponta —
+   um quadradinho de relevo, como o do Winamp. */
+[data-tema="win95"] .tocador-barra,
+[data-tema="xp"]    .tocador-barra {
+  position: relative;
+  height: 2.2vw;
+  margin: 1.4vw 0 0 9.2vw;
+  border-radius: 0;
+  background: #000000;
+  overflow: visible;
+  box-shadow: inset 1px 1px 0 #2a2a2a, inset -1px -1px 0 #6e6e6e;
+}
+[data-tema="win95"] .tocador-barra span,
+[data-tema="xp"]    .tocador-barra span {
+  position: relative;
+  border-radius: 0;
+  background: #e08030;
+}
+[data-tema="win95"] .tocador-barra span::after,
+[data-tema="xp"]    .tocador-barra span::after {
+  content: '';
+  position: absolute;
+  right: -0.9vw; top: -0.25vw;
+  width: 1.8vw; height: 2.7vw;
+  background: #c8c8c8;
+  box-shadow: inset -1px -1px 0 #4a4a4a, inset 1px 1px 0 #ffffff,
+              inset -2px -2px 0 #8a8a8a, inset 2px 2px 0 #e8e8e8;
+}
+
+[data-tema="win95"] .tocador-tempos,
+[data-tema="xp"]    .tocador-tempos {
+  margin: 1vw 0 0 9.2vw;
+  color: #22dd55;
+  font-size: 1vw;
+  letter-spacing: 0.06em;
+}
+/* A fonte volta a aparecer: é ela que diz onde o botão vai bater, e no
+   Winamp este é o lugar dos indicadores. */
+[data-tema="win95"] .toca-fonte,
+[data-tema="xp"]    .toca-fonte {
+  display: block;
+  text-transform: uppercase;
+  color: #8a8a8a;
+}
+
+/* O painel de baixo, com os quatro botões chapados e o raio no canto. */
+[data-tema="win95"] .tocador-botoes,
+[data-tema="xp"]    .tocador-botoes {
+  clear: both;
+  margin: 1.6vw 0 0;
+  padding: 1vw;
+  box-shadow: inset 1px 1px 0 #2a2a2a, inset -1px -1px 0 #6e6e6e;
+}
+[data-tema="win95"] .tocador-botoes[data-tocando="1"] .bt-tocar,
+[data-tema="xp"]    .tocador-botoes[data-tocando="1"] .bt-tocar,
+[data-tema="win95"] .tocador-botoes[data-tocando="0"] .bt-pausar,
+[data-tema="xp"]    .tocador-botoes[data-tocando="0"] .bt-pausar {
+  display: flex;          /* no Winamp os quatro estão sempre lá */
+}
+[data-tema="win95"] .tocador-botoes[data-tocando="1"] .bt-tocar,
+[data-tema="xp"]    .tocador-botoes[data-tocando="1"] .bt-tocar { opacity: 0.55; }
+
+[data-tema="win95"] .toca-bt,
+[data-tema="xp"]    .toca-bt {
+  width: 5.4vw;
+  height: 4.4vw;
+  margin-right: 0.4vw;
+  border: 0;
+  border-radius: 0;
+  background: #d4d4d4;
+  color: #4a4a4a;
+  box-shadow: inset -1px -1px 0 #4a4a4a, inset 1px 1px 0 #ffffff,
+              inset -2px -2px 0 #8a8a8a, inset 2px 2px 0 #f0f0f0;
+}
+[data-tema="win95"] .toca-bt.grande,
+[data-tema="xp"]    .toca-bt.grande {
+  width: 5.4vw; height: 4.4vw;      /* no aparelho todos têm o mesmo tamanho */
+  background: #d4d4d4;
+  color: #4a4a4a;
+}
+[data-tema="win95"] .toca-bt:active,
+[data-tema="xp"]    .toca-bt:active {
+  transform: none;                  /* botão de relevo afunda, não encolhe */
+  box-shadow: inset 1px 1px 0 #4a4a4a, inset -1px -1px 0 #ffffff,
+              inset 2px 2px 0 #8a8a8a, inset -2px -2px 0 #f0f0f0;
+}
+[data-tema="win95"] .toca-bt .ic,
+[data-tema="xp"]    .toca-bt .ic { width: 38%; height: 38%; }
+
+[data-tema="win95"] .tocador-nota,
+[data-tema="xp"]    .tocador-nota {
+  margin: 0.9vw 0 0;
+  color: #8a8a8a;
+  font-size: 0.85vw;
+}
+
+/* O raio, no canto do painel de botões — o lugar onde o aparelho leva a
+   marca. Empurrado para a direita pelo auto da margem, que é o que resta sem
+   `gap` nem `justify-content` brigando com os botões. */
+[data-tema="win95"] .toca-raio,
+[data-tema="xp"]    .toca-raio {
+  display: block;
+  margin-left: auto;
+  margin-right: 0.6vw;
+  width: 4.4vw;
+  height: 4.4vw;
+  background: #f0f0f0;
+  transform: rotate(45deg);
+  box-shadow: inset -1px -1px 0 #8a8a8a, inset 1px 1px 0 #ffffff;
+}
+[data-tema="win95"] .toca-raio svg,
+[data-tema="xp"]    .toca-raio svg {
+  width: 100%; height: 100%;
+  transform: rotate(-45deg) scale(0.62);
+  fill: #f08020;
+  stroke: none;
+}

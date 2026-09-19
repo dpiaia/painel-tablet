@@ -1581,9 +1581,18 @@ body { display: flex; flex-direction: column; }
 }
 .tocador-txt { flex: 1; min-width: 0; }
 
+/* Rótulo e valor. Nos temas comuns o rótulo não aparece — o valor já se
+   explica pelo tamanho e pela cor. Quem o acende é o Winamp do 95 e do XP,
+   onde o rótulo à esquerda do visor preto é metade do desenho. */
+.lcd-rot { display: none; }
+.lcd-val { display: block; }
+
 .tocador-faixa { font-size: 2.6vw; font-weight: 700; line-height: 1.15; }
 .tocador-artista { font-size: 1.6vw; color: var(--ciano); margin-top: 0.6vw; }
 .tocador-album { font-size: 1.1vw; color: var(--apagado); margin-top: 0.3vw; }
+/* A fonte fica no meio dos tempos, onde o Winamp punha o kbps. Nos temas
+   comuns ela já está no título da tela, então some daqui. */
+.toca-fonte { display: none; }
 
 .tocador-barra {
   height: 0.5vw;
@@ -1608,6 +1617,14 @@ body { display: flex; flex-direction: column; }
 }
 
 .tocador-botoes { display: flex; align-items: center; margin-top: 2vw; }
+
+/* São quatro botões na marcação, como o Winamp tinha. Aqui sobra o par que se
+   aplica: play quando está parado, pause quando está tocando. */
+.tocador-botoes[data-tocando="1"] .bt-tocar,
+.tocador-botoes[data-tocando="0"] .bt-pausar { display: none; }
+
+/* O raio é adorno do aparelho do 95/XP. Nos outros temas não há aparelho. */
+.toca-raio { display: none; }
 
 /* Botão de dedo, não de mouse: 5vw são ~57px no Tab E, e o do meio é maior
    porque é o que se aperta sem olhar. */

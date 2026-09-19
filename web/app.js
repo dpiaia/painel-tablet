@@ -1079,25 +1079,56 @@ function telaMusica() {
              icone + '</button>';
   }
 
+  /* Rótulo e valor em linhas separadas, e não só o texto empilhado.
+   *
+   * Os temas comuns escondem o rótulo e mostram só o valor, como sempre foi.
+   * No Windows 95 e no XP o tocador vira um Winamp, e lá o rótulo à esquerda
+   * do visor preto é metade do desenho. Mesma marcação, duas caras — se fosse
+   * um HTML por tema, cada mudança de conteúdo teria que ser feita duas vezes.
+   */
+  function lcd(rot, valor, classe) {
+    return '<div class="lcd-linha">' +
+             '<span class="lcd-rot">' + rot + '</span>' +
+             '<span class="lcd-val ' + classe + '">' + valor + '</span>' +
+           '</div>';
+  }
+
+  /* Quatro botões, como o Winamp tinha, e não três.
+   *
+   * O painel só sabe alternar, então o mapa é: "pausar" sempre alterna (é o
+   * que a tecla de pausa do Winamp fazia) e "tocar" só alterna quando está
+   * parado — apertar tocar tocando não faz nada, porque a extensão não tem
+   * como recomeçar a faixa e fingir que tem seria pior.
+   *
+   * Nos temas comuns o CSS esconde o que não se aplica, e sobra o par de
+   * sempre: um botão de play OU de pause, mais anterior e próxima.
+   */
   return '<div class="tocador">' +
     capaHtml(f, 'tocador-capa') +
     '<div class="tocador-txt">' +
-      '<div class="tocador-faixa">' + escapar(f.titulo) + '</div>' +
-      '<div class="tocador-artista">' + escapar(f.artista || 'artista desconhecido') + '</div>' +
-      '<div class="tocador-album">' +
-        escapar(f.album || 'sem álbum') + (f.ano ? ' · ' + escapar(f.ano) : '') +
-      '</div>' +
+      lcd('Música', escapar(f.titulo), 'tocador-faixa') +
+      lcd('Artista', escapar(f.artista || 'artista desconhecido'), 'tocador-artista') +
+      lcd('Álbum', escapar(f.album || 'sem álbum') +
+                   (f.ano ? ' · ' + escapar(f.ano) : ''), 'tocador-album') +
 
       '<div class="tocador-barra"><span id="toca-progresso" style="width:' + pct + '%"></span></div>' +
       '<div class="tocador-tempos">' +
         '<span id="toca-pos">' + tempoFaixa(pos) + '</span>' +
+        '<span class="toca-fonte">' + escapar(nomeFonte()) + '</span>' +
         '<span>' + tempoFaixa(f.duracao) + '</span>' +
       '</div>' +
 
-      '<div class="tocador-botoes">' +
+      '<div class="tocador-botoes" data-tocando="' + (f.tocando ? '1' : '0') + '">' +
         botao('anterior', ICONE_TOCA.anterior) +
-        botao('tocar-pausar', f.tocando ? ICONE_TOCA.pausar : ICONE_TOCA.tocar, 'grande') +
+        botao('tocar', ICONE_TOCA.tocar, 'grande bt-tocar') +
+        botao('pausar', ICONE_TOCA.pausar, 'grande bt-pausar') +
         botao('proxima', ICONE_TOCA.proxima) +
+        /* Um raio genérico, não o logotipo do Winamp: a estética é de época e
+         * não é de ninguém, a marca é. Mesma regra da maçã lá em cima. Só
+         * aparece no 95 e no XP; nos outros temas o CSS o esconde. */
+        '<span class="toca-raio">' +
+          '<svg viewBox="0 0 24 24"><path d="M13 2 4 14h6l-1 8 9-12h-6z"/></svg>' +
+        '</span>' +
       '</div>' +
       '<div class="tocador-nota">quem aperta o botão é a extensão, no Opera — ' +
         'pode levar um segundo</div>' +
@@ -1149,12 +1180,22 @@ function andarMusica() {
 function mandarMusica(cmd) {
   telaAte = Date.now() + T.tela * 1000;   // mexer no tocador é continuar usando
 
-  if (cmd === 'tocar-pausar') {
-    var m = musicaViva();
-    var bt = document.querySelector('[data-musica="tocar-pausar"]');
-    if (m && m.faixa && bt) {
-      m.faixa.tocando = !m.faixa.tocando;
-      bt.innerHTML = m.faixa.tocando ? ICONE_TOCA.pausar : ICONE_TOCA.tocar;
+  var m = musicaViva();
+  var tocando = !!(m && m.faixa && m.faixa.tocando);
+
+  if (cmd === 'tocar' || cmd === 'pausar') {
+    // Apertar "tocar" já tocando não faz nada: a extensão só sabe alternar, e
+    // recomeçar a faixa não está no alcance dela.
+    if (cmd === 'tocar' && tocando) return;
+    cmd = 'tocar-pausar';
+
+    /* Pinta antes de a resposta chegar. O relatório demora até dois segundos,
+     * e um botão parado num tablet de 2015 vira um segundo toque — que vira
+     * play-pause-play. O próximo relatório confirma ou desfaz. */
+    if (m && m.faixa) {
+      m.faixa.tocando = !tocando;
+      var grupo = document.querySelector('.tocador-botoes');
+      if (grupo) grupo.setAttribute('data-tocando', m.faixa.tocando ? '1' : '0');
     }
   }
 
