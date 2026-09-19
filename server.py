@@ -24,6 +24,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import agenda
 import claude_uso
 import temas
+import widgets
 import claude
 import github
 import maquina
@@ -921,6 +922,16 @@ class Handler(BaseHTTPRequestHandler):
             # oito paletas em cada empurrão custaria mais de um KB a cada
             # quinze segundos para dizer sempre a mesma coisa.
             return self._json({"temas": temas.LISTA, "padrao": temas.PADRAO})
+        if rota == "/widgets.json":
+            # Catálogo, como o dos temas, e pelo mesmo motivo: o painel e o
+            # editor precisam dos mesmos mínimos, e duas listas em dois
+            # arquivos JS divergem na primeira vez que um widget muda de
+            # tamanho e alguém esquece a outra.
+            return self._json({
+                "widgets": widgets.LISTA,
+                "grade": {"colunas": widgets.COLUNAS, "unidades": widgets.UNIDADES,
+                          "linhas": widgets.LINHAS, "por_faixa": widgets.POR_FAIXA},
+            })
         if rota == "/controle":
             if not eh_local(self):
                 return self.send_error(403, "o controle so abre no proprio Mac")
@@ -1225,7 +1236,22 @@ def main():
     cfg = carregar_config()
     porta = args.porta or int(cfg.get("porta", PADRAO["porta"]))
 
-    publicar(ajustes=cfg.get("painel") or {})
+    # O arranjo antigo (coluna de itens, sem tamanho) vira grade aqui, uma vez,
+    # e é gravado por cima. Converter no navegador significaria carregar as
+    # duas leituras no app.js para sempre; assim o formato velho morre no
+    # primeiro arranque e o tablet só conhece o novo.
+    painel = cfg.get("painel") or {}
+    grade = widgets.migrar_layout(painel.get("layout"))
+    if grade:
+        with _trava_config:
+            cfg = carregar_config()
+            cfg.setdefault("painel", {})["layout"] = grade
+            gravar_config(cfg)
+        painel = cfg["painel"]
+        print("arranjo convertido para a grade de %dx%d" %
+              (widgets.COLUNAS, widgets.LINHAS))
+
+    publicar(ajustes=painel)
     carregar_claude()
 
     global TOKEN

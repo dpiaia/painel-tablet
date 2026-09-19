@@ -141,36 +141,78 @@ input:focus{outline:none;border-color:var(--ciano)}
                 background:color-mix(in srgb, var(--cor-tema) 26%, var(--alto))}
 .mini-fundo{display:inline-block;width:34px;height:20px;border-radius:3px;background-size:cover;background-position:center;border:1px solid rgba(255,255,255,.14)}
 /* ------------------------------------------------------ editor de arranjo */
+/* O editor é uma MAQUETE, não uma lista: cada faixa tem a proporção que vai
+   ter na tela, e cada célula ocupa a fração da linha que vai ocupar lá. É a
+   diferença entre escolher "2+1" lendo o rótulo e escolher olhando o formato. */
 .colunas-editor{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px}
 .col-editor{background:#0a0c11;border:1px solid var(--linha);border-radius:10px;
             padding:10px;min-height:120px}
 .titulo-col{font:600 10px var(--mono);letter-spacing:.18em;text-transform:uppercase;
             color:var(--fraco);margin-bottom:8px}
+.topo-lado{display:flex;align-items:baseline;justify-content:space-between;gap:8px}
+.topo-lado .titulo-col{margin-bottom:8px}
+/* Quantas das quatro linhas já foram. É o número que decide se ainda dá para
+   arrastar mais alguma coisa para este lado. */
+.linhas-livres{font:11px var(--mono);color:var(--mudo)}
 
-/* A fenda é o alvo entre um bloco e outro. Fina quando parada e grossa quando
-   um widget passa por cima: sem isso não dá para saber ONDE vai cair. */
+/* A fenda é o alvo entre uma faixa e outra. Fina quando parada e grossa
+   quando um widget passa por cima: sem isso não dá para saber ONDE vai cair. */
 .fenda{height:6px;border-radius:4px;margin:2px 0;transition:height .1s,background .1s}
 .fenda.sobre{height:26px;background:rgba(34,211,238,.22);
              outline:1px dashed var(--ciano)}
 .fenda-fim{min-height:14px}
+/* Sem linha livre, a fenda do fim não promete o que não pode cumprir. */
+.fenda-fim.sem-espaco{opacity:.25}
+.fenda-fim.sem-espaco.sobre{background:rgba(239,68,68,.18);outline-color:var(--vermelho)}
 
-.bloco{background:var(--alto);border:1px solid var(--linha);border-radius:9px;
+.faixa{background:var(--alto);border:1px solid var(--linha);border-radius:9px;
        padding:8px}
-.bloco.sobre{border-color:var(--ciano);background:rgba(34,211,238,.10)}
-.bloco .chips{display:flex;flex-direction:column;gap:6px}
-.bloco .chips.lado-a-lado{flex-direction:row}
-.bloco .chips.lado-a-lado .chip-w{flex:1;min-width:0}
+.faixa-corpo{display:flex;gap:6px;align-items:stretch}
 
-.chip-w{background:var(--painel);border:1px solid var(--linha);border-radius:7px;
+.celula{background:var(--painel);border:1px solid var(--linha);border-radius:8px;
+        padding:7px;min-width:0;display:flex;flex-direction:column;gap:6px}
+.celula.sobre{border-color:var(--ciano);background:rgba(34,211,238,.10)}
+.celula .chips{display:flex;flex-direction:column;gap:5px}
+
+/* A vaga ao lado só aparece quando cabe uma segunda célula na faixa — duas é
+   o teto, porque com três cada cartão fica com um bloco e nenhum cabe o
+   próprio conteúdo. */
+/* A vaga é um convite, não parte do arranjo — por isso é estreita e fixa. Se
+   ela tomasse a fração que o widget vai tomar, a maquete estaria mostrando um
+   layout que ainda não existe. */
+.vaga{flex:0 0 34px;border:1px dashed var(--linha);border-radius:8px;
+      display:flex;align-items:center;justify-content:center;
+      font:16px var(--mono);color:var(--mudo);min-height:44px}
+.vaga.sobre{border-color:var(--ciano);color:var(--ciano);
+            background:rgba(34,211,238,.10)}
+
+.chip-w{background:var(--alto);border:1px solid var(--linha);border-radius:7px;
         padding:7px 10px;font-size:13px;cursor:grab;user-select:none;
         white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .chip-w:active{cursor:grabbing}
 .chip-w.levando{opacity:.4}
 
-.pe-bloco{display:flex;align-items:center;gap:8px;margin-top:8px;
+.pe-celula{display:flex;align-items:center;gap:6px;flex-wrap:wrap;
+           padding-top:6px;border-top:1px solid var(--linha)}
+.pe-celula .tam{font:600 10px var(--mono);letter-spacing:.06em;color:var(--ciano)}
+.pe-celula .nota-celula{font:11px var(--mono);color:var(--fraco)}
+.pe-celula button{padding:3px 8px;font-size:11px}
+
+.pe-faixa{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:8px;
           padding-top:7px;border-top:1px solid var(--linha)}
-.pe-bloco span{font:11px var(--mono);color:var(--fraco);flex:1}
-.pe-bloco button{padding:4px 9px;font-size:11.5px}
+.pe-faixa .altura{font:11px var(--mono);color:var(--fraco);margin-right:2px}
+.pe-faixa button{padding:4px 9px;font-size:11.5px}
+.pe-faixa button:disabled{opacity:.35;cursor:default}
+/* A divisão em uso fica marcada: sem isso as três opções parecem três botões
+   iguais e não dá para saber qual está valendo. */
+.pe-faixa .divisao{font:11px var(--mono)}
+.pe-faixa .divisao.ativo{border-color:var(--ciano);color:var(--ciano)}
+
+/* Por que o editor recusou. Só aparece depois de um gesto que não deu, e some
+   no próximo — é uma resposta, não um estado. */
+.aviso-arranjo{background:rgba(245,158,11,.12);border:1px solid rgba(245,158,11,.4);
+               border-radius:7px;padding:6px 9px;margin-bottom:8px;
+               font:11.5px var(--mono);color:var(--laranja)}
 
 .bandeja{background:#0a0c11;border:1px dashed var(--linha);border-radius:10px;
          padding:10px;margin-bottom:14px}
@@ -246,7 +288,7 @@ button:disabled{opacity:.3;cursor:default}
 
   <section data-sec="cartoes">
     <h2>O QUE APARECE</h2>
-    <p class="sobre">Arraste os widgets entre as colunas. Solte um em cima de outro para juntá-los; solte na bandeja para desligar.</p>
+    <p class="sobre">Cada lado é uma grade de 3 blocos por 4 linhas. Arraste um widget para uma faixa, para "ao lado" de outro, ou para cima de um cartão — em cima, os dois passam a alternar no mesmo espaço. Solte na bandeja para desligar.</p>
     <div id="cartoes"></div>
   </section>
 

@@ -7,36 +7,6 @@
 
 // Os nove widgets. O antigo cartão "Claude Code e Git" virou três: o slider
 // deixou de ser uma peça e passou a ser um arranjo possível entre elas.
-const WIDGETS = [
-  ['relogio',    'Relógio',            'hora, data e marcas do dia'],
-  ['clima',      'Clima',              'temperatura; a semana no toque'],
-  ['recado',     'Recado',             'o texto que você escrever'],
-  ['claude',     'Claude Code',        'estado das sessões'],
-  ['git-meus',   'Meus pull requests', 'os PRs que você abriu'],
-  ['git-design', 'PRs do repositório', 'o repositório vigiado'],
-  ['agenda',     'Agenda',             'compromissos de hoje e da semana'],
-  ['mensagens',  'Mensagens',          'Gmail, Chat e WhatsApp pela extensão'],
-  ['monitor',    'Monitor do Mac',     'CPU, memória e swap; processos no toque'],
-  ['uso',        'Monitor do Claude',  'limite de 5 horas e semanal do plano'],
-  ['musica',     'Música',             'YouTube Music ou Spotify no Opera; tocador no toque'],
-];
-
-// Espelha o LAYOUT_PADRAO do app.js. Duplicado de propósito: o painel de
-// controle não carrega o app.js, e uma importação só para isto pagaria caro
-// por uma constante.
-const LAYOUT_PADRAO = {
-  esquerda: [
-    { tipo: 'solo',   ids: ['relogio'] },
-    { tipo: 'par',    ids: ['clima', 'recado'] },
-    { tipo: 'slider', ids: ['claude', 'git-meus', 'git-design'] }
-  ],
-  direita: [
-    { tipo: 'solo',   ids: ['agenda'] },
-    { tipo: 'solo',   ids: ['mensagens'] },
-    { tipo: 'slider', ids: ['monitor', 'uso'] }
-  ]
-};
-
 const FONTES = [
   ['cidade',       'texto', 'Cidade do clima',    'ex.: Paulínia, SP'],
   ['repo_design',  'repo',  'Repositório vigiado','cole a URL do GitHub'],
@@ -70,13 +40,17 @@ const GRUPOS_COR = [
                    ['vermelho','Ruim'],['azul','Crachá']]],
 ];
 
-/* A tabela de temas NÃO mora mais aqui.
+/* A tabela de temas NÃO mora mais aqui, nem a dos widgets.
  *
  * Ela morava, enquanto o controle era a única tela que trocava tema. Agora a
  * menu de configurações do tablet também troca, e duas cópias das mesmas oito
  * paletas em dois arquivos JS divergem na primeira vez que alguém acerta um
  * verde e esquece a outra. O dono passou a ser temas.py, no servidor; as duas
  * telas buscam de /temas.json e nenhuma tem opinião sobre o assunto.
+ *
+ * Pelo mesmo motivo saiu daqui a lista de widgets: o painel e o editor
+ * precisam concordar sobre quanto espaço cada cartão pede, e o dono disso
+ * passou a ser widgets.py, servido em /widgets.json.
  */
 let PADRAO_CORES = {};
 let TEMAS = [];
@@ -216,71 +190,269 @@ function linha(...filhos) {
 // cartão. Juntar tira metade da tela e some com o vaivém entre dois lugares.
 /* ============================================================ arranjo
  *
- * Arrastar um widget para qualquer posição de qualquer coluna, e juntar
- * widgets num par (lado a lado) ou num slider (alternando no mesmo cartão).
+ * A tela são três partes: a barra principal — que fica no topo ou no rodapé,
+ * quem decide é o tema — e os dois lados, onde moram os widgets.
  *
- * Um widget fora das colunas é um widget desligado — não existem duas
- * verdades. Antes havia um interruptor por cartão E uma ordem separada; com
- * posição livre isso viraria três lugares para dizer a mesma coisa.
+ * CADA LADO É UMA GRADE de 3 blocos de largura por 4 de altura: 12 blocos.
+ * Internamente a largura conta em 6 UNIDADES (meio bloco cada), por um motivo
+ * só: duas peças do mesmo tamanho mínimo dividem a linha ao meio, e metade de
+ * 3 não é inteiro. Com 6, meio a meio é 3 + 3.
+ *
+ * O arranjo é uma lista de FAIXAS. Uma faixa tem altura em linhas e uma ou
+ * duas células; as larguras somam 6. Duas células por faixa é o teto — com
+ * três, cada cartão fica com um bloco e nenhum deles cabe o próprio conteúdo.
+ *
+ * Uma célula guarda uma LISTA de widgets. Um é um cartão; vários alternam no
+ * mesmo espaço. Alternar não é enfeite: os quatro cartões grandes pedem 3x2
+ * cada, dois enchem um lado, e a soma dos mínimos de tudo dá 34 blocos para
+ * uma tela de 24.
+ *
+ * O CATÁLOGO vem do servidor (/widgets.json), não de uma lista aqui. É a mesma
+ * decisão dos temas: o painel e o editor precisam dos mesmos mínimos, e duas
+ * cópias divergem na primeira vez que um widget muda de tamanho.
  */
-function layoutAtual() {
-  const l = painel.layout;
-  if (l && Array.isArray(l.esquerda) && Array.isArray(l.direita)) return l;
-  return JSON.parse(JSON.stringify(LAYOUT_PADRAO));
-}
+let CATALOGO = [];
+let GRADE = { colunas: 3, unidades: 6, linhas: 4, por_faixa: 2 };
+
+const LAYOUT_PADRAO = {
+  esquerda: [
+    { alt: 1, celulas: [{ ids: ['relogio'], larg: 6 }] },
+    { alt: 1, celulas: [{ ids: ['clima'], larg: 2 }, { ids: ['recado'], larg: 4 }] },
+    { alt: 2, celulas: [{ ids: ['claude', 'git-meus', 'git-design'], larg: 6 }] }
+  ],
+  direita: [
+    { alt: 2, celulas: [{ ids: ['agenda'], larg: 6 }] },
+    { alt: 1, celulas: [{ ids: ['mensagens'], larg: 6 }] },
+    { alt: 1, celulas: [{ ids: ['monitor'], larg: 3 }, { ids: ['uso'], larg: 3 }] }
+  ]
+};
+
+const LADOS = [['esquerda', 'Lado esquerdo'], ['direita', 'Lado direito']];
 
 function nomeWidget(id) {
-  const d = WIDGETS.find(w => w[0] === id);
-  return d ? d[1] : id;
+  const w = CATALOGO.find(x => x.id === id);
+  return w ? w.nome : id;
 }
 
-// Tira o widget de onde estiver e deixa o layout íntegro: item que ficou vazio
-// some, item que ficou com um só volta a ser solo, com três ou mais vira
-// slider (dois lado a lado ainda cabem, três não).
+/* O piso de um grupo é o maior mínimo entre os widgets que ele guarda: o
+ * cartão é um só, e precisa caber o mais exigente da leva — senão o dia em
+ * que aquele aparecer, o conteúdo vaza. */
+function alterna(id) {
+  const w = CATALOGO.find(x => x.id === id);
+  return !!(w && w.alterna);
+}
+
+function minimoDe(ids) {
+  let larg = 1, alt = 1;
+  (ids || []).forEach(id => {
+    const w = CATALOGO.find(x => x.id === id);
+    if (w) { larg = Math.max(larg, w.min[0]); alt = Math.max(alt, w.min[1]); }
+  });
+  return [larg, alt];
+}
+
+// Blocos -> unidades. Meio bloco é a menor medida do editor.
+const unid = (blocos) => blocos * 2;
+
+function categoria(unidades, alt) {
+  const blocos = unidades / 2;
+  if (blocos >= 3 && alt > 2) return 'G';
+  if (blocos >= 2 || alt >= 2) return 'M';
+  return 'P';
+}
+
+function emBlocos(unidades) {
+  const b = unidades / 2;
+  return (b === Math.floor(b) ? b : Math.floor(b) + '½') + (b > 1 ? ' blocos' : ' bloco');
+}
+
+/* Como duas peças dividem os 6 da linha.
+ *
+ * Mesmo mínimo, metade para cada — foi a regra pedida, e é a única divisão
+ * justa quando as duas querem a mesma coisa. Mínimos diferentes: a menor leva
+ * o que precisa e a maior fica com o resto, porque apertar a maior é o que
+ * quebra conteúdo. Se não cabem juntas, devolve null. */
+function divisao(idsA, idsB) {
+  const a = minimoDe(idsA)[0], b = minimoDe(idsB)[0];
+  if (a + b > GRADE.colunas) return null;
+  if (a === b) return [GRADE.unidades / 2, GRADE.unidades / 2];
+  return a < b ? [unid(a), GRADE.unidades - unid(a)]
+               : [GRADE.unidades - unid(b), unid(b)];
+}
+
+/* As divisões que o usuário pode escolher numa faixa de duas células. Só
+ * entram as que respeitam os dois mínimos — uma opção que corta conteúdo não
+ * é uma opção, é uma armadilha. */
+function divisoesPossiveis(faixa) {
+  const [a, b] = faixa.celulas;
+  const mA = unid(minimoDe(a.ids)[0]), mB = unid(minimoDe(b.ids)[0]);
+  return [[2, 4], [3, 3], [4, 2]].filter(([x, y]) => x >= mA && y >= mB);
+}
+
+function layoutAtual() {
+  const l = painel.layout;
+  const bom = l && ['esquerda', 'direita'].every(k =>
+    Array.isArray(l[k]) && l[k].every(f => Array.isArray(f.celulas)));
+  return bom ? JSON.parse(JSON.stringify(l))
+             : JSON.parse(JSON.stringify(LAYOUT_PADRAO));
+}
+
+function linhasUsadas(lado) {
+  return lado.reduce((t, f) => t + (f.alt || 1), 0);
+}
+
+/* O lugar único onde o arranjo volta a ser legal.
+ *
+ * Toda mudança passa por aqui em vez de cada botão cuidar das próprias
+ * consequências — foi assim que a versão anterior deste editor acumulou casos
+ * (item que ficou vazio, par que virou trio) espalhados por cinco lugares.
+ */
+function normalizar(l) {
+  ['esquerda', 'direita'].forEach(nome => {
+    let lado = (l[nome] || [])
+      .map(f => ({
+        alt: f.alt || 1,
+        celulas: (f.celulas || []).filter(c => (c.ids || []).length).slice(0, GRADE.por_faixa)
+      }))
+      .filter(f => f.celulas.length);
+
+    lado.forEach(f => {
+      if (f.celulas.length === 1) {
+        f.celulas[0].larg = GRADE.unidades;
+      } else {
+        const atual = f.celulas.map(c => c.larg);
+        const ok = divisoesPossiveis(f).some(d => d[0] === atual[0] && d[1] === atual[1]);
+        if (!ok) {
+          const d = divisao(f.celulas[0].ids, f.celulas[1].ids);
+          if (d) { f.celulas[0].larg = d[0]; f.celulas[1].larg = d[1]; }
+          else {
+            // Não cabem juntas: a segunda sai da faixa e vira faixa própria.
+            const fora = f.celulas.pop();
+            f.celulas[0].larg = GRADE.unidades;
+            lado.splice(lado.indexOf(f) + 1, 0,
+                        { alt: minimoDe(fora.ids)[1], celulas: [fora] });
+          }
+        }
+      }
+      // A altura nunca fica abaixo do mínimo da faixa, nem passa da grade.
+      f.alt = Math.max(minimoDe([].concat.apply([], f.celulas.map(c => c.ids)))[1],
+                       Math.min(GRADE.linhas, f.alt));
+    });
+
+    /* Estourou as quatro linhas: as últimas faixas saem. Cortar do começo
+     * mudaria o que está no alto da tela, que é onde o olho vai primeiro —
+     * quem acabou de arrastar algo para baixo não espera o topo mudar. */
+    const cabe = [];
+    let usado = 0;
+    lado.forEach(f => {
+      if (usado + f.alt <= GRADE.linhas) { cabe.push(f); usado += f.alt; }
+    });
+    l[nome] = cabe;
+  });
+  return l;
+}
+
 function retirar(l, id) {
-  ['esquerda', 'direita'].forEach(col => {
-    l[col] = l[col].map(it => ({
-      tipo: it.tipo,
-      ids: (it.ids || []).filter(x => x !== id)
-    })).filter(it => it.ids.length);
-    l[col].forEach(it => {
-      if (it.ids.length === 1) it.tipo = 'solo';
-      else if (it.ids.length > 2 && it.tipo !== 'slider') it.tipo = 'slider';
+  ['esquerda', 'direita'].forEach(nome => {
+    (l[nome] || []).forEach(f => {
+      f.celulas = (f.celulas || []).map(c => ({
+        larg: c.larg, ids: (c.ids || []).filter(x => x !== id)
+      }));
     });
   });
+  return l;
 }
 
 function salvarLayout(l) {
+  normalizar(l);
   painel.layout = l;
-  // O liga/desliga continua existindo para o app.js, mas quem o define agora é
-  // a presença no layout. Escrever os dois mantém uma verdade só.
+  // O liga/desliga continua existindo para o app.js, mas quem o define é a
+  // presença no arranjo. Escrever os dois mantém uma verdade só.
   const dentro = {};
-  ['esquerda', 'direita'].forEach(c => l[c].forEach(it => it.ids.forEach(x => dentro[x] = 1)));
+  ['esquerda', 'direita'].forEach(n =>
+    l[n].forEach(f => f.celulas.forEach(c => c.ids.forEach(x => dentro[x] = 1))));
   painel.cartoes = painel.cartoes || {};
-  WIDGETS.forEach(([id]) => { painel.cartoes[id] = !!dentro[id]; });
+  CATALOGO.forEach(w => { painel.cartoes[w.id] = !!dentro[w.id]; });
 
   salvar('layout', null, l);
   salvar('cartoes', null, painel.cartoes);
   desenharArranjo();
 }
 
+/* O que o editor recusou da última vez, para dizer por quê. Mora fora das
+ * funções porque o desenho acontece depois do gesto, e a razão precisa
+ * sobreviver à volta. */
+let avisoArranjo = null;
+
 function mexer(id, destino) {
-  const l = layoutAtual();
-  retirar(l, id);
+  avisoArranjo = null;
+  const l = retirar(layoutAtual(), id);
   if (destino.tipo === 'fora') { salvarLayout(l); return; }
 
-  const col = l[destino.coluna];
-  if (destino.tipo === 'junta') {
-    const it = col[destino.indice];
-    if (!it) return;
-    it.ids.push(id);
-    if (it.ids.length === 2 && it.tipo === 'solo') it.tipo = 'par';
-    if (it.ids.length > 2) it.tipo = 'slider';
-  } else {
-    col.splice(Math.max(0, Math.min(destino.indice, col.length)), 0,
-               { tipo: 'solo', ids: [id] });
+  const lado = l[destino.lado];
+
+  if (destino.tipo === 'celula') {
+    const c = lado[destino.f] && lado[destino.f].celulas[destino.c];
+    // Juntar no mesmo cartão é revezar, e nem todo widget reveza: o relógio,
+    // o clima, o recado, a agenda e as mensagens são nós de verdade no HTML,
+    // e um nó não fica em dois lugares. Quem não reveza vira faixa própria
+    // logo abaixo, em vez de sumir — arrastar tem que fazer alguma coisa.
+    if (c && alterna(id) && c.ids.every(alterna)) {
+      c.ids.push(id);
+    } else {
+      lado.splice(destino.f + 1, 0,
+                  { alt: minimoDe([id])[1], celulas: [{ ids: [id], larg: GRADE.unidades }] });
+    }
+  } else if (destino.tipo === 'ao-lado') {
+    const f = lado[destino.f];
+    if (f && f.celulas.length < GRADE.por_faixa) f.celulas.push({ ids: [id], larg: 3 });
+  } else if (destino.tipo === 'faixa') {
+    lado.splice(Math.max(0, Math.min(destino.indice, lado.length)), 0,
+                { alt: minimoDe([id])[1], celulas: [{ ids: [id], larg: GRADE.unidades }] });
+  }
+
+  /* RECUSA em vez de despejar.
+   *
+   * O normalizar corta as faixas que não cabem nas quatro linhas, e isso é
+   * tecnicamente um arranjo válido e humanamente um desastre: você arrasta
+   * uma coisa para o topo e some outra lá embaixo, sem relação aparente com o
+   * que você fez.
+   *
+   * Então a conta é feita numa cópia primeiro. Se alguém sumiu, nada é
+   * gravado e o editor diz quem não coube — inclusive quando quem não coube
+   * foi o próprio widget que você arrastou. Um guarda só, no fim, em vez de
+   * um por caminho: todos os caminhos passam por aqui. */
+  const perdidos = idsDentro(layoutAtual())
+    .concat([id])
+    .filter((x, i, a) => a.indexOf(x) === i)
+    .filter(x => idsDentro(normalizar(JSON.parse(JSON.stringify(l)))).indexOf(x) < 0);
+
+  if (perdidos.length) {
+    /* A mensagem fala do GESTO, não da contabilidade. Quem arrastou quer
+     * saber por que não deu — listar os três widgets que teriam sido
+     * despejados conta a história pelo lado errado. */
+    const outros = perdidos.filter(x => x !== id);
+    avisoArranjo = { lado: destino.lado, texto:
+      perdidos.indexOf(id) >= 0
+        ? nomeWidget(id) + ' precisa de ' + minimoDe([id])[1] +
+          (minimoDe([id])[1] > 1 ? ' linhas' : ' linha') +
+          ', e as 4 deste lado já estão ocupadas'
+        : 'não cabe aqui sem empurrar ' +
+          (outros.length === 1 ? nomeWidget(outros[0]) : outros.length + ' widgets') +
+          ' para fora da tela' };
+    desenharArranjo();
+    return;
   }
   salvarLayout(l);
+}
+
+function idsDentro(l) {
+  const todos = [];
+  ['esquerda', 'direita'].forEach(n =>
+    (l[n] || []).forEach(f => (f.celulas || []).forEach(c => (c.ids || []).forEach(x => {
+      if (todos.indexOf(x) < 0) todos.push(x);
+    }))));
+  return todos;
 }
 
 let arrastando = null;
@@ -290,6 +462,8 @@ function chipWidget(id) {
   c.className = 'chip-w';
   c.draggable = true;
   c.textContent = nomeWidget(id);
+  const m = minimoDe([id]);
+  c.title = 'mínimo ' + m[0] + '×' + m[1];
   c.ondragstart = (e) => {
     arrastando = id;
     c.classList.add('levando');
@@ -313,47 +487,110 @@ function alvoSolta(destino, classe) {
   return z;
 }
 
-function blocoItem(it, coluna, i) {
-  const b = alvoSolta({ tipo: 'junta', coluna: coluna, indice: i }, 'bloco');
-  const chips = document.createElement('div');
-  chips.className = 'chips' + (it.tipo === 'par' ? ' lado-a-lado' : '');
-  it.ids.forEach(id => chips.appendChild(chipWidget(id)));
-  b.appendChild(chips);
-
-  if (it.ids.length > 1) {
-    const pe = document.createElement('div');
-    pe.className = 'pe-bloco';
-    const nome = document.createElement('span');
-    nome.textContent = it.tipo === 'par' ? 'lado a lado' : 'alternando no mesmo cartão';
-    pe.appendChild(nome);
-
-    // Dois widgets cabem lado a lado; três não — por isso a troca só aparece
-    // no par. Com três, alternar é a única forma que cabe.
-    if (it.ids.length === 2) {
-      const troca = document.createElement('button');
-      troca.textContent = it.tipo === 'par' ? 'alternar' : 'lado a lado';
-      troca.onclick = () => {
-        const l = layoutAtual();
-        const alvo = l[coluna][i];
-        alvo.tipo = alvo.tipo === 'par' ? 'slider' : 'par';
-        salvarLayout(l);
-      };
-      pe.appendChild(troca);
-    }
-
-    const sep = document.createElement('button');
-    sep.textContent = 'separar';
-    sep.onclick = () => {
-      const l = layoutAtual();
-      const alvo = l[coluna][i];
-      const soltos = alvo.ids.map(x => ({ tipo: 'solo', ids: [x] }));
-      l[coluna].splice(i, 1, ...soltos);
-      salvarLayout(l);
-    };
-    pe.appendChild(sep);
-    b.appendChild(pe);
-  }
+function botao(texto, aoClicar, dica) {
+  const b = document.createElement('button');
+  b.textContent = texto;
+  if (dica) b.title = dica;
+  b.onclick = aoClicar;
   return b;
+}
+
+function desenharCelula(c, faixa, lado, iF, iC) {
+  const cel = alvoSolta({ tipo: 'celula', lado: lado, f: iF, c: iC },
+                        'celula' + (c.ids.every(alterna) ? '' : ' sem-reveza'));
+  // A largura da célula no editor é a mesma proporção da tela: o editor é uma
+  // maquete, não uma lista. Você escolhe olhando o formato.
+  cel.style.flex = c.larg + ' 0 0';
+
+  const chips = document.createElement('div');
+  chips.className = 'chips';
+  c.ids.forEach(id => chips.appendChild(chipWidget(id)));
+  cel.appendChild(chips);
+
+  const pe = document.createElement('div');
+  pe.className = 'pe-celula';
+  const etq = document.createElement('span');
+  etq.className = 'tam';
+  etq.textContent = categoria(c.larg, faixa.alt) + ' · ' + emBlocos(c.larg) +
+                    ' × ' + faixa.alt + (faixa.alt > 1 ? ' linhas' : ' linha');
+  pe.appendChild(etq);
+
+  if (c.ids.length > 1) {
+    const nota = document.createElement('span');
+    nota.className = 'nota-celula';
+    nota.textContent = 'alternando';
+    pe.appendChild(nota);
+    pe.appendChild(botao('separar', () => {
+      const l = layoutAtual();
+      const alvo = l[lado][iF].celulas[iC];
+      const soltos = alvo.ids.slice(1);
+      alvo.ids = [alvo.ids[0]];
+      soltos.reverse().forEach(id => l[lado].splice(iF + 1, 0,
+        { alt: minimoDe([id])[1], celulas: [{ ids: [id], larg: GRADE.unidades }] }));
+      salvarLayout(l);
+    }, 'cada widget vira um cartão próprio, em faixas novas'));
+  }
+  cel.appendChild(pe);
+  return cel;
+}
+
+function desenharFaixa(f, lado, iF, livres) {
+  const cx = document.createElement('div');
+  cx.className = 'faixa';
+
+  const corpo = document.createElement('div');
+  corpo.className = 'faixa-corpo';
+  f.celulas.forEach((c, iC) => corpo.appendChild(desenharCelula(c, f, lado, iF, iC)));
+
+  /* A vaga ao lado só aparece quando alguma coisa cabe ali de verdade.
+   *
+   * Com uma célula de mínimo 3 (agenda, Claude, os dois do GitHub) a linha já
+   * está tomada: qualquer companhia teria zero bloco. Oferecer a vaga nesse
+   * caso seria prometer um encaixe que o normalizar desfaz no instante
+   * seguinte — e um alvo que não cumpre é pior que alvo nenhum.
+   */
+  const sobra = GRADE.colunas - minimoDe([].concat.apply([], f.celulas.map(c => c.ids)))[0];
+  if (f.celulas.length < GRADE.por_faixa && sobra >= 1) {
+    const vaga = alvoSolta({ tipo: 'ao-lado', lado: lado, f: iF }, 'vaga');
+    vaga.textContent = '+';
+    vaga.title = 'arraste um widget para cá para dividir a linha';
+    corpo.appendChild(vaga);
+  }
+  cx.appendChild(corpo);
+
+  const pe = document.createElement('div');
+  pe.className = 'pe-faixa';
+
+  const minAlt = minimoDe([].concat.apply([], f.celulas.map(c => c.ids)))[1];
+  const alt = document.createElement('span');
+  alt.className = 'altura';
+  alt.textContent = 'altura ' + f.alt;
+  pe.appendChild(alt);
+  pe.appendChild(botao('−', () => {
+    const l = layoutAtual(); l[lado][iF].alt = f.alt - 1; salvarLayout(l);
+  }, 'uma linha a menos')).disabled = f.alt <= minAlt;
+  pe.appendChild(botao('+', () => {
+    const l = layoutAtual(); l[lado][iF].alt = f.alt + 1; salvarLayout(l);
+  }, 'uma linha a mais')).disabled = livres < 1;
+
+  // As divisões possíveis, quando há duas células. Só as que respeitam os
+  // dois mínimos aparecem.
+  if (f.celulas.length === 2) {
+    divisoesPossiveis(f).forEach(d => {
+      const atual = d[0] === f.celulas[0].larg && d[1] === f.celulas[1].larg;
+      const b = botao(emBlocos(d[0]).replace(/ .*/, '') + '+' + emBlocos(d[1]).replace(/ .*/, ''),
+        () => {
+          const l = layoutAtual();
+          l[lado][iF].celulas[0].larg = d[0];
+          l[lado][iF].celulas[1].larg = d[1];
+          salvarLayout(l);
+        }, 'larguras ' + emBlocos(d[0]) + ' e ' + emBlocos(d[1]));
+      b.className = 'divisao' + (atual ? ' ativo' : '');
+      pe.appendChild(b);
+    });
+  }
+  cx.appendChild(pe);
+  return cx;
 }
 
 function desenharArranjo() {
@@ -364,24 +601,44 @@ function desenharArranjo() {
   const grade = document.createElement('div');
   grade.className = 'colunas-editor';
 
-  [['esquerda', 'Coluna esquerda'], ['direita', 'Coluna direita']].forEach(([col, titulo]) => {
+  LADOS.forEach(([nome, titulo]) => {
     const caixa = document.createElement('div');
     caixa.className = 'col-editor';
-    caixa.innerHTML = '<div class="titulo-col">' + titulo + '</div>';
-    l[col].forEach((it, i) => {
-      caixa.appendChild(alvoSolta({ tipo: 'pos', coluna: col, indice: i }, 'fenda'));
-      caixa.appendChild(blocoItem(it, col, i));
+    const usadas = linhasUsadas(l[nome]);
+    const livres = GRADE.linhas - usadas;
+
+    const topo = document.createElement('div');
+    topo.className = 'topo-lado';
+    topo.innerHTML = '<span class="titulo-col">' + titulo + '</span>' +
+      '<span class="linhas-livres">' + usadas + ' de ' + GRADE.linhas + ' linhas' +
+      (livres ? ' · ' + livres + ' livre' + (livres > 1 ? 's' : '') : ' · cheio') +
+      '</span>';
+    caixa.appendChild(topo);
+
+    if (avisoArranjo && avisoArranjo.lado === nome) {
+      const av = document.createElement('div');
+      av.className = 'aviso-arranjo';
+      av.textContent = avisoArranjo.texto;
+      caixa.appendChild(av);
+    }
+
+    l[nome].forEach((f, i) => {
+      caixa.appendChild(alvoSolta({ tipo: 'faixa', lado: nome, indice: i }, 'fenda'));
+      caixa.appendChild(desenharFaixa(f, nome, i, livres));
     });
-    caixa.appendChild(alvoSolta({ tipo: 'pos', coluna: col, indice: l[col].length },
-                                'fenda fenda-fim'));
+    const fim = alvoSolta({ tipo: 'faixa', lado: nome, indice: l[nome].length },
+                          'fenda fenda-fim');
+    if (!livres) fim.classList.add('sem-espaco');
+    caixa.appendChild(fim);
     grade.appendChild(caixa);
   });
   alvo.appendChild(grade);
 
   // Bandeja do que está fora: arrastar para cá desliga, arrastar de volta liga.
   const dentro = {};
-  ['esquerda', 'direita'].forEach(c => l[c].forEach(it => it.ids.forEach(x => dentro[x] = 1)));
-  const fora = WIDGETS.map(w => w[0]).filter(id => !dentro[id]);
+  ['esquerda', 'direita'].forEach(n =>
+    l[n].forEach(f => f.celulas.forEach(c => c.ids.forEach(x => dentro[x] = 1))));
+  const fora = CATALOGO.map(w => w.id).filter(id => !dentro[id]);
 
   const bandeja = alvoSolta({ tipo: 'fora' }, 'bandeja');
   bandeja.innerHTML = '<div class="titulo-col">Fora da tela</div>';
@@ -400,10 +657,8 @@ function desenharArranjo() {
 
   const acoes = document.createElement('div');
   acoes.className = 'acoes';
-  const padrao = document.createElement('button');
-  padrao.textContent = 'Voltar ao arranjo padrão';
-  padrao.onclick = () => salvarLayout(JSON.parse(JSON.stringify(LAYOUT_PADRAO)));
-  acoes.appendChild(padrao);
+  acoes.appendChild(botao('Voltar ao arranjo padrão',
+    () => salvarLayout(JSON.parse(JSON.stringify(LAYOUT_PADRAO)))));
   alvo.appendChild(acoes);
 }
 
@@ -818,6 +1073,13 @@ async function iniciar() {
   const cat = await (await fetch('/temas.json')).json();
   TEMAS = cat.temas || [];
   PADRAO_CORES = cat.padrao || {};
+
+  // Os widgets e os mínimos deles também são do servidor, pelo mesmo motivo
+  // dos temas: o painel e o editor têm que concordar sobre quanto espaço um
+  // cartão precisa, e duas listas em dois arquivos JS divergem.
+  const cg = await (await fetch('/widgets.json')).json();
+  CATALOGO = cg.widgets || [];
+  GRADE = cg.grade || GRADE;
 
   const d = await (await fetch('/ajustes', {method:'POST',
     headers:{'Content-Type':'application/json'}, body:'{}'})).json();

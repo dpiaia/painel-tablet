@@ -195,7 +195,11 @@ function horaDe(e, classe) {
 }
 
 function marcarAgenda(curta) {
-  document.querySelector('.agenda').className = 'cartao agenda toque' + (curta ? ' sozinho' : '');
+  /* toggle e não `className =`. Reescrever a lista inteira apagava as classes
+   * que o arranjo põe no cartão — `estreito`, `quina-td` — e como isto roda a
+   * cada minuto, o cartão perdia a largura e o canto um instante depois de
+   * montado. Ninguém via a montagem certa. */
+  document.querySelector('.agenda').classList.toggle('sozinho', !!curta);
 
   // O canto conta o que ainda vem HOJE — não o total da semana. Num cartão de
   // relance, "3" querendo dizer "três nos próximos sete dias" seria pior que
@@ -1169,7 +1173,9 @@ var WIDGETS_NO = ['relogio', 'clima', 'recado', 'agenda', 'mensagens'];
  * agenda, em geral). Num grupo, o mais alto dos slides define a altura: ela
  * fica estável enquanto o slider gira, em vez de o cartão pular de tamanho a
  * cada troca. */
-var WIDGETS_CURTOS = ['monitor', 'uso'];
+/* WIDGETS_CURTOS saiu com a grade. Ele existia para um cartão de conteúdo
+   curto não esticar dentro de uma coluna flex — agora quem decide a altura é
+   o arranjo, em linhas, e um cartão sempre preenche a célula que recebeu. */
 var WIDGETS_SLIDE = {
   'claude':     slideClaude,
   'git-meus':   slideGitMeus,
@@ -1183,16 +1189,35 @@ var WIDGETS_SLIDE = {
   'musica':     slideMusica
 };
 
+/* ================================================================= arranjo
+ *
+ * Cada lado da tela é uma GRADE de 3 blocos de largura por 4 de altura. A
+ * largura é contada em 6 UNIDADES (meio bloco cada) por um motivo só: duas
+ * peças do mesmo tamanho mínimo dividem a linha ao meio, e metade de 3 não é
+ * inteiro. Com 6, meio a meio é 3 + 3.
+ *
+ * O arranjo é uma lista de FAIXAS por lado. Cada faixa tem altura em linhas e
+ * até duas células; as larguras de uma faixa somam 6, e as alturas de um lado
+ * somam 4. Quem garante isso é o editor no painel de controle — aqui só se
+ * desenha, e o que não fecha a conta simplesmente não aparece.
+ *
+ * Uma célula guarda uma LISTA de ids. Um id é um cartão comum; vários são um
+ * slider, alternando no mesmo espaço. O slider não é enfeite: os quatro
+ * cartões grandes pedem 3x2 cada, dois deles enchem um lado, e a soma dos
+ * mínimos de tudo dá 34 blocos para uma tela de 24. Sem alternar, não cabe.
+ */
+var GRADE = { unidades: 6, linhas: 4 };
+
 var LAYOUT_PADRAO = {
   esquerda: [
-    { tipo: 'solo',   ids: ['relogio'] },
-    { tipo: 'par',    ids: ['clima', 'recado'] },
-    { tipo: 'slider', ids: ['claude', 'git-meus', 'git-design'] }
+    { alt: 1, celulas: [{ ids: ['relogio'], larg: 6 }] },
+    { alt: 1, celulas: [{ ids: ['clima'], larg: 2 }, { ids: ['recado'], larg: 4 }] },
+    { alt: 2, celulas: [{ ids: ['claude', 'git-meus', 'git-design'], larg: 6 }] }
   ],
   direita: [
-    { tipo: 'solo',   ids: ['agenda'] },
-    { tipo: 'solo',   ids: ['mensagens'] },
-    { tipo: 'slider', ids: ['monitor', 'uso'] }
+    { alt: 2, celulas: [{ ids: ['agenda'], larg: 6 }] },
+    { alt: 1, celulas: [{ ids: ['mensagens'], larg: 6 }] },
+    { alt: 1, celulas: [{ ids: ['monitor'], larg: 3 }, { ids: ['uso'], larg: 3 }] }
   ]
 };
 
@@ -1218,8 +1243,8 @@ function montarLayout(cfg) {
   }
   hostsSlide = [];
 
-  montarColuna($('col-esq'), l.esquerda || []);
-  montarColuna($('col-dir'), l.direita || []);
+  montarLado($('col-esq'), l.esquerda || []);
+  montarLado($('col-dir'), l.direita || []);
 
   // A conta de quantas linhas cabem só vale depois que a coluna inteira
   // existe: a altura de um cartão em flex depende dos irmãos, e medir no
@@ -1233,27 +1258,60 @@ function montarLayout(cfg) {
   }, 0);
 }
 
-function montarColuna(coluna, itens) {
-  coluna.innerHTML = '';
-  for (var i = 0; i < itens.length; i++) {
-    var it = itens[i] || {};
-    var ids = (it.ids || []).filter(function (id) {
-      return WIDGETS_NO.indexOf(id) >= 0 || WIDGETS_SLIDE[id];
-    });
-    if (!ids.length) continue;
+function montarLado(lado, faixas) {
+  lado.innerHTML = '';
+  var linha = 1;
 
-    if (it.tipo === 'par' && ids.length > 1) {
-      var dupla = document.createElement('div');
-      // `abertura` é o pareamento do clima, que tem regra própria: o clima
-      // abraça o conteúdo e o vizinho fica com o resto.
-      dupla.className = 'dupla' + (ids.indexOf('clima') >= 0 ? ' abertura' : '');
-      for (var k = 0; k < ids.length; k++) dupla.appendChild(pecaDe(ids[k]));
-      coluna.appendChild(dupla);
-    } else if (it.tipo === 'slider' && ids.length > 1) {
-      coluna.appendChild(hospedeiro(ids));
-    } else {
-      coluna.appendChild(pecaDe(ids[0]));
+  for (var i = 0; i < faixas.length; i++) {
+    var f = faixas[i] || {};
+    var alt = Math.max(1, Math.min(GRADE.linhas, +f.alt || 1));
+    if (linha + alt - 1 > GRADE.linhas) break;   // não cabe mais nada embaixo
+
+    var coluna = 1;
+    var celulas = f.celulas || [];
+    for (var k = 0; k < celulas.length; k++) {
+      var c = celulas[k] || {};
+      var ids = (c.ids || []).filter(function (id) {
+        return WIDGETS_NO.indexOf(id) >= 0 || WIDGETS_SLIDE[id];
+      });
+      var larg = Math.max(1, Math.min(GRADE.unidades, +c.larg || GRADE.unidades));
+      if (!ids.length) { coluna += larg; continue; }
+
+      /* Alternar no mesmo cartão só vale para os widgets desenhados por
+       * função. Os outros são nós de verdade movidos do estoque, e um nó não
+       * tem como estar em dois lugares. O editor não deixa juntá-los; aqui o
+       * primeiro é quem fica, para um arranjo antigo não apagar a tela. */
+      var alternaveis = ids.filter(function (id) { return !!WIDGETS_SLIDE[id]; });
+      var peca = (ids.length > 1 && alternaveis.length === ids.length)
+        ? hospedeiro(ids) : pecaDe(ids[0]);
+
+      /* Posição explícita em vez de deixar a grade encaixar sozinha. Com
+       * peças de duas linhas de altura, o encaixe automático deixa buracos
+       * quando uma faixa curta vem depois de uma alta — e um buraco no meio
+       * do painel é justamente o que o usuário arrumou para não ter. */
+      peca.style.gridColumn = coluna + ' / span ' + larg;
+      peca.style.gridRow = linha + ' / span ' + alt;
+
+      /* Sem container queries (o Chrome 64 não tem), quem sabe que o cartão
+       * ficou estreito é isto aqui. O clima usa para descer os detalhes para
+       * uma faixa embaixo em vez de disputar a direita. */
+      peca.classList.toggle('estreito', larg < GRADE.unidades);
+      if (larg < GRADE.unidades) peca.setAttribute('data-larg', larg);
+      else peca.removeAttribute('data-larg');
+
+      /* Quem encosta na quina de cima à direita do lado. O Orkut abre esse
+       * canto mais que os outros, e antes isso era um seletor de posição no
+       * CSS — que na grade não dá, porque a peça da quina depende das
+       * larguras e o Chrome 64 não tem :has(). Aqui a posição é sabida. */
+      /* toggle porque os nós vêm do estoque e são REUSADOS: com `+=`, cada
+       * remontagem colava mais uma cópia da classe no mesmo elemento. */
+      peca.classList.toggle('quina-td',
+        linha === 1 && coluna + larg - 1 === GRADE.unidades);
+
+      lado.appendChild(peca);
+      coluna += larg;
     }
+    linha += alt;
   }
 }
 
@@ -1266,8 +1324,6 @@ function pecaDe(id) {
 function hospedeiro(ids) {
   var el = document.getElementById('molde-host').content
              .firstElementChild.cloneNode(true);
-  var curto = ids.every(function (id) { return WIDGETS_CURTOS.indexOf(id) >= 0; });
-  if (curto) el.className += ' curto';
   el.setAttribute('data-cartao', ids.join('+'));
   var slider = new Slider(el.querySelector('.palco'), el.querySelector('.pontos'));
   var cabeca = el.querySelector('h2'), selo = el.querySelector('.etq');
@@ -2181,20 +2237,8 @@ function aplicarAjustes() {
   // decisão, e o que perdesse deixaria a tela embaralhada de um jeito difícil
   // de explicar.
 
-  // --- clima em meia largura quando divide a linha com o recado
-  //
-  // Sem container queries (Chrome 64 não tem), quem sabe que o cartão ficou
-  // estreito é o JS: se os dois estão ligados, o clima muda de arranjo e os
-  // detalhes descem para uma faixa embaixo em vez de disputar a direita.
-  var clima = document.querySelector('[data-cartao="clima"]');
-  if (clima) {
-    // Antes isto perguntava se o recado estava ligado. Agora a pergunta certa é
-    // se o clima está DIVIDINDO a linha — ele pode estar pareado com o monitor,
-    // ou sozinho com o recado em outra coluna.
-    var dividindo = !!(clima.parentNode && clima.parentNode.className &&
-                       clima.parentNode.className.indexOf('dupla') >= 0);
-    clima.className = clima.className.replace(/ ?estreito/, '') + (dividindo ? ' estreito' : '');
-  }
+  // (o "estreito" do clima agora é decidido em montarLado, onde a largura da
+  // célula é conhecida — não faz sentido recalcular a cada empurrão)
 
   /* --- papel de parede, por tema
    *

@@ -108,8 +108,26 @@ body { display: flex; flex-direction: column; }
   padding: 0.4vw 2vw 2vw;
 }
 
-.coluna { display: flex; flex-direction: column; min-height: 0; }
-.coluna > * + * { margin-top: var(--gap); }
+/* Cada lado é uma grade de 6 unidades (3 blocos) por 4 linhas. A peça diz
+   onde fica, em grid-column/grid-row escritos pelo montarLado — posição
+   explícita, porque o encaixe automático deixa buraco quando uma faixa curta
+   vem depois de uma alta.
+
+   `grid-gap` e não `gap`: o nome curto só existe em grid a partir do Chrome
+   66, e o alvo aqui é o 64. As duas linhas ficam, e a velha é a que vale no
+   tablet. */
+.coluna {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  grid-template-rows: repeat(4, 1fr);
+  grid-gap: var(--gap);
+  gap: var(--gap);
+  min-height: 0;
+}
+/* min-height/min-width 0 em tudo que entra na grade: sem isso um item de
+   grade nunca encolhe abaixo do próprio conteúdo, e um cartão com lista
+   grande estoura a linha em vez de cortar. */
+.coluna > * { min-width: 0; min-height: 0; }
 
 /* ================================================================= relógio */
 .relogio { flex: none; padding: 0.5vw 0 1vw; }
@@ -436,9 +454,8 @@ body { display: flex; flex-direction: column; }
 .pilula.pronto      { color: var(--verde); border-color: rgba(34,197,94,0.35); }
 
 /* ==================================== mensagens + monitor, lado a lado */
-.dupla { display: flex; flex: 0 0 31%; min-height: 0; }
-.dupla > * { flex: 1; min-width: 0; }
-.dupla > * + * { margin-left: var(--gap); }
+/* `.dupla` saiu: duas peças na mesma linha agora são duas células da grade,
+   cada uma com a própria largura em unidades. */
 
 /* ------------------------------------------------------- chips e slider */
 .palco { position: relative; flex: 1; min-height: 0; }
@@ -968,22 +985,12 @@ body { display: flex; flex-direction: column; }
 /* O clima abraça o próprio conteúdo (a temperatura tem largura previsível) e
    o recado fica com todo o resto — texto é o que mais precisa de espaço.
    Com o recado desligado, o clima volta a esticar sozinho. */
-/* O nome era `dupla topo` e caía na mesma regra da barra do topo da tela —
-   herdava o padding dela, e por isso a linha nascia deslocada e sobrando
-   espaço à direita. Nome próprio resolve, e some a ambiguidade do
-   querySelector('.topo') lá no app.js. */
-.dupla.abertura { flex: none; align-items: stretch; }
-.dupla.abertura > [data-cartao="clima"]  { flex: 0 0 auto; min-width: 15vw; }
-.dupla.abertura > [data-cartao="recado"] { flex: 1; min-width: 0; }
-.dupla.abertura > [data-cartao="clima"]:only-child { flex: 1; }
-.dupla.abertura .recado-corpo p { font-size: 1.35vw; }
-
-/* O corpo do recado parava na altura do texto e deixava um vão embaixo: o
-   cartão tinha 128px e a frase ocupava 21. Esticando o corpo, o texto se
-   centraliza no espaço que sobra do cabeçalho — igual ao clima, que já fazia
-   isso. É o que faz os dois ocuparem a linha inteira, e não flutuarem nela. */
-.dupla.abertura .recado-corpo,
-.dupla.abertura .clima-corpo { flex: 1; min-height: 0; }
+/* Cartão estreito: menos que a largura inteira da linha.
+   Quem marca é o montarLado, que é onde a largura da célula é conhecida —
+   o Chrome 64 não tem container query para o CSS descobrir sozinho. */
+.cartao.estreito .recado-corpo p { font-size: 1.35vw; }
+.cartao.estreito .recado-corpo,
+.cartao.estreito .clima-corpo { flex: 1; min-height: 0; }
 
 /* Clima dividindo a linha com o recado: os detalhes descem para uma faixa
    embaixo, como era antes do redesenho. Na metade da largura não há espaço
@@ -1252,15 +1259,10 @@ body { display: flex; flex-direction: column; }
 
 
 /* ===================================================== layout livre
-   Com os widgets podendo ir para qualquer lugar, quem cresce não pode mais ser
-   decidido por cartão. Antes era `.claude { flex: 1 }` e `.agenda { flex: 1 }`,
-   o que só funcionava enquanto o lugar de cada um era fixo — movido para uma
-   dupla, o cartão levava o crescimento junto e espremia o vizinho.
-
-   A regra passa a ser posicional: cartão direto na coluna ocupa o que sobra;
-   cartão dentro de uma dupla divide a linha com o irmão. */
-.coluna > .cartao { flex: 1; min-height: 0; }
-.dupla > .cartao  { flex: 1; min-height: 0; }
+   Quem cresce não é mais decidido por cartão nem por posição: é a célula da
+   grade que manda, e o cartão preenche o que recebeu. As regras de flex que
+   moravam aqui (`.coluna > .cartao { flex: 1 }` e companhia) eram da época da
+   coluna flexível e viraram letra morta — item de grade ignora flex. */
 
 
 /* Selo do tema na ponta direita da barra do topo. Altura casada com a do
@@ -1280,12 +1282,10 @@ body { display: flex; flex-direction: column; }
 .tela-aberta .topo { display: none; }
 
 
-/* ------------------------------------------------- monitor: altura do conteúdo
-   Sozinho numa coluna, o monitor não estica. Ele tem três linhas e pronto —
-   esticado, viravam três linhas no topo e um vazio de meia tela embaixo.
-   Dentro de uma dupla ele continua dividindo a linha com o irmão, que é o
-   caso em que esticar faz sentido. */
-.coluna > [data-widget="monitor"] { flex: none; }
+/* ------------------------------------------- monitor: conteúdo centrado
+   A altura dele agora é escolhida no arranjo, em linhas. O que continua
+   valendo é centrar as três linhas na vertical, para quando a célula for
+   mais alta que o conteúdo.
 
 /* E o conteúdo fica centrado na vertical, para quando ele ESTIVER esticado. */
 .monitor .corpo,
@@ -1859,26 +1859,7 @@ body { display: flex; flex-direction: column; }
 }
 
 
-/* Cartão de conteúdo curto (os dois monitores) não estica: ele tem três ou
-   quatro linhas e pronto. A altura vem do palco, que o Slider mede pelo slide
-   mais alto — ver Slider.prototype.medirAltura. */
-.coluna > .cartao.curto { flex: none; }
-
-/* Num cartão curto os slides deixam de ser absolutos e passam a se empilhar
-   numa célula de grade. É isso que dá ALTURA PRÓPRIA ao palco: ele passa a
-   medir o slide mais alto, e o cartão abraça esse tamanho — sem JavaScript
-   medindo nada.
-   
-   Só nos curtos. Nos outros a posição absoluta é o que faz uma lista longa ser
-   CORTADA em vez de esticar o cartão, e é dela que depende o "mostra quantos
-   couberem". Empilhar por grade ali tiraria a restrição e a lista cresceria
-   sem limite. */
-.cartao.curto .palco {
-  flex: none;
-  display: grid;
-  height: auto;
-}
-.cartao.curto .slide {
-  position: relative;
-  grid-area: 1 / 1;
-}
+/* O mecanismo do cartão "curto" saiu com a grade. Ele fazia um cartão de
+   conteúdo curto não esticar dentro de uma coluna flex, empilhando os slides
+   com grid em vez de posição absoluta. Numa célula de altura definida nada
+   disso é preciso: a posição absoluta do .slide volta a servir para todos. */

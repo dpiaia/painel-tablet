@@ -161,10 +161,11 @@
    de fora do conjunto — abre mais que os outros. É o desenho assimétrico das
    caixas de perfil daquela época.
 
-   Duas regras porque o primeiro item da coluna pode ser um cartão sozinho ou
-   uma dupla; na dupla, quem encosta na quina é o cartão da direita. */
-[data-tema="orkut"] #col-dir > .cartao:first-child,
-[data-tema="orkut"] #col-dir > .dupla:first-child > .cartao:last-child {
+   Na grade, quem encosta na quina depende das larguras da primeira faixa —
+   não é sempre o primeiro do DOM, e o Chrome 64 não tem :has() para
+   descobrir. Então o montarLado marca a peça com `quina-td`, que é onde a
+   posição é sabida. */
+[data-tema="orkut"] #col-dir > .quina-td {
   border-top-right-radius: 1.9vw;
 }
 [data-tema="orkut"] .cartao h2 {
