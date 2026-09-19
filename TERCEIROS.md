@@ -66,20 +66,24 @@ uma adaptação, feita para exibição.
 
 | arquivo | de quem é |
 |---|---|
+| `xp-colina.jpg` | **original**, gerado por IA para este projeto; MIT |
+| `apple-ponte.jpg` | **original**, gerado por IA para este projeto; MIT |
+| `matrix-chuva.jpg` | gerado para este projeto; MIT |
 | `win95-nuvens.jpg` | Microsoft — "Clouds", do Windows 95 |
-| `winxp-colina.jpg` | Microsoft — "Bliss", do Windows XP |
-| `apple-golden-gate.jpg` | Apple — papel de parede do macOS, via 512pixels.net |
-| `matrix-chuva.jpg` | gerado para este projeto; coberto pela MIT |
 
-**Atenção a estes três.** Os papéis de parede do Windows e do macOS são
-fotografias licenciadas pela Microsoft e pela Apple, e isso é mais delicado que
-os logotipos: logotipo identificando um tema é uso comum, fotografia
-redistribuída não é. Eles vêm
-aqui para o painel funcionar assim que alguém clona; quem for usar este projeto
-para outra coisa deve trocá-los.
+**Três dos quatro são nossos, e isso foi de propósito.** As versões anteriores
+eram as fotografias originais da Microsoft ("Bliss") e da Apple, e fotografia
+redistribuída é mais delicada que logotipo: logotipo identificando um tema é
+uso nominativo, fotografia de terceiro num repositório público é republicação.
+Foram trocadas por imagens geradas para este projeto, que **evocam** aquelas
+áreas de trabalho sem ser a foto de ninguém.
 
-O do XP foi reduzido de 4500 para 1600px, porque o tablet tem 1,4 GB de RAM e o
-navegador descomprime a imagem inteira antes de escalar.
+Falta a do Windows 95. Enquanto não vem, `win95-nuvens.jpg` continua sendo a
+"Clouds" da Microsoft — quem for publicar uma versão deste projeto deve
+trocá-la, ou desligar o papel de parede desse tema no painel de controle.
+
+O do XP e o do Apple foram reduzidos para 1600px, porque o tablet tem 1,4 GB de
+RAM e o navegador descomprime a imagem inteira antes de escalar.
 
 Qualquer imagem que você colocar nessa pasta aparece no painel de controle, e é
 sua — não deste repositório.

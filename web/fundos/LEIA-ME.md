@@ -13,8 +13,8 @@ isso o relógio e a barra do topo, que ficam por fora dos cartões, sumiriam em
 cima de uma foto clara.
 
 Quatro imagens VÊM no repositório, para o painel não nascer sem papel de
-parede: as dos temas Windows 95, Windows XP, Apple e Matrix. As três primeiras
-são fotografias de terceiros — leia o `TERCEIROS.md` antes de republicar este
-projeto em qualquer lugar.
+parede. Três foram geradas para o projeto e são nossas; a do Windows 95 ainda é
+a fotografia original da Microsoft — leia o `TERCEIROS.md` antes de republicar
+este projeto em qualquer lugar.
 
 As que você acrescentar são suas, e o repositório não tem por que carregá-las.
