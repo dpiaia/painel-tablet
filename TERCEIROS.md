@@ -68,11 +68,13 @@ uma adaptação, feita para exibição.
 |---|---|
 | `win95-nuvens.jpg` | Microsoft — "Clouds", do Windows 95 |
 | `winxp-colina.jpg` | Microsoft — "Bliss", do Windows XP |
-| `matrix-chuva.jpg` | gerado para este projeto; cobertos pela MIT |
+| `apple-golden-gate.jpg` | Apple — papel de parede do macOS, via 512pixels.net |
+| `matrix-chuva.jpg` | gerado para este projeto; coberto pela MIT |
 
-**Atenção a estes dois.** Os papéis de parede do Windows são fotografias
-licenciadas pela Microsoft, e isso é mais delicado que os logotipos: logotipo
-identificando um tema é uso comum, fotografia redistribuída não é. Eles vêm
+**Atenção a estes três.** Os papéis de parede do Windows e do macOS são
+fotografias licenciadas pela Microsoft e pela Apple, e isso é mais delicado que
+os logotipos: logotipo identificando um tema é uso comum, fotografia
+redistribuída não é. Eles vêm
 aqui para o painel funcionar assim que alguém clona; quem for usar este projeto
 para outra coisa deve trocá-los.
 

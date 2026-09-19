@@ -12,5 +12,9 @@ brilho do próprio tema — véu preto nos temas escuros, branco nos claros. Sem
 isso o relógio e a barra do topo, que ficam por fora dos cartões, sumiriam em
 cima de uma foto clara.
 
-As imagens desta pasta não vão para o git: são suas, e o repositório não tem
-por que carregá-las.
+Quatro imagens VÊM no repositório, para o painel não nascer sem papel de
+parede: as dos temas Windows 95, Windows XP, Apple e Matrix. As três primeiras
+são fotografias de terceiros — leia o `TERCEIROS.md` antes de republicar este
+projeto em qualquer lugar.
+
+As que você acrescentar são suas, e o repositório não tem por que carregá-las.
