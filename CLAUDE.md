@@ -1,124 +1,210 @@
 # Orientações para o Claude Code neste repositório
 
-Um painel que roda no Mac e aparece num tablet na mesa: relógio, agenda,
-clima, contadores de mensagem, estado das sessões do Claude Code, pull
-requests do GitHub e saúde do Mac. O `README.md` conta *por que* cada peça é
-como é — leia antes de mudar comportamento.
+Um painel que roda no computador da pessoa e aparece numa tela na mesa:
+relógio, agenda, clima, contadores de mensagem, estado das sessões do Claude
+Code, pull requests do GitHub, saúde da máquina e o que está tocando.
+
+**Feito e testado em macOS.** Em Linux e Windows o núcleo deve funcionar e dois
+cartões não — o passo 2 abaixo tem a tabela exata. Não esconda isso de quem
+está instalando.
+
+O `README.md` é a porta de entrada de quem chega. O `DECISOES.md` conta *por
+que* cada peça é como é — **leia antes de mudar comportamento**: quase toda
+escolha estranha no código tem um parágrafo lá explicando que não foi acaso.
 
 ---
 
 ## Se a pessoa acabou de clonar, conduza a instalação
 
-Ela provavelmente não leu o README e não sabe o que precisa decidir. **Pergunte
-em vez de chutar** — três respostas mudam o que vai ser instalado. Faça uma
-pergunta de cada vez e execute o passo antes de ir para a próxima.
+Ela provavelmente não leu nada e não sabe o que precisa decidir. Seu trabalho
+aqui não é executar comandos: é **conduzir**. Pergunte uma coisa de cada vez,
+execute o passo, confirme que funcionou, e só então siga.
 
-### 1. Em que aparelho o painel vai aparecer?
+Parta do princípio de que ela pode nunca ter aberto um terminal. Quando pedir
+para rodar algo, diga **onde** e **o que vai acontecer**. Quando um comando
+falhar, leia a mensagem e traduza — não devolva o erro cru.
 
-Isto decide duas coisas, então pergunte primeiro.
+### Passo 0. Quanto ela quer, de verdade
 
-| | Android com adb | iPad / iPhone |
+**Pergunte isto antes de qualquer coisa.** As três respostas dão trabalhos
+muito diferentes, e a maioria das pessoas quer a primeira:
+
+1. **"Só quero o painel na tela."** Relógio, clima, recado e o que vier do
+   GitHub. Não precisa de tablet configurado, nem de extensão, nem de adb —
+   precisa do servidor de pé e de um navegador apontado para o endereço.
+   São dez minutos. Faça só os passos 4, 9, 10 e 11.
+2. **"Quero a agenda e as mensagens também."** Aí entram a extensão do
+   navegador (passo 7) e, se o aparelho for Android e ela quiser a agenda de
+   dentro dele, o adb (passo 3). Some também os passos 5 e 6.
+3. **"Quero mexer no código."** Aí o `DECISOES.md` importa mais que este
+   roteiro.
+
+Não venda o caminho 3 para quem pediu o 1.
+
+### Passo 1. O que ela precisa ter
+
+Confira antes de começar, e seja honesto sobre o que é obrigatório:
+
+| | Precisa? | Por quê |
 |---|---|---|
-| Agenda | do próprio aparelho, pelo `CalendarProvider` | precisa de outra fonte (passo 4) |
-| Bateria e Wi-Fi | aparecem na barra do topo | não existem; o cartão some sozinho |
-| Modo quiosque | Fully Kiosk Browser | "Adicionar à Tela de Início" + Acesso Guiado |
-| Recarregar remoto | botão do painel de controle, via adb | não precisa: a página se recarrega sozinha |
+| **Claude Code** | sim | O projeto inteiro foi feito com ele e é para continuar assim. É o que lê este arquivo e a mão que mexe no código. Sem ele a pessoa fica com um painel que funciona e que ela não consegue mudar. |
+| **Python 3.8+** | sim | O servidor. Só biblioteca padrão — nada de instalar pacote. |
+| **Um navegador Chromium** | só nos caminhos 2 e 3 | Chrome, Edge, Brave, Opera, Vivaldi, Arc ou o Chromium puro. Precisa aceitar extensão em modo desenvolvedor. **Safari e Firefox não servem**: a extensão é Manifest V3 com as APIs `chrome.*`. |
+| **Uma tela** | sim, mas qualquer uma | Ver o passo 3. |
+| **`gh` (GitHub CLI)** | opcional | Só para os cartões de pull request. Sem ele, desligue os cartões no painel de controle em vez de instalar por instalar. |
+| **`adb`** | só Android com agenda | Ver o passo 3. |
 
-O CSS serve aos dois sem mudança. Ele foi escrito para o WebView 64 de um
-Galaxy Tab E de 2014 — qualquer Safari ou Chrome mais novo é um superconjunto
-disso.
+### Passo 2. Em que sistema ela está
 
-### 2. As dependências estão no lugar?
+**Este projeto foi feito e testado em macOS.** Diga isso com todas as letras —
+e diga também o que muda, que é menos do que parece:
 
-```
-python3 --version          # 3.8+; o servidor é só biblioteca padrão
-gh auth status             # para os pull requests
-adb devices                # só no caminho Android
-```
+| | macOS | Linux | Windows |
+|---|---|---|---|
+| Servidor, clima, GitHub, agenda por adb, extensão, música | funciona | deve funcionar (stdlib + `gh` + `adb`) | deve funcionar |
+| Cartão "Monitor do Mac" | funciona | **não**: usa `vm_stat` e `sysctl`; no Linux seria `/proc/meminfo` | **não** |
+| Cartão "Monitor do Claude" | funciona | **não sei**: lê `~/Library/Application Support/Claude/`; onde o app guarda isso em outro sistema é coisa a descobrir | **não sei** |
+| Hooks (`hooks/avisar.sh`) | funciona | funciona (é `/bin/sh`) | precisa de WSL ou Git Bash |
+| Serviço que sobe sozinho | `launchd` | `systemd --user` | Agendador de Tarefas |
 
-Se a pessoa não usa GitHub ou não quer o cartão, o `gh` é opcional — desligue
-o cartão no painel de controle em vez de instalar por instalar.
+Se ela **não** estiver no macOS: não finja que está tudo pronto. Ajude a
+levantar o que funciona, desligue no painel de controle os cartões que não
+funcionam, e **convide a contribuir** — portar o `maquina.py` para Linux é uma
+tarefa pequena e bem delimitada, e ela seria a primeira pessoa a fazer. Ofereça
+ajudar a abrir o pull request.
 
-### 3. Gere a configuração
+### Passo 3. Em que aparelho o painel vai aparecer
+
+Pergunte, e depois pergunte o **modelo**. Não é curiosidade: o modelo decide se
+vai precisar de adb e de cabo.
+
+| | Android | iPad / iPhone | Um navegador qualquer |
+|---|---|---|---|
+| Agenda | do próprio aparelho, via `adb` | precisa de outra fonte (passo 5) | outra fonte |
+| Bateria e Wi-Fi na barra | sim | não existem; o cartão some sozinho | não |
+| Modo quiosque | Fully Kiosk Browser | "Adicionar à Tela de Início" + Acesso Guiado | tela cheia |
+| Recarregar de longe | botão no painel de controle | não precisa: a página se recarrega sozinha | idem |
+
+**Se for Android e ela quiser a agenda do aparelho**, aí sim precisa de adb:
+
+1. Peça o modelo e a versão do Android.
+2. Peça para ela **ligar o cabo USB** no computador — a primeira autorização do
+   adb só acontece por cabo.
+3. Ative Opções do desenvolvedor (tocar sete vezes em "Número da versão", em
+   Sobre o tablet) e depois Depuração USB.
+4. `adb devices` — vai aparecer um aviso **no tablet** pedindo autorização.
+   Avise antes, senão ela fica olhando o terminal parado.
+5. Só então `adb tcpip 5555` e `adb connect <ip>:5555`, e o cabo pode sair.
+
+**Se ela não quiser nada disso**, o tablet é o requisito mais leve do projeto:
+abrir o endereço no navegador dele e pronto. Ofereça esse caminho primeiro.
+
+O CSS serve a todos sem mudança: foi escrito para o WebView 64 de um Galaxy
+Tab E de 2014, e qualquer navegador mais novo é um superconjunto disso.
+
+### Passo 4. Gere a configuração
 
 ```
 python3 ferramentas/instalar.py
 ```
 
-Ele cria `config.json`, sorteia o token e escreve `extensao/config.js` e
-`hooks/avisar.sh` já preenchidos. **Esses três arquivos nunca vão para o git** —
-estão no `.gitignore` porque carregam o token.
+Cria o `config.json`, sorteia um token e o escreve nos três lugares que
+precisam dele: o servidor, a extensão e o hook. **Esses três arquivos nunca vão
+para o git** — estão no `.gitignore` porque carregam o token.
 
-Pergunte a cidade do clima e, se houver, a URL do repositório que ela quer
-vigiar para revisão. O painel de controle valida a URL e avisa na hora se a
-conta não tem acesso.
+Ele vai perguntar a cidade do clima e, se houver, o repositório que ela quer
+vigiar. O painel de controle valida o repositório e avisa na hora se a conta
+não tem acesso.
 
-### 4. De onde vem a agenda
+### Passo 5. De onde vem a agenda
 
-No caminho Android já está resolvido. **No iPad, escolha com a pessoa:**
+No caminho Android com adb já está resolvido. Nos outros, escolha com ela:
 
 - **Calendar do macOS** — ela adiciona a conta em Ajustes do Sistema → Contas
   de Internet, e o servidor lê de `~/Library/Calendars`. Funciona com o
   aparelho desligado e sem navegador aberto. Peça para ela confirmar que
   aparecem eventos ali antes de escrever código.
 - **Pela extensão** — a aba do Google Agenda aberta alimenta o painel. Sem
-  configuração extra, mas depende da aba.
+  configuração extra, mas depende da aba ficar aberta.
 - **URL iCal secreta** — Google Agenda → configurações do calendário. Muitas
   contas corporativas bloqueiam; verifique antes de prometer.
 
-### 5. Hooks do Claude Code
+### Passo 6. Hooks do Claude Code
 
 Em `~/.claude/settings.json`, apontando para o `hooks/avisar.sh` gerado, nos
 eventos `SessionStart`, `UserPromptSubmit`, `Notification`, `Stop` e
 `SessionEnd`. **Não use `PreToolUse`/`PostToolUse`** — disparam dezenas de
 vezes por minuto e o painel não fica melhor por isso.
 
-### 6. A extensão do navegador
+### Passo 7. A extensão do navegador
 
-Carregue `extensao/` sem empacotar, em qualquer navegador Chromium (Chrome,
-Opera, Edge, Brave). Ela lê o **título** das abas de Gmail, Chat e WhatsApp e
-nunca clica em nada.
+Ela alimenta os contadores de mensagem, o que está tocando e (se for o caso) a
+agenda. Carregue `extensao/` **sem empacotar**, em modo desenvolvedor:
 
-### 6b. Octocats (opcional, e com uma regra de licença)
+| Navegador | Endereço |
+|---|---|
+| Chrome | `chrome://extensions` |
+| Edge | `edge://extensions` |
+| Brave | `brave://extensions` |
+| Opera | `opera://extensions` |
+| Vivaldi | `vivaldi://extensions` |
+| Arc / Chromium | `chrome://extensions` |
+
+Ligue "Modo do desenvolvedor" e use "Carregar sem compactação" apontando para a
+pasta `extensao/`.
+
+**Duas coisas que sempre pegam quem instala:**
+
+1. Arquivo novo na extensão só vale **depois de recarregá-la**. Toda vez que o
+   código dela mudar, é um clique em recarregar.
+2. Um *content script* só entra em aba **carregada depois** da extensão. A
+   extensão injeta sozinha nas abas já abertas, mas se algo não aparecer, o
+   primeiro teste é recarregar a aba.
+
+### Passo 8. Octocats — já vêm no repositório
+
+**Não mande a pessoa baixar nada aqui.** As imagens do Octodex vêm junto com o
+clone, para o painel funcionar inteiro no primeiro arranque. Os scripts
+`ferramentas/baixar_octodex.py` e `ferramentas/limpar_octodex.py` existem para
+buscar de novo ou acrescentar, não para a instalação.
+
+O que você precisa saber, e dizer se ela publicar a versão dela:
+
+- Essas imagens **não estão sob a MIT** deste repositório. A `LICENSE` diz
+  explicitamente que cobre o código, e o `TERCEIROS.md` lista cada pasta com os
+  termos de origem. Isso é a razão de a licença ser escopada — não mexa nesse
+  arranjo sem ler o `TERCEIROS.md` inteiro.
+- Metade delas foi tratada para tirar o fundo branco, que numa cena de tela
+  cheia virava um selo retangular colado por cima. O corte é por preenchimento
+  a partir da borda, não por cor: nessas imagens o branco é de 40 a 75% do
+  total, porque também é a armadura do stormtrooper e a camisa do Link.
+
+### Passo 9. Deixar o painel de pé sozinho
 
 ```
-python3 ferramentas/baixar_octodex.py
+python3 ferramentas/servico.py
 ```
 
-Baixa os octocats do Octodex para `web/octodex/`, que o painel usa no cartão
-do GitHub vazio e nas cenas de pull request.
+No macOS ele escreve o LaunchAgent e carrega. Em Linux e Windows ele **não
+instala nada** — imprime o arquivo que faltaria (unit do systemd, tarefa do
+Agendador) para a pessoa colar, e diz que aquilo não foi testado por ninguém
+ainda. Se ela fizer funcionar, é a melhor primeira contribuição possível.
 
-**Nunca commite essa pasta.** As imagens são obra da GitHub. O FAQ deles
-permite usá-las para *se referir à GitHub* — que é exatamente o que o painel
-faz — mas elas continuam sendo "official GitHub artwork under GitHub's
-trademark license". Trazê-las para dentro de um repositório MIT seria
-republicar arte de terceiros sob uma licença que não é nossa para dar. Por
-isso o repositório traz o script e cada um busca na fonte.
+Para desenvolver, derrube o serviço e rode à mão: `python3 server.py`.
 
-Metade delas vem com fundo branco, que numa cena de tela cheia aparece como
-um selo retangular colado por cima. `ferramentas/limpar_octodex.py` tira — por
-preenchimento a partir da borda, não por cor: nessas imagens o branco é de 40 a
-75% do total, porque também é a armadura do stormtrooper e a camisa do Link.
+### Passo 10. Abrir no aparelho e trancar
 
-Sem a pasta nada quebra: o painel volta ao mascote próprio.
-
-### 7. O serviço
-
-Um LaunchAgent com `KeepAlive`, para o painel subir sozinho e sobreviver a
-reinício. O README tem o plist.
-
-### 8. Abrir no aparelho e trancar
-
-Android: Fully Kiosk apontando para `http://<ip-do-mac>:8766`.
+Android: Fully Kiosk apontando para `http://<ip-do-computador>:8766`.
 iOS: Safari no mesmo endereço → Compartilhar → Adicionar à Tela de Início →
-abrir pelo ícone → Acesso Guiado (triplo clique no botão home). Em ambos,
-desligue o bloqueio automático de tela.
+abrir pelo ícone → Acesso Guiado (triplo clique no botão lateral).
+Em ambos, desligue o bloqueio automático de tela.
 
-### 9. Conferir
+### Passo 11. Conferir de verdade
 
 `http://127.0.0.1:8766/controle` tem um diagnóstico linha a linha: telas
-conectadas, extensão, adb, agenda, GitHub, clima e Claude Code. Use ele para
-fechar a instalação, não "parece que está funcionando".
+conectadas, extensão, adb, agenda, GitHub, clima e Claude Code. **Feche a
+instalação por ele, não por "parece que está funcionando".** Cada linha
+vermelha ali tem uma frase dizendo o que fazer.
 
 ---
 
@@ -151,7 +237,7 @@ O pior que alguém na rede de casa consegue é deixar o painel verde e pular a
 sua música. **Se um dia outra rota precisar sair do Mac, o teste é este: ela
 cabe numa frase que descreva o pior caso sem dar medo?**
 
-**Meça o custo no aparelho, não suponha.** O README tem a metodologia e o
+**Meça o custo no aparelho, não suponha.** O `DECISOES.md` tem a metodologia e o
 resultado de três medições que contrariaram a intuição. Numa GPU velha, a taxa
 de quadros pesa mais que a técnica.
 

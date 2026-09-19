@@ -77,9 +77,15 @@ def main():
     print("  hooks/avisar.sh      escrito (chmod 700)")
     print("\nFalta você:")
     print("  1. python3 server.py            e abrir http://localhost:%d" % porta)
-    print("  2. carregar extensao/ em opera://extensions (modo de programador)")
+    print("     (e conferir o diagnóstico em /controle — é ele que fecha a")
+    print("      instalação, não o 'parece que está funcionando')")
+    print("  2. carregar extensao/ sem compactação, em chrome://extensions")
+    print("     (ou edge://, brave://, opera://, vivaldi:// — qualquer Chromium)")
     print("  3. apontar os hooks do Claude Code para hooks/avisar.sh")
-    print("     (veja a seção 'Estado do Claude Code' no README)")
+    print("     (veja a seção 'Estado do Claude Code' no DECISOES.md)")
+    print("  4. python3 ferramentas/servico.py   para subir sozinho no login")
+    print("\nSe travar em algo: abra este projeto no Claude Code e conte o que")
+    print("aconteceu. O CLAUDE.md tem o roteiro e as armadilhas conhecidas.")
     if not cfg["adb"]:
         print("\n  aviso: adb não encontrado — a agenda e a bateria dependem dele")
     if not cfg["gh"]:
