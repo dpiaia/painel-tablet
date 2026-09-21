@@ -845,6 +845,56 @@ Isso é aceitável numa rede doméstica e foi uma escolha, não um descuido. Se 
 dia isto for para um Wi-Fi compartilhado, o certo é exigir o token também na
 leitura ou prender o servidor a uma interface específica.
 
+## A cidade do clima pode seguir você
+
+Era fixa no `config.json`, e funcionava até eu viajar: o painel mostrou o clima
+de Paulínia enquanto eu estava a 600 km, em Santa Catarina, com toda a
+confiança do mundo. É o tipo de mentira que este projeto não quer contar — e
+pior que "SEM LEITURA", porque parece certa.
+
+**Três fontes, em ordem de precisão, e cada leitura carrega de onde veio:**
+
+| fonte | precisão | como |
+|---|---|---|
+| navegador | o ponto certo | a extensão pede a posição ao navegador, com permissão |
+| ip | região certa, cidade errada por 10-20 km | `localizacao.py` pergunta a um de três serviços |
+| config | o que você escreveu | e é quem manda quando `cidade_auto` está desligado |
+
+A precedência é por precisão, não por quem chegou primeiro. E a diferença é
+**medível**: no mesmo momento, o ponto do IP dava 28° e o ponto do navegador,
+7 km ao lado, dava 30°. Eu tinha suposto que 20 km não mudariam nada e estava
+errado.
+
+### Por que a fonte aparece na tela
+
+Um pontinho ao lado da cidade — vazado para IP, cheio para navegador — e uma
+frase na tela de detalhe. Sem isso, o painel dizendo "GUARAMIRIM/SC" quando
+você está em Jaraguá do Sul parece defeito, e não uma detecção que acertou de
+perto. Dizer de onde veio transforma um bug aparente numa aproximação
+compreensível.
+
+### O que ainda não dá: o nome exato
+
+As coordenadas do navegador são precisas, mas o NOME continua vindo do IP —
+então ele pode dizer a cidade vizinha. Traduzir coordenada em nome exige mandar
+a sua posição exata para um serviço de geocodificação reversa, e isso é uma
+decisão de quem instala, não uma escolha a tomar por ele. Fica registrado como
+pendência consciente.
+
+### Três serviços e não um
+
+Serviço gratuito de geolocalização cai, muda de política e passa a pedir chave.
+`localizacao.py` tenta ipapi.co, geojs.io e ipinfo.io em ordem, e o primeiro que
+responder ganha. O primeiro da fila é o único que devolve a sigla do estado —
+sem ela o rótulo fica só com o nome da cidade, que é melhor que inventar a
+abreviação.
+
+### Fica atrás de um interruptor, desligado
+
+É a única coisa no projeto que fala de você com um terceiro. O aviso mora
+**junto do interruptor**, não numa nota de rodapé: a hora de dizer isso é no
+momento de ligar.
+
 ## Fases
 
 - [x] **1** — servidor, SSE, página, hora, data, clima

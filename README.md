@@ -5,7 +5,11 @@ o clima, as mensagens que chegaram, os pull requests esperando revisão, o que o
 Claude Code está fazendo e a música que está tocando.
 
 Quem faz o trabalho é o seu computador. O tablet só mostra — ele é vidro.
-Tudo acontece na rede local: nada sobe para lugar nenhum.
+
+Tudo acontece na rede local, com **duas exceções, e nenhuma delas é ligada por
+padrão**: o clima consulta o Open-Meteo (coordenadas, sem quem você é), e se
+você ligar "seguir onde eu estou" o servidor pergunta a um serviço externo em
+que cidade o seu IP está. Fora isso nada sobre você sai da sua rede.
 
 O painel tem oito temas que mudam **forma, fonte e ícones**, não só cor:
 Escuro, Claro, Apple, Orkut, Facebook, Windows XP, Windows 95 e Matrix. No 95 e

@@ -219,6 +219,14 @@ input:focus{outline:none;border-color:var(--ciano)}
 .bandeja.sobre{border-color:var(--laranja);background:rgba(245,158,11,.08)}
 .bandeja .chips{display:flex;flex-wrap:wrap;gap:6px}
 
+/* Interruptor de liga/desliga. Mostra o ESTADO em palavra, não só em cor:
+   um botão colorido sozinho deixa dúvida sobre se aquilo é o estado atual ou
+   o que vai acontecer se você clicar. */
+.interruptor{background:var(--alto);border:1px solid var(--linha);border-radius:99px;
+             padding:6px 16px;cursor:pointer;font:13px system-ui;color:var(--mudo)}
+.interruptor.ativo{border-color:var(--ciano);color:var(--ciano);
+                   box-shadow:inset 0 0 0 1px var(--ciano)}
+
 .aviso-envio{font:12px var(--mono);color:var(--mudo);align-self:center}
 .dica-vazia{font-size:12px;color:var(--fraco);line-height:1.5;max-width:44ch}
 .amostra-recado{display:inline-flex;align-items:center;justify-content:center;width:28px;height:20px;border-radius:4px;font-size:11px;font-weight:700;border:1px solid rgba(0,0,0,.18)}

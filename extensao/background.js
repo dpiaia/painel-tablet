@@ -137,7 +137,64 @@ chrome.runtime.onMessage.addListener((msg, remetente, responder) => {
     responder({ base: PAINEL.replace(/\/ingest$/, '') });
     return;
   }
+
+  if (msg && msg.tipo === 'local') {
+    if (msg.dados) enviarLocal(msg.dados);
+    fecharLocal();
+    return;
+  }
 });
+
+/* --------------------------------------------------------------- localização
+ *
+ * O painel pode seguir onde você está em vez de usar uma cidade fixa. Ele
+ * consegue isso sozinho pelo IP, que acerta a região e erra a cidade por
+ * dezenas de quilômetros. A extensão melhora as COORDENADAS — o navegador tem
+ * a posição de verdade.
+ *
+ * Nada disto acontece se `cidade_auto` estiver desligado no painel: o servidor
+ * ignora o que chega aqui. E se a permissão for negada, o painel cai para o IP
+ * sem reclamar.
+ */
+const LOCAL_CADA = 30;      // minutos; posição não muda a cada ciclo de aba
+
+async function pedirLocal() {
+  try {
+    const existe = await chrome.offscreen.hasDocument();
+    if (existe) return;                 // já tem um pedido em andamento
+    await chrome.offscreen.createDocument({
+      url: 'local.html',
+      reasons: ['GEOLOCATION'],
+      justification: 'saber a cidade para o clima do painel',
+    });
+  } catch (e) {
+    // Navegador sem a API offscreen (Chromium antigo). O painel usa o IP.
+  }
+}
+
+async function fecharLocal() {
+  try { await chrome.offscreen.closeDocument(); } catch (e) { /* já fechado */ }
+}
+
+async function enviarLocal(dados) {
+  try {
+    await fetch(PAINEL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token: TOKEN, fontes: { local: dados } }),
+    });
+  } catch (e) {
+    // Painel fora do ar; o próximo ciclo resolve.
+  }
+}
+
+// delayInMinutes para o primeiro pedido sair logo depois de carregar: sem
+// ele, a primeira posição só chegaria meia hora depois, e quem acabou de ligar
+// a opção acharia que não funcionou.
+chrome.alarms.create('local', { delayInMinutes: 0.2, periodInMinutes: LOCAL_CADA });
+chrome.runtime.onStartup.addListener(pedirLocal);
+chrome.runtime.onInstalled.addListener(pedirLocal);
+chrome.alarms.onAlarm.addListener((a) => { if (a.name === 'local') pedirLocal(); });
 
 async function enviarMusica(dados) {
   try {
@@ -185,7 +242,10 @@ chrome.tabs.onCreated.addListener(agendar);
 // Batimento: o service worker do MV3 morre ocioso; o alarme o acorda. Serve
 // também para o painel saber que o sensor continua vivo.
 chrome.alarms.create('batimento', { periodInMinutes: 1 });
-chrome.alarms.onAlarm.addListener(enviar);
+// Só o batimento dos contadores. Antes isto respondia a QUALQUER alarme, o
+// que passou a incluir o da localização — e cada pedido de posição disparava
+// um envio de contadores à toa.
+chrome.alarms.onAlarm.addListener((a) => { if (a.name === 'batimento') enviar(); });
 
 /* Injeta o leitor de agenda nas abas do Calendar que JÁ estão abertas.
  *

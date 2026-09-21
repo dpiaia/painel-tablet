@@ -149,7 +149,19 @@ function desenharClima() {
   var c = estado.clima;
   if (!c) { $('clima-esq').innerHTML = '<div class="vazio">sem clima</div>'; return; }
 
-  $('clima-cidade').textContent = c.cidade.toUpperCase();
+  /* A cidade, e de onde ela veio.
+   *
+   * Detectada não é o mesmo que escolhida: a do IP erra a cidade vizinha com
+   * frequência, e sem esse pontinho você olharia "GUARAMIRIM/SC" achando que
+   * o painel enlouqueceu, em vez de entender que ele adivinhou de perto. O
+   * toque no cartão abre a tela, que explica em palavras. */
+  $('clima-cidade').textContent = (c.cidade || '').toUpperCase();
+  var marca = $('clima-auto');
+  var detectada = c.fonte_local === 'ip' || c.fonte_local === 'navegador';
+  marca.hidden = !detectada;
+  marca.textContent = c.fonte_local === 'navegador' ? '\u25c9' : '\u25cb';
+  marca.title = c.fonte_local === 'navegador'
+    ? 'detectada pelo navegador' : 'detectada pelo IP';
   $('clima-esq').innerHTML =
     '<svg class="tempo" viewBox="0 0 64 64"><g class="traco">' +
       (TEMPO[c.icone] || TEMPO.nuvem) + '</g></svg>' +
@@ -1568,7 +1580,25 @@ function telaClima() {
   if (!c || !c.semana) return '<div class="vazio">sem previsão</div>';
   var hoje = hojeISO();
 
-  return '<div class="semana">' + c.semana.map(function (d) {
+  /* De onde saiu esta cidade, em palavras. É aqui que a imprecisão do IP fica
+   * dita: um painel que mostra a cidade vizinha sem avisar parece quebrado, e
+   * um que avisa está só sendo honesto sobre o que a fonte dele consegue. */
+  var ORIGEM = {
+    'navegador': 'Localização do navegador, com a permissão que você deu. ' +
+                 'São coordenadas de verdade.',
+    'ip': 'Detectada pelo endereço IP. Acerta a região e erra a cidade por ' +
+          'dez ou vinte quilômetros — se estiver mostrando a cidade vizinha, ' +
+          'é isso. Dar permissão de localização à extensão resolve.',
+    'config': 'A cidade que você escreveu no painel de controle.'
+  };
+  var nota = '<div class="nota-proc">' +
+    (ORIGEM[c.fonte_local] || ORIGEM.config) +
+    (c.fonte_local !== 'config'
+      ? ' Para fixar uma cidade, desligue "Seguir onde eu estou" em Fontes de dados.'
+      : ' Para o painel seguir você, ligue "Seguir onde eu estou" em Fontes de dados.') +
+    '</div>';
+
+  return '<div class="tela-clima">' + '<div class="semana">' + c.semana.map(function (d) {
     var dt = dataLocal(d.data);
     var nome = d.data === hoje ? 'HOJE' : DIA_CURTO[dt.getDay()].toUpperCase();
     var chuva = (d.chuva === null || d.chuva === undefined) ? '—' : d.chuva + '%';
@@ -1581,7 +1611,7 @@ function telaClima() {
              '<div class="pe">chuva <b>' + chuva + '</b><br>' +
                escapar(d.nascer || '') + ' – ' + escapar(d.por || '') + '</div>' +
            '</div>';
-  }).join('') + '</div>';
+  }).join('') + '</div>' + nota + '</div>';
 }
 
 /* ----------------------------------------------------------------- agenda */

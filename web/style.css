@@ -129,6 +129,22 @@ body { display: flex; flex-direction: column; }
    grande estoura a linha em vez de cortar. */
 .coluna > * { min-width: 0; min-height: 0; }
 
+/* Pontinho ao lado da cidade quando ela foi DETECTADA, não escolhida.
+   Vazado = pelo IP (erra a cidade vizinha), cheio = pelo navegador (preciso).
+   É pequeno de propósito: informa quem procura, não disputa com a
+   temperatura. A tela de detalhe explica em palavras. */
+.auto {
+  font-style: normal;
+  font-size: 0.7vw;
+  margin-left: 0.4vw;
+  color: var(--ciano);
+  vertical-align: super;
+}
+
+.tela-clima { display: flex; flex-direction: column; height: 100%; }
+.tela-clima .semana { flex: 1; min-height: 0; }
+.tela-clima .nota-proc { margin-top: auto; }
+
 /* ================================================================= relógio */
 .relogio { flex: none; padding: 0.5vw 0 1vw; }
 

@@ -25,6 +25,7 @@ import agenda
 import claude_uso
 import temas
 import widgets
+import localizacao
 import claude
 import github
 import maquina
@@ -70,7 +71,7 @@ _estado = {
 # de propósito: um POST não pode inventar chave nova no estado.
 # "agenda_web" é a reserva: quando o adb não alcança o tablet, a extensão lê a
 # agenda da aba do Google Agenda aberta no Opera e manda por aqui.
-FONTES_EXTERNAS = ("email", "chat", "whatsapp", "agenda_web")
+FONTES_EXTERNAS = ("email", "chat", "whatsapp", "agenda_web", "local")
 
 # ---------------------------------------------------------------- música
 #
@@ -156,7 +157,7 @@ PADRAO_PAINEL = ("cartoes", "tempos", "cores", "recado", "agenda", "ordem", "tem
 
 # Chaves do topo do config que o painel de controle pode mudar. Lista fechada
 # de propósito: um POST não encosta em token, caminho de binário nem porta.
-FONTES_EDITAVEIS = ("cidade", "repo_design", "clima_intervalo_s",
+FONTES_EDITAVEIS = ("cidade", "cidade_auto", "repo_design", "clima_intervalo_s",
                     "agenda_intervalo_s", "github_intervalo_s", "maquina_intervalo_s")
 TOKEN = ""
 
@@ -1127,21 +1128,63 @@ class Handler(BaseHTTPRequestHandler):
 
 
 # ---------------------------------------------------------------- coletores
+# A leitura do navegador tem prazo mais curto que a do IP: ela é precisa, mas
+# só vale enquanto você está onde estava. Laptop fechado e levado para outra
+# cidade deixaria coordenada boa apontando para o lugar errado — e aí é melhor
+# cair para o IP, que é impreciso mas atual.
+VALIDADE_LOCAL_NAVEGADOR = 3600
+
+
 def laco_clima(_):
     # Relê o config a cada volta em vez de guardar no arranque: trocar a cidade
     # no painel de controle tem que valer sem reiniciar o serviço.
-    local, cidade_lida = None, None
+    local_cfg, cidade_lida = None, None
+    ip_cache, ip_rede = None, None
+
     while True:
         cfg = carregar_config()
         cidade = cfg.get("cidade", "")
+        auto = bool(cfg.get("cidade_auto"))
+
         try:
-            if local is None or cidade != cidade_lida:
-                local = weather.geocodificar(cidade)
+            if local_cfg is None or cidade != cidade_lida:
+                local_cfg = weather.geocodificar(cidade)
                 cidade_lida = cidade
-                if local is None:
+                if local_cfg is None:
                     print("clima: cidade %r não encontrada" % cidade)
+
+            por_ip = None
+            if auto:
+                # Rede nova é o sinal mais barato de que você pode ter mudado
+                # de cidade — foi o caso que motivou tudo isto. Além dele, a
+                # releitura é por prazo.
+                rede = ip_local()
+                velho = (not ip_cache or rede != ip_rede or
+                         time.time() - ip_cache["em"] > localizacao.VALIDADE)
+                if velho:
+                    novo = localizacao.por_ip()
+                    if novo:
+                        if not ip_cache or novo["rotulo"] != ip_cache["rotulo"]:
+                            print("localização por IP: %s (%s)"
+                                  % (novo["rotulo"], novo["servico"]))
+                        ip_cache, ip_rede = novo, rede
+                por_ip = ip_cache
+
+            do_nav = None
+            if auto:
+                bruto = _estado.get("local") or {}
+                # `atualizado_em` e não `em`: quem grava o horário é o
+                # /ingest, e é esse o nome que ele usa em toda fonte externa.
+                if time.time() - (bruto.get("atualizado_em") or 0) <= \
+                        VALIDADE_LOCAL_NAVEGADOR:
+                    do_nav = localizacao.do_navegador(bruto)
+
+            local = local_cfg if not auto else \
+                localizacao.escolher(local_cfg, por_ip, do_nav)
+
             if local:
-                publicar(clima=weather.agora(local))
+                publicar(clima=dict(weather.agora(local),
+                                    fonte_local=local.get("fonte", "config")))
         except Exception as erro:          # rede cai; o painel segue vivo
             print("clima falhou: %s" % erro)
         esperar(max(60, int(cfg.get("clima_intervalo_s", 600))))

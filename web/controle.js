@@ -9,6 +9,8 @@
 // deixou de ser uma peça e passou a ser um arranjo possível entre elas.
 const FONTES = [
   ['cidade',       'texto', 'Cidade do clima',    'ex.: Paulínia, SP'],
+  ['cidade_auto',  'liga',  'Seguir onde eu estou',
+   'detecta a cidade sozinho; o campo acima vira só a reserva'],
   ['repo_design',  'repo',  'Repositório vigiado','cole a URL do GitHub'],
   ['clima_intervalo_s',   'num', 'Buscar clima',   's', 'consulta o Open-Meteo'],
   ['agenda_intervalo_s',  'num', 'Buscar agenda',  's', 'lê o tablet por adb'],
@@ -675,6 +677,40 @@ function desenharFontes() {
       inp.onchange = () => enviar({fontes: {[id]: Math.max(5, +inp.value || 60)}});
       const u = document.createElement('span'); u.className = 'unidade'; u.textContent = un;
       alvo.appendChild(linha(rotulo(nome, dica), inp, u));
+      return;
+    }
+
+    if (tipo === 'liga') {
+      const [, , nome, dica] = def;
+      const campo = document.createElement('div');
+      campo.className = 'campo';
+      campo.innerHTML = '<label><b>' + nome + '</b><span>' + dica + '</span></label>';
+
+      const bt = document.createElement('button');
+      const ligado = !!fontes[id];
+      bt.className = 'interruptor' + (ligado ? ' ativo' : '');
+      bt.textContent = ligado ? 'ligado' : 'desligado';
+      bt.onclick = () => {
+        enviar({fontes: {[id]: !fontes[id]}});
+        fontes[id] = !fontes[id];
+        desenharFontes();
+      };
+      campo.appendChild(bt);
+
+      /* O aviso do IP fica junto do interruptor, não numa nota de rodapé:
+         é a única coisa do painel que fala de você com um terceiro, e a hora
+         de dizer isso é no momento de ligar. */
+      const nota = document.createElement('p');
+      nota.className = 'sobre';
+      nota.textContent = ligado
+        ? 'O servidor pergunta a um serviço externo em que cidade este IP está. '
+          + 'É a única coisa aqui que sai da sua rede. A extensão, se você der '
+          + 'permissão de localização a ela, manda coordenadas melhores e o IP '
+          + 'deixa de ser usado para isso.'
+        : 'Desligado, o painel usa só a cidade que você escreveu acima, e nada '
+          + 'sobre você sai da rede local.';
+      campo.appendChild(nota);
+      alvo.appendChild(campo);
       return;
     }
 
