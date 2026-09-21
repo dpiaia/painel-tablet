@@ -112,9 +112,23 @@ Cria o `config.json`, sorteia um token e o escreve nos três lugares que
 precisam dele: o servidor, a extensão e o hook. **Esses três arquivos nunca vão
 para o git** — estão no `.gitignore` porque carregam o token.
 
-Ele vai perguntar a cidade do clima e, se houver, o repositório que ela quer
-vigiar. O painel de controle valida o repositório e avisa na hora se a conta
-não tem acesso.
+Ele pergunta a **porta**, a cidade do clima e, se houver, o repositório que ela
+quer vigiar. O painel de controle valida o repositório e avisa na hora se a
+conta não tem acesso.
+
+**Sobre a porta, explique em vez de deixar ela adivinhar.** O instalador testa
+a 8766 e, se estiver ocupada, sugere a próxima livre — na prática é Enter. Mas
+duas coisas você precisa dizer:
+
+- a porta mora em **três** arquivos (`config.json`, `extensao/config.js`,
+  `hooks/avisar.sh`). Trocar só no primeiro faz o painel subir na porta nova e
+  a extensão e os hooks continuarem falando com a antiga, **sem erro nenhum** —
+  só coisas que param de aparecer. Para trocar, é rodar o instalador de novo.
+- o endereço no aparelho também tem a porta dentro.
+
+Se ela perguntar "qual porta é melhor?": a resposta é qualquer uma livre acima
+de 1024. A 8766 não tem nada de especial além de não ser a 8080, que todo
+projeto de desenvolvimento disputa.
 
 ### Passo 5. De onde vem a agenda
 

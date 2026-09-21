@@ -155,9 +155,22 @@ dia mover isto de volta para Documents, o serviço para de subir.
 ### Por que a porta 8766
 
 8080 é porta disputada: qualquer projeto quer ela, e este servidor precisa ficar
-de pé o ano inteiro sem brigar. 8765 já é do um projeto anterior meu, então o painel ficou
-no vizinho. Se a porta estiver ocupada, o servidor morre na hora com uma
-mensagem clara em vez de virar zumbi.
+de pé o ano inteiro sem brigar. 8765 já é de um projeto anterior meu, então o
+painel ficou no vizinho. Se a porta estiver ocupada, o servidor morre na hora
+com uma mensagem clara em vez de virar zumbi.
+
+**Ela mora em três arquivos, e essa é a armadilha.** `config.json`,
+`extensao/config.js` e `hooks/avisar.sh` — os dois últimos gerados pelo
+instalador. Trocar só no `config.json` faz o painel subir na porta nova
+enquanto a extensão e os hooks continuam batendo na antiga: sem erro em lugar
+nenhum, só os contadores de mensagem e o cartão do Claude Code parando de
+atualizar, o que parece um bug de coleta e não de configuração.
+
+Por isso o instalador **pergunta** a porta em vez de assumir, testa se está
+livre (e distingue "ocupada por outro programa" de "ocupada pelo próprio
+painel", que é o caso normal de rodar o instalador duas vezes), e reescreve os
+três. E a mensagem de erro do servidor manda rodar o instalador, não editar o
+config — era conselho pela metade.
 
 ## O aparelho (medido, não suposto)
 

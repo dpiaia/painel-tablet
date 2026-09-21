@@ -1336,7 +1336,14 @@ def main():
         if erro.errno == errno.EADDRINUSE:
             print("porta %d ocupada. Veja por quem:  lsof -nP -iTCP:%d -sTCP:LISTEN"
                   % (porta, porta))
-            print("ou troque a porta em config.json")
+            # Trocar só no config.json não basta, e este era um conselho pela
+            # metade: a porta também está escrita na extensão do navegador e no
+            # hook do Claude Code, e os dois ficam apontando para o lugar
+            # errado sem dizer nada. Quem reescreve os três é o instalador.
+            print("Para trocar:  python3 ferramentas/instalar.py")
+            print("(ele pergunta a porta e reescreve os TRÊS lugares onde ela")
+            print(" mora: config.json, extensao/config.js e hooks/avisar.sh.")
+            print(" Mexer só no config.json deixa a extensão e os hooks mudos.)")
             raise SystemExit(1)
         raise
     srv.daemon_threads = True

@@ -72,9 +72,39 @@ verde do GitHub e descompacte.
 python3 ferramentas/instalar.py
 ```
 
-Ele vai perguntar algumas coisas — a cidade do clima, o repositório do GitHub
-que você quer vigiar. Pode apertar Enter para aceitar o que ele sugere e mudar
-tudo depois, pela tela de controle.
+Ele vai perguntar algumas coisas — a porta, a cidade do clima, o repositório do
+GitHub que você quer vigiar. **Pode apertar Enter em todas** e mudar depois,
+pela tela de controle.
+
+### Sobre a porta, que é a única pergunta que pode dar trabalho
+
+Seu computador tem **um** endereço na rede, mas pode ter vários programas
+atendendo nele. A porta é o número que diz qual deles responde — como o número
+do apartamento num prédio com um endereço só. O painel usa a **8766**.
+
+Por que não a 8080, que é a mais conhecida: justamente por ser a mais
+conhecida. Qualquer projeto de desenvolvimento quer a 8080, e este servidor
+precisa ficar de pé o ano inteiro sem brigar com nada.
+
+**Você não precisa decidir nada.** O instalador tenta a 8766, e se já tiver
+outro programa ali, ele procura a próxima livre e sugere. Aperte Enter.
+
+Se quiser conferir por conta própria quem está usando uma porta:
+
+```bash
+lsof -nP -iTCP:8766 -sTCP:LISTEN
+```
+
+Sem resposta quer dizer que está livre.
+
+> **O que realmente importa saber:** a porta fica escrita em **três** arquivos —
+> o `config.json`, a extensão do navegador e o hook do Claude Code. Se um dia
+> você quiser trocar, **rode o instalador de novo** em vez de editar o
+> `config.json` na mão. Editando só ele, o painel sobe na porta nova e a
+> extensão e os hooks continuam falando com a antiga — sem erro nenhum na
+> tela, só coisas que param de aparecer.
+>
+> E lembre de atualizar o endereço no tablet, que também tem a porta dentro.
 
 O que ele faz: cria o `config.json`, sorteia uma senha interna (um "token") e
 escreve essa senha nos três lugares que precisam dela. **Esses arquivos nunca

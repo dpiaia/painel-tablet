@@ -10,6 +10,7 @@ Uso:  python3 ferramentas/instalar.py
 """
 import json
 import os
+import socket
 import secrets
 import shutil
 import subprocess
@@ -25,6 +26,60 @@ def caminho_de(programa, padroes):
         if os.path.exists(p):
             return p
     return ""
+
+
+def quem_ocupa(porta):
+    """Quem já está escutando nessa porta: ninguém, nós mesmos, ou outro.
+
+    Distinguir "nós mesmos" importa porque rodar o instalador de novo com o
+    painel de pé é normal — e dizer "porta ocupada" nesse caso mandaria a
+    pessoa procurar um problema que não existe.
+    """
+    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    s.settimeout(0.4)
+    try:
+        s.connect(("127.0.0.1", porta))
+    except OSError:
+        return None                      # ninguém atende: está livre
+    finally:
+        s.close()
+
+    try:
+        import urllib.request
+        with urllib.request.urlopen(
+                "http://127.0.0.1:%d/temas.json" % porta, timeout=1) as r:
+            if r.status == 200:
+                return "nosso"
+    except Exception:
+        pass
+    return "outro"
+
+
+def escolher_porta(atual):
+    """A porta do painel, conferida antes de virar configuração.
+
+    Isto é pergunta e não constante porque 8766 pode estar ocupada na máquina
+    de quem instala, e descobrir isso só na primeira vez que o servidor sobe —
+    com o painel já apontado para o lugar errado na extensão e no hook — é
+    perder uma tarde.
+    """
+    sugerida = atual
+    while quem_ocupa(sugerida) == "outro" and sugerida < atual + 20:
+        sugerida += 1
+    if sugerida != atual:
+        print("A porta %d está ocupada por outro programa; sugerindo %d."
+              % (atual, sugerida))
+        print("(para ver quem:  lsof -nP -iTCP:%d -sTCP:LISTEN)\n" % atual)
+
+    while True:
+        escolhida = int(perguntar("Porta do painel", sugerida) or sugerida)
+        dono = quem_ocupa(escolhida)
+        if dono is None or dono == "nosso":
+            if dono == "nosso":
+                print("  (essa porta já é do painel — seguindo)")
+            return escolhida
+        print("  %d está ocupada por outro programa. Escolha outra." % escolhida)
+        print("  para ver quem:  lsof -nP -iTCP:%d -sTCP:LISTEN" % escolhida)
 
 
 def perguntar(texto, padrao):
@@ -43,6 +98,7 @@ def main():
         cfg = json.load(open(exemplo, encoding="utf8"))
         print("Criando config.json a partir do exemplo.\n")
 
+    cfg["porta"] = escolher_porta(int(cfg.get("porta", 8766)))
     cfg["cidade"] = perguntar("Cidade do clima", cfg.get("cidade", "São Paulo, SP"))
     cfg["tablet"] = perguntar("Tablet no adb (ip:porta)", cfg.get("tablet", "192.168.0.20:5555"))
     cfg["repo_design"] = perguntar("Repositório a vigiar (org/repo, ou vazio)",
@@ -72,7 +128,7 @@ def main():
     os.chmod(hook, 0o700)
 
     print("\nPronto.")
-    print("  config.json          token gerado")
+    print("  config.json          token e porta %d" % porta)
     print("  extensao/config.js   escrito")
     print("  hooks/avisar.sh      escrito (chmod 700)")
     print("\nFalta você:")
