@@ -27,6 +27,7 @@ import temas
 import widgets
 import localizacao
 import correio
+import ical
 import claude
 import github
 import maquina
@@ -159,8 +160,44 @@ PADRAO_PAINEL = ("cartoes", "tempos", "cores", "recado", "agenda", "ordem", "tem
 # Chaves do topo do config que o painel de controle pode mudar. Lista fechada
 # de propósito: um POST não encosta em token, caminho de binário nem porta.
 FONTES_EDITAVEIS = ("cidade", "cidade_auto", "repo_design", "clima_intervalo_s",
-                    "correio_intervalo_s",
+                    "correio", "correio_intervalo_s", "ical",
                     "agenda_intervalo_s", "github_intervalo_s", "maquina_intervalo_s")
+
+# Marca que ocupa o lugar de uma senha no caminho de volta para o painel de
+# controle. Senha não volta: o painel mostra que existe uma e permite trocar,
+# sem nunca ter a atual em mãos. Quem manda isto de volta está dizendo "não
+# mexi", e o servidor mantém a que já estava.
+SENHA_GUARDADA = "\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022"
+
+
+def _sem_senhas(contas):
+    """Cópia das contas com a senha trocada pela marca."""
+    saida = []
+    for c in contas or []:
+        c = dict(c)
+        if c.get("senha"):
+            c["senha"] = SENHA_GUARDADA
+        saida.append(c)
+    return saida
+
+
+def _preservar_senhas(novas, antigas):
+    """Devolve as contas novas com as senhas que o painel não mandou de volta.
+
+    O painel recebe a marca no lugar da senha; quando ele devolve a marca,
+    quer dizer que o campo não foi tocado. Sem isto, salvar qualquer outro
+    campo da conta apagaria a senha — e o sintoma seria o e-mail parar de
+    funcionar depois de uma edição que não tinha nada a ver com ela.
+    """
+    por_usuario = {c.get("usuario"): c.get("senha")
+                   for c in (antigas or []) if c.get("usuario")}
+    saida = []
+    for c in novas or []:
+        c = dict(c)
+        if c.get("senha") == SENHA_GUARDADA:
+            c["senha"] = por_usuario.get(c.get("usuario"), "")
+        saida.append(c)
+    return saida
 TOKEN = ""
 
 # Sessões do Claude Code, alimentadas pelos hooks. Vive fora de _estado porque
@@ -351,10 +388,20 @@ def diagnostico(cfg):
             linha("agenda", "Agenda", "ruim", str(ag["erro"])[:60],
                   idade(ag.get("atualizado_em")))
     else:
+        # A FONTE APARECE SEMPRE. Com três caminhos possíveis, "42 eventos" sem
+        # dizer de onde esconde justamente o que você precisa saber quando algo
+        # está estranho — e esconde também que uma fonte melhor caiu.
+        de_onde = {"ical": "pela URL iCal",
+                   "adb": "pelo adb no tablet",
+                   "navegador": "pela extensão (as outras caíram)"}
+        extra = ""
+        if ag.get("regras_ignoradas"):
+            extra = " · %d regra(s) de repetição que não sei expandir" % \
+                ag["regras_ignoradas"]
         linha("agenda", "Agenda", "ok",
-              "%d eventos na semana%s" % (
+              "%d eventos na semana, %s%s" % (
                   len(ag.get("itens") or []),
-                  "" if ag.get("origem") != "navegador" else " (pela extensão: o adb caiu)"),
+                  de_onde.get(ag.get("origem"), "origem desconhecida"), extra),
               idade(ag.get("atualizado_em")))
 
     # --- correio (só aparece quando alguém configurou)
@@ -707,6 +754,8 @@ class Handler(BaseHTTPRequestHandler):
         for chave, valor in (novos.pop("fontes", None) or {}).items():
             if chave not in FONTES_EDITAVEIS:
                 continue
+            if chave == "correio":
+                valor = _preservar_senhas(valor, cfg.get("correio"))
             # Guarda "org/repo" mesmo quando colaram a URL inteira: o resto do
             # código espera o formato curto.
             cfg[chave] = github.normalizar(valor) if chave == "repo_design" else valor
@@ -721,8 +770,11 @@ class Handler(BaseHTTPRequestHandler):
         cfg["painel"] = painel
         gravar_config(cfg)
         publicar(ajustes=painel)
-        return self._json({"ok": True, "painel": painel,
-                           "fontes": {k: cfg.get(k) for k in FONTES_EDITAVEIS}})
+        # As senhas não voltam: o painel recebe a marca e só manda senha quando
+        # a pessoa digita uma nova.
+        fontes = {k: cfg.get(k) for k in FONTES_EDITAVEIS}
+        fontes["correio"] = _sem_senhas(fontes.get("correio"))
+        return self._json({"ok": True, "painel": painel, "fontes": fontes})
 
     def _mandar_comando(self):
         """O tablet aperta play; quem clica é a extensão, no navegador.
@@ -1210,16 +1262,55 @@ def laco_clima(_):
         esperar(max(60, int(cfg.get("clima_intervalo_s", 600))))
 
 
-def laco_agenda(cfg):
-    intervalo = max(30, int(cfg.get("agenda_intervalo_s", 120)))
-    adb = cfg.get("adb", "")
-    serial = cfg.get("tablet", "")
-    if not (adb and serial):
-        print("agenda: falta 'adb' ou 'tablet' no config.json; laço desligado")
-        return
+def laco_agenda(_):
+    """A agenda, da fonte mais confiável que estiver de pé.
 
+    TRÊS FONTES, EM ORDEM DE PREFERÊNCIA — e a ordem é por quem depende de
+    menos coisas para funcionar:
+
+        ical        uma URL e HTTPS. Não precisa de aparelho ligado, nem de
+                    adb, nem de navegador aberto. Se você configurou, ela manda.
+        adb         o calendário de dentro do tablet. Bom, e cai em todo
+                    reinício do aparelho.
+        extensão    o que o Google Agenda está mostrando numa aba do navegador.
+
+    O que você PREENCHE ganha do que o painel descobre sozinho — é a mesma
+    regra da cidade do clima. Configurar uma fonte é dizer qual você quer; o
+    automático existe para quem não quis escolher.
+
+    Relê o config a cada volta: colar a URL no painel de controle vale sem
+    reiniciar o serviço.
+    """
     ultimos, ultimo_ts = [], None
     while True:
+        cfg = carregar_config()
+        intervalo = max(30, int(cfg.get("agenda_intervalo_s", 120)))
+        url = (cfg.get("ical") or "").strip()
+        adb = cfg.get("adb", "")
+        serial = cfg.get("tablet", "")
+
+        if url:
+            try:
+                r = ical.eventos(url, dias=7, atras=6)
+                ultimos, ultimo_ts = r["itens"], time.time()
+                publicar(agenda={"itens": ultimos, "atualizado_em": ultimo_ts,
+                                 "origem": "ical", "erro": None,
+                                 "regras_ignoradas": r["regras_ignoradas"]})
+                esperar(intervalo)
+                continue
+            except Exception as erro:
+                # URL configurada e fora do ar: cai para o adb em vez de
+                # deixar o painel cego. O diagnóstico conta qual fonte venceu,
+                # então a queda não passa despercebida.
+                print("ical falhou: %s" % erro)
+
+        if not (adb and serial):
+            publicar(agenda={"itens": ultimos, "atualizado_em": ultimo_ts,
+                             "origem": "ical" if url else None,
+                             "erro": "sem iCal no ar e sem adb configurado"})
+            esperar(intervalo)
+            continue
+
         try:
             # Sempre a semana inteira: sete dias à frente cobrem a maior
             # janela que a tela pede, e seis para trás cobrem o começo da

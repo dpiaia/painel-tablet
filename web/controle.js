@@ -130,6 +130,7 @@ const SECOES = [
   ['fontes',     'Fontes de dados', '\u21C4'],
   ['recado',     'Recado',          '\u270E'],
   ['agenda',     'Agenda',          '\u25F4'],
+  ['correio',    'E-mail',          '\u2709'],
   ['fundo',      'Papel de parede', '\u25A3'],
   ['ritmo',      'Ritmo',           '\u23F1'],
   ['cores',      'Cores e temas',   '\u25D0'],
@@ -1022,6 +1023,34 @@ function desenharAgendaOpc() {
   const alvo = document.getElementById('agenda-opc');
   alvo.innerHTML = '';
 
+  /* A URL iCal vem primeiro porque é a decisão mais importante desta tela:
+     com ela preenchida, a agenda para de depender do tablet ligado e do adb. */
+  const fonte = document.createElement('div');
+  fonte.className = 'campo';
+  fonte.innerHTML = '<label><b>URL iCal</b><span>Google Agenda \u2192 ' +
+    'Configurações do calendário \u2192 "Endereço secreto no formato iCal"' +
+    '</span></label>';
+  const inp = document.createElement('input');
+  inp.type = 'text';
+  inp.value = fontes.ical || '';
+  inp.placeholder = 'https://calendar.google.com/calendar/ical/.../basic.ics';
+  inp.onchange = () => {
+    fontes.ical = inp.value.trim();
+    enviar({fontes: {ical: fontes.ical}});
+    desenharAgendaOpc();
+  };
+  fonte.appendChild(inp);
+
+  const notaIcal = document.createElement('p');
+  notaIcal.className = 'sobre';
+  notaIcal.textContent = fontes.ical
+    ? 'Preenchida: é ela que manda. O adb e a extensão viram reserva, para o '
+      + 'caso de a URL sair do ar.'
+    : 'Vazia: a agenda vem do calendário de dentro do tablet, por adb — que '
+      + 'cai em todo reinício do aparelho. Preencher aqui resolve isso.';
+  fonte.appendChild(notaIcal);
+  alvo.appendChild(fonte);
+
   const campo = document.createElement('div');
   campo.className = 'campo';
   campo.innerHTML = '<label><b>Dias listados</b>' +
@@ -1046,6 +1075,104 @@ function desenharAgendaOpc() {
   nota.textContent = (JANELAS_AGENDA.find(j => j[0] === atual) || JANELAS_AGENDA[2])[2];
   campo.appendChild(nota);
   alvo.appendChild(campo);
+}
+
+/* --------------------------------------------------------------- e-mail */
+/* Uma conta por bloco, com os campos que o IMAP precisa.
+ *
+ * A SENHA NUNCA VOLTA DO SERVIDOR. O campo chega preenchido com uma marca de
+ * bolinhas; se você não encostar nele, a marca volta e o servidor mantém a
+ * senha que já tinha. Digitar por cima troca. Assim o painel permite editar
+ * uma conta sem nunca ter a senha dela em mãos — e salvar o nome não apaga a
+ * credencial, que seria um bug silencioso e chato de achar.
+ */
+const CAMPOS_CORREIO = [
+  ['nome',     'Nome',     'como aparece no cartão: trabalho, pessoal…', 'text'],
+  ['usuario',  'E-mail',   'o endereço completo',                         'text'],
+  ['senha',    'Senha',    'senha de aplicativo, não a sua senha normal',  'password'],
+  ['servidor', 'Servidor', 'imap.gmail.com',                              'text'],
+  ['porta',    'Porta',    '993',                                         'number'],
+];
+
+function contasCorreio() {
+  return Array.isArray(fontes.correio) ? fontes.correio : [];
+}
+
+function salvarCorreio(lista) {
+  fontes.correio = lista;
+  enviar({fontes: {correio: lista}});
+  desenharCorreio();
+}
+
+function desenharCorreio() {
+  const alvo = document.getElementById('correio');
+  alvo.innerHTML = '';
+  const lista = contasCorreio();
+
+  lista.forEach((conta, i) => {
+    const caixa = document.createElement('div');
+    caixa.className = 'col-editor';
+
+    const topo = document.createElement('div');
+    topo.className = 'topo-lado';
+    topo.innerHTML = '<span class="titulo-col">' +
+      (conta.nome || conta.usuario || 'conta ' + (i + 1)) + '</span>';
+    const tirar = document.createElement('button');
+    tirar.textContent = 'remover';
+    tirar.onclick = () => {
+      const l = contasCorreio().slice();
+      l.splice(i, 1);
+      salvarCorreio(l);
+    };
+    topo.appendChild(tirar);
+    caixa.appendChild(topo);
+
+    CAMPOS_CORREIO.forEach(([id, nome, dica, tipo]) => {
+      const campo = document.createElement('div');
+      campo.className = 'campo';
+      campo.innerHTML = '<label><b>' + nome + '</b><span>' + dica + '</span></label>';
+      const inp = document.createElement('input');
+      inp.type = tipo;
+      inp.value = conta[id] === undefined ? '' : conta[id];
+      inp.placeholder = dica;
+      // onchange e não oninput: cada tecla digitada numa senha viraria um POST.
+      inp.onchange = () => {
+        const l = contasCorreio().slice();
+        l[i] = Object.assign({}, l[i]);
+        l[i][id] = tipo === 'number' ? (+inp.value || 993) : inp.value.trim();
+        salvarCorreio(l);
+      };
+      campo.appendChild(inp);
+      caixa.appendChild(campo);
+    });
+    alvo.appendChild(caixa);
+  });
+
+  if (!lista.length) {
+    const v = document.createElement('p');
+    v.className = 'sobre';
+    v.textContent = 'Nenhuma conta. Sem conta aqui, o cartão continua com o ' +
+                    'contador que a extensão lê do título da aba.';
+    alvo.appendChild(v);
+  }
+
+  const acoes = document.createElement('div');
+  acoes.className = 'acoes';
+  const add = document.createElement('button');
+  add.textContent = 'Adicionar conta';
+  add.onclick = () => salvarCorreio(contasCorreio().concat([{
+    nome: '', usuario: '', senha: '', servidor: 'imap.gmail.com', porta: 993,
+  }]));
+  acoes.appendChild(add);
+  alvo.appendChild(acoes);
+
+  const nota = document.createElement('p');
+  nota.className = 'sobre';
+  nota.innerHTML = 'No Gmail, a senha aqui é uma <b>senha de aplicativo</b> ' +
+    '(precisa de verificação em duas etapas ligada), não a sua senha de ' +
+    'entrar. Em conta corporativa o administrador pode bloquear IMAP — se ' +
+    'bloquear, nenhuma senha funciona e o caminho é continuar pela extensão.';
+  alvo.appendChild(nota);
 }
 
 /* ---------------------------------------------------------- diagnóstico */
@@ -1123,7 +1250,7 @@ async function iniciar() {
 
   desenharNav();
   desenharMarca(); desenharArranjo(); desenharFontes(); desenharRecado();
-  desenharAgendaOpc();
+  desenharAgendaOpc(); desenharCorreio();
   desenharFundos();
   desenharTempos(); desenharTemas(); desenharCores(); verDiag();
   setInterval(verDiag, 15000);
