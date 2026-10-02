@@ -1,0 +1,7 @@
+// Versões FIXADAS, e isso é de propósito: o Gradle do sistema é atualizado
+// pelo Homebrew sem aviso, e o plugin Android só funciona com uma faixa
+// estreita de versões. O wrapper abaixo garante que compilar aqui daqui a um
+// ano dê o mesmo resultado de hoje.
+plugins {
+    id "com.android.application" version "8.7.3" apply false
+}

@@ -1,0 +1,28 @@
+plugins { id "com.android.application" }
+
+android {
+    namespace "net.piaianet.painel"
+    compileSdk 34
+
+    defaultConfig {
+        applicationId "net.piaianet.painel"
+        // 24 é o Android 7 do Galaxy Tab E — o aparelho que já está na mesa.
+        // O WebView dele é o Chrome 64, que é exatamente o alvo para o qual o
+        // CSS do painel foi escrito. Nada precisa ser adaptado.
+        minSdk 24
+        targetSdk 34
+        versionCode 1
+        versionName "0.1"
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+}

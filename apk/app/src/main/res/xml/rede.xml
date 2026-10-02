@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- O painel é servido por HTTP na rede local, sem TLS, e isso é intencional:
+     certificado para um IP de rede doméstica custa manutenção e não protege de
+     nada que importe aqui. O Android bloqueia texto claro por padrão desde o 9,
+     então a permissão fica EXPLÍCITA e restrita a endereços privados — e não
+     liberada para a internet inteira. -->
+<network-security-config>
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="true">192.168.0.0</domain>
+        <domain includeSubdomains="true">10.0.0.0</domain>
+        <domain includeSubdomains="true">localhost</domain>
+    </domain-config>
+    <base-config cleartextTrafficPermitted="true"/>
+</network-security-config>
