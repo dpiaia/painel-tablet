@@ -217,18 +217,24 @@ def analisar(texto, dias=7, atras=6, hoje=None):
     janela_fim = datetime.datetime.combine(
         hoje + datetime.timedelta(days=dias), datetime.time.min)
 
-    eventos, alterados, ignoradas = [], {}, 0
-    atual = None
-
+    # DUAS PASSADAS, e a primeira existe por causa de uma armadilha real.
+    #
+    # Uma reunião semanal que teve UMA ocorrência remarcada vira, no arquivo,
+    # a série com RRULE *mais* um VEVENT separado com RECURRENCE-ID marcando
+    # qual data foi alterada. Expandir a regra sem saber disso gera a data
+    # original E a alterada: a reunião aparece duas vezes no mesmo dia.
+    #
+    # Pior: o VEVENT da alteração costuma vir DEPOIS da série no arquivo, às
+    # vezes centenas de eventos depois. Só dá para saber quais datas suprimir
+    # depois de ler tudo — daí a primeira passada.
+    brutos, atual = [], None
     for linha in _desdobrar(texto):
         if linha == "BEGIN:VEVENT":
             atual = {}
             continue
         if linha == "END:VEVENT":
             if atual is not None:
-                ev, pulou = _montar(atual, janela_ini, janela_fim, alterados)
-                eventos.extend(ev)
-                ignoradas += pulou
+                brutos.append(atual)
             atual = None
             continue
         if atual is None:
@@ -241,6 +247,23 @@ def analisar(texto, dias=7, atras=6, hoje=None):
                                    atual["EXDATE"][1] + "," + valor)
             else:
                 atual[nome] = (params, valor)
+
+    # Chaveado por UID e não por título: títulos se repetem ("Almoço" aparece
+    # todo dia), UID não.
+    alterados = set()
+    for b in brutos:
+        if "RECURRENCE-ID" in b and "UID" in b:
+            try:
+                d, _ = _momento(b["RECURRENCE-ID"][1], b["RECURRENCE-ID"][0])
+                alterados.add((b["UID"][1], _comparavel(d)))
+            except ValueError:
+                pass
+
+    eventos, ignoradas = [], 0
+    for b in brutos:
+        ev, pulou = _montar(b, janela_ini, janela_fim, alterados)
+        eventos.extend(ev)
+        ignoradas += pulou
 
     eventos.sort(key=lambda e: (e["inicio_ts"], e["titulo"]))
     return {"itens": eventos, "regras_ignoradas": ignoradas}
@@ -271,10 +294,6 @@ def _montar(bruto, janela_ini, janela_fim, alterados):
                      else datetime.timedelta(hours=1))
     duracao = fim - ini
 
-    # Instância alterada de uma série: entra no lugar da data original.
-    if "RECURRENCE-ID" in bruto:
-        alterados[(titulo, bruto["RECURRENCE-ID"][1][:8])] = True
-
     excluidas = set()
     if "EXDATE" in bruto:
         for pedaco in bruto["EXDATE"][1].split(","):
@@ -296,9 +315,15 @@ def _montar(bruto, janela_ini, janela_fim, alterados):
         return ([_saida(titulo, local, ini, fim, dia_inteiro)]
                 if _na_janela(ini, fim, janela_ini, janela_fim) else []), pulou
 
+    uid = (bruto.get("UID") or (None, ""))[1]
     saida = []
     for d in datas:
         if _comparavel(d) in excluidas:
+            continue
+        # Data que tem instância alterada em outro VEVENT: a alterada é que
+        # vale, e ela será emitida por conta própria. Gerar as duas põe a
+        # mesma reunião duas vezes no dia.
+        if (uid, _comparavel(d)) in alterados:
             continue
         f = d + duracao
         if _na_janela(d, f, janela_ini, janela_fim):
