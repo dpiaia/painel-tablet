@@ -1,4 +1,4 @@
-"""Saúde do Mac: carga, memória e swap.
+"""Saúde da máquina que serve o painel: carga, memória e swap.
 
 O painel mostra isso porque o Mac é o cérebro de tudo. Quando ele começa a
 engasgar, o tablet vira o primeiro lugar onde dá para perceber — antes da
@@ -9,12 +9,20 @@ de propósito, então livre baixo é normal. O sinal de verdade é o **swap**.
 Quando ele cresce, a máquina já está paginando para o disco, e a lentidão vem
 logo atrás. Por isso ele aparece em GB, e não escondido numa porcentagem.
 
-"Memória usada" aqui segue a conta do Monitor de Atividade — ativa + reservada
-+ comprimida — para bater com o número que você vê quando vai investigar.
+"Memória usada" não tem uma definição universal, e por isso cada sistema usa a
+conta do PRÓPRIO monitor — o número do painel tem que bater com o que você vê
+quando vai investigar, senão ele atrapalha em vez de ajudar:
+
+    macOS   ativa + reservada + comprimida, como o Monitor de Atividade
+    Linux   MemTotal menos MemAvailable, como o `free` e o monitor do GNOME
+
+São contas diferentes porque os dois sistemas gerenciam memória de formas
+diferentes; forçar uma fórmula só daria um número que não confere com nada.
 """
 import os
 import re
 import subprocess
+import sys
 
 GB = 1024.0 ** 3
 
@@ -46,18 +54,68 @@ def _swap():
     return mb("used") / 1024.0, mb("total") / 1024.0    # em GB
 
 
-def ler():
-    nucleos = os.cpu_count() or 1
-    carga = os.getloadavg()[0]
-    cpu = min(100, round(carga / nucleos * 100))
+def _meminfo(caminho="/proc/meminfo"):
+    """/proc/meminfo como um dicionário de bytes.
 
+    O caminho é parâmetro para dar para testar o analisador sem um Linux à mão
+    — o formato do arquivo é estável há vinte anos, e é ele que tem como ter
+    bug aqui, não o `open`.
+
+    O arquivo é `Chave: <número> kB` — e o kB ali é mesmo 1024, apesar do nome.
+    Converter na entrada deixa o resto da função falando em bytes, como o lado
+    do macOS já falava.
+    """
+    dados = {}
+    with open(caminho, encoding="utf8") as fh:
+        for linha in fh:
+            partes = linha.split(":", 1)
+            if len(partes) != 2:
+                continue
+            numero = partes[1].strip().split()
+            if numero and numero[0].isdigit():
+                dados[partes[0]] = int(numero[0]) * 1024
+    return dados
+
+
+def _ler_linux():
+    m = _meminfo()
+    total = float(m.get("MemTotal", 0))
+
+    # MemAvailable e não MemFree: o Linux usa quase toda a RAM livre como cache
+    # de disco de propósito, então "livre" é sempre baixo e não quer dizer
+    # aperto. MemAvailable é a estimativa do próprio kernel de quanto dá para
+    # entregar a um programa novo sem paginar — é a conta que o `free` mostra e
+    # a única que corresponde ao que a pessoa sente.
+    disponivel = float(m.get("MemAvailable", m.get("MemFree", 0)))
+    usada = max(0.0, total - disponivel)
+
+    # Do /proc/meminfo e não do /proc/swaps: o meminfo sempre existe, e o
+    # /proc/swaps fica vazio em máquina sem swap configurado — que é o caso
+    # comum num Raspberry com o dphys-swapfile desligado.
+    swap_total = float(m.get("SwapTotal", 0))
+    swap_usado = max(0.0, swap_total - float(m.get("SwapFree", 0)))
+    return total, usada, swap_usado / GB, swap_total / GB
+
+
+def _ler_macos():
     p, tam = _paginas()
     total = float(_rodar(["sysctl", "-n", "hw.memsize"]).strip() or 0)
     usada = (p.get("pages active", 0) + p.get("pages wired down", 0) +
              p.get("pages occupied by compressor", 0)) * tam
-    ram = round(usada / total * 100) if total else 0
-
     swap_usado, swap_total = _swap()
+    return total, usada, swap_usado, swap_total
+
+
+def ler():
+    nucleos = os.cpu_count() or 1
+    # getloadavg e cpu_count existem nos dois sistemas — a carga é a única
+    # métrica deste módulo que não precisou de porte.
+    carga = os.getloadavg()[0]
+    cpu = min(100, round(carga / nucleos * 100))
+
+    total, usada, swap_usado, swap_total = \
+        _ler_macos() if sys.platform == "darwin" else _ler_linux()
+    ram = round(usada / total * 100) if total else 0
     swap_livre = max(0.0, swap_total - swap_usado)
 
     # Um rótulo só, calculado aqui, para a tela não ter que saber de limiares.
