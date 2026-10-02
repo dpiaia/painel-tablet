@@ -26,6 +26,7 @@ import claude_uso
 import temas
 import widgets
 import localizacao
+import correio
 import claude
 import github
 import maquina
@@ -158,6 +159,7 @@ PADRAO_PAINEL = ("cartoes", "tempos", "cores", "recado", "agenda", "ordem", "tem
 # Chaves do topo do config que o painel de controle pode mudar. Lista fechada
 # de propósito: um POST não encosta em token, caminho de binário nem porta.
 FONTES_EDITAVEIS = ("cidade", "cidade_auto", "repo_design", "clima_intervalo_s",
+                    "correio_intervalo_s",
                     "agenda_intervalo_s", "github_intervalo_s", "maquina_intervalo_s")
 TOKEN = ""
 
@@ -355,6 +357,20 @@ def diagnostico(cfg):
                   "" if ag.get("origem") != "navegador" else " (pela extensão: o adb caiu)"),
               idade(ag.get("atualizado_em")))
 
+    # --- correio (só aparece quando alguém configurou)
+    corr = _estado.get("email_imap")
+    if corr:
+        ruins = [c for c in corr.get("contas", []) if not c["aberto"]]
+        if ruins:
+            linha("correio", "E-mail (IMAP)", "ruim",
+                  "%s: %s" % (ruins[0]["nome"], ruins[0]["erro"]),
+                  idade(corr.get("em")))
+        else:
+            linha("correio", "E-mail (IMAP)", "ok",
+                  "%d não lido(s) em %d conta(s)" % (
+                      corr.get("contador") or 0, len(corr.get("contas", []))),
+                  idade(corr.get("em")))
+
     # --- github
     g = fotos.get("git") or {}
     if not g:
@@ -421,6 +437,10 @@ def gravar_config(cfg):
     tmp = CONFIG_PATH + ".tmp"
     with open(tmp, "w", encoding="utf8") as fh:
         json.dump(cfg, fh, indent=2, ensure_ascii=False)
+    # 600 antes de publicar: o arquivo já guardava o token do painel e agora
+    # guarda senha de aplicativo de e-mail. Num Mac com mais de uma conta, o
+    # padrão 644 deixa isso legível por qualquer um que entre na máquina.
+    os.chmod(tmp, 0o600)
     os.replace(tmp, CONFIG_PATH)   # troca atômica: nunca deixa o arquivo pela metade
     global _versao_config
     _versao_config += 1            # acorda os laços que estiverem dormindo
@@ -1292,6 +1312,31 @@ def laco_uso():
         esperar(60)
 
 
+def laco_correio(_):
+    """E-mail por IMAP, quando houver conta configurada.
+
+    Relê o config a cada volta: ligar uma conta no painel de controle vale sem
+    reiniciar o serviço, como já vale para a cidade.
+
+    Sem conta, o laço dorme e não publica nada — e o cartão continua com o
+    contador da extensão, exatamente como antes. Fonte nova não pode mudar o
+    que já funciona só por existir.
+    """
+    while True:
+        cfg = carregar_config()
+        contas = cfg.get("correio") or []
+        try:
+            if contas:
+                visao = correio.resumo(contas)
+                if visao:
+                    publicar(email_imap=visao)
+        except Exception as erro:
+            print("correio falhou: %s" % erro)
+        # Mais devagar que os outros laços: cada volta abre uma conexão TLS por
+        # conta, e caixa de entrada não muda a cada quinze segundos.
+        esperar(max(60, int(cfg.get("correio_intervalo_s", 120))))
+
+
 def laco_maquina(cfg):
     # Mais frequente que os outros porque carga de CPU muda em segundos, e o
     # ponto deste número é justamente pegar o aperto enquanto ele acontece.
@@ -1393,6 +1438,7 @@ def main():
 
     threading.Thread(target=laco_clima, args=(cfg,), daemon=True).start()
     threading.Thread(target=laco_uso, daemon=True).start()
+    threading.Thread(target=laco_correio, args=(cfg,), daemon=True).start()
     threading.Thread(target=laco_agenda, args=(cfg,), daemon=True).start()
     threading.Thread(target=laco_sistema, args=(cfg,), daemon=True).start()
     threading.Thread(target=laco_maquina, args=(cfg,), daemon=True).start()

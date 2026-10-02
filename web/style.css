@@ -1708,6 +1708,47 @@ body { display: flex; flex-direction: column; }
 .tocador-nota { margin-top: 1.4vw; font-size: 0.9vw; color: var(--fraco); }
 
 
+/* ------------------------------------------------ correio (tela cheia) */
+/* Uma coluna por conta: ver "trabalho" e "pessoal" lado a lado é o ponto —
+   somados viram um número que não diz de onde veio. */
+.correio { display: flex; height: 100%; }
+.correio > * { flex: 1; min-width: 0; }
+.correio > * + * { margin-left: 1.4vw; padding-left: 1.4vw;
+                   border-left: 1px solid var(--borda); }
+
+.carta {
+  padding: 0.6vw 0;
+  border-top: 1px solid var(--borda);
+}
+.carta:first-of-type { border-top: 0; }
+.carta-topo { display: flex; align-items: baseline; justify-content: space-between; }
+.carta-de {
+  font-size: 1vw;
+  font-weight: 700;
+  color: var(--ciano);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.carta-hora {
+  font-family: var(--mono);
+  font-size: 0.8vw;
+  color: var(--fraco);
+  margin-left: 0.8vw;
+  flex: none;
+}
+/* O assunto pode ocupar duas linhas e para por aí: a terceira linha de um
+   assunto raramente diz algo que as duas primeiras não disseram, e empurraria
+   a próxima mensagem para fora da tela. */
+.carta-assunto {
+  font-size: 0.95vw;
+  line-height: 1.35;
+  margin-top: 0.15vw;
+  max-height: 2.7vw;
+  overflow: hidden;
+}
+.pr-vazio.cego { color: var(--vermelho); font-family: var(--mono); font-size: 0.85vw; }
+
 /* -------------------------------------------- monitor do Claude (tela) */
 /* Mesma estrutura da tela de processos: blocos em cima, nota colada embaixo.
    O que muda é o miolo — lá são listas, aqui são dois números grandes e a

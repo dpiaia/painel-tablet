@@ -1471,7 +1471,7 @@ function montarSlides() {
 
   // Uma conta de e-mail por linha. Ver "trabalho 0 / pessoal 131" separado
   // vale muito mais que um "140" somado que não diz de onde veio.
-  var em = estado.email;
+  var em = emailAtual();
   var contas = (em && em.abas) ? em.abas.filter(function (a) { return a.conta; }) : [];
 
   if (!contas.length) {
@@ -1488,6 +1488,25 @@ function montarSlides() {
       }).join('') + '</div>');
   }
   return slides;
+}
+
+/* O IMAP ganha da extensão quando está configurado e fresco.
+ *
+ * Os dois falam a mesma língua (`{aberto, contador, abas}`), então o cartão
+ * não sabe que existe disputa — ele só recebe um deles. E o IMAP ganha porque
+ * o dado é estritamente melhor: ele sabe o número com o navegador fechado, e
+ * ainda traz remetente e assunto, que a leitura de título de aba não tem como
+ * dar.
+ *
+ * Sem conta configurada, `email_imap` não existe e tudo segue como antes —
+ * fonte nova não muda o que já funciona só por aparecer.
+ */
+var EMAIL_IMAP_VELHO = 400;   // o laço roda a cada 120s; três voltas de folga
+
+function emailAtual() {
+  var i = estado.email_imap;
+  if (i && i.em && agoraS() - i.em <= EMAIL_IMAP_VELHO) return i;
+  return estado.email;
 }
 
 function desenharMensagens() {
@@ -2184,10 +2203,54 @@ function telaUso() {
   '</div>';
 }
 
+/* ------------------------------------------------- mensagens (tela cheia)
+ *
+ * Esta tela só tem o que contar quando o e-mail vem por IMAP: a leitura de
+ * título de aba sabe QUANTOS, nunca DE QUEM. Por isso ela diz isso em vez de
+ * abrir vazia — a ausência tem uma explicação e um conserto.
+ */
+function telaMensagens() {
+  var em = emailAtual();
+  if (!em || em.fonte !== 'imap') {
+    return '<div class="vazio">os assuntos só aparecem com o e-mail por IMAP — ' +
+           'a leitura pela aba do navegador sabe quantos, nunca de quem</div>';
+  }
+
+  var contas = em.contas || [];
+  if (!contas.length) return '<div class="vazio">nenhuma conta configurada</div>';
+
+  return '<div class="correio">' + contas.map(function (c) {
+    var corpo;
+    if (!c.aberto) {
+      // Cego não é zero: a conta que não respondeu diz por quê, e não some.
+      corpo = '<div class="pr-vazio cego">' + escapar(c.erro || 'não respondeu') + '</div>';
+    } else if (!c.ultimos.length) {
+      corpo = '<div class="pr-vazio">nada não lido</div>';
+    } else {
+      corpo = c.ultimos.map(function (m) {
+        return '<div class="carta">' +
+                 '<div class="carta-topo">' +
+                   '<span class="carta-de">' + escapar(m.de) + '</span>' +
+                   '<span class="carta-hora">' +
+                     (m.em ? hhmm(m.em) : '') + '</span>' +
+                 '</div>' +
+                 '<div class="carta-assunto">' + escapar(m.assunto) + '</div>' +
+               '</div>';
+      }).join('');
+    }
+    return '<div class="correio-conta">' +
+             '<div class="titulo-col">' + escapar(c.nome) +
+               (c.aberto && c.contador ? ' · ' + c.contador : '') + '</div>' +
+             corpo +
+           '</div>';
+  }).join('') + '</div>';
+}
+
 var TELAS = {
   monitor: { titulo: 'Monitor do Mac · processos', render: telaMaquina },
   uso:    { titulo: 'Monitor do Claude · plano', render: telaUso },
   musica: { titulo: nomeFonte, render: telaMusica },
+  mensagens: { titulo: 'Mensagens · não lidos', render: telaMensagens },
   sobre:  { titulo: 'Sobre o painel',   render: telaSobre },
   clima:  { titulo: 'Clima da semana',  render: telaClima },
   agenda: { titulo: 'Agenda da semana', render: telaAgenda },

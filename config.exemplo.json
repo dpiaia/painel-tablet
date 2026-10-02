@@ -1,6 +1,8 @@
 {
   "cidade": "São Paulo, SP",
   "cidade_auto": false,
+  "correio": [],
+  "correio_intervalo_s": 120,
   "porta": 8766,
   "clima_intervalo_s": 600,
   "adb": "/opt/homebrew/bin/adb",
