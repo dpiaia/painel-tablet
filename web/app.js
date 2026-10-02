@@ -275,16 +275,40 @@ function desenharAgenda() {
   var p = comHora[0];
   var rolando = p.inicio_ts <= agora;
   $('destaque').innerHTML =
-    '<div class="d-topo">' + horaDe(p, rolando ? 'rolando' : '') + duracaoDe(p) + '</div>' +
-    '<div class="d-titulo">' + escapar(p.titulo) + '</div>';
+    '<div class="d-topo">' + horaDe(p, rolando ? 'rolando' : '') + duracaoDe(p) +
+      (p.remoto ? '<span class="ev-remoto" title="chamada">\u25CE</span>' : '') + '</div>' +
+    '<div class="d-titulo"' + corDe(p) + '>' + escapar(p.titulo) + '</div>';
 
   var resto = comHora.slice(1, 6);   // cabe mais agora que a lista é larga
   marcarAgenda(resto.length === 0);
   $('lista').innerHTML = resto.map(linhaAgenda).join('');
 }
 
+/* A cor vem do calendário de origem, e é a mesma que você vê no Google.
+ *
+ * Nove calendários de três contas caem nesta lista. Sem cor, "Casa" da conta
+ * do trabalho fica indistinguível de "Design Sessions" — e a pergunta que o
+ * painel tem que responder de longe é justamente "isso é meu ou do trabalho?".
+ *
+ * Só aparece quando o dado existe: o caminho por adb não traz cor, e pintar
+ * tudo de uma cor padrão seria fingir uma informação que não temos.
+ */
+function corDe(e) {
+  return e.cor ? ' style="--cor-agenda:' + escapar(e.cor) + '"' : '';
+}
+
+/* Marcador não é compromisso. "Casa" e "Escritório" são onde você está, e o
+ * Google os marca como livres; tratá-los igual a uma reunião enche a lista de
+ * linhas que não exigem nada de você. */
+function classeDe(e) {
+  var c = '';
+  if (e.ocupado === false) c += ' livre';
+  if (e.remoto) c += ' remoto';
+  return c;
+}
+
 function linhaAgenda(e) {
-  return '<div class="ev">' +
+  return '<div class="ev' + classeDe(e) + '"' + corDe(e) + '>' +
            '<div class="ev-esq">' + horaDe(e) + '</div>' +
            '<div class="ev-titulo">' + escapar(e.titulo) + '</div>' +
            duracaoDe(e) +
@@ -1756,7 +1780,7 @@ function telaAgenda() {
     var corpo = d.itens.length ? d.itens.map(function (e) {
       var passou = !e.dia_inteiro && e.fim_ts <= agora;
       return '<div class="compromisso' + (passou ? ' passou' : '') +
-               (e.dia_inteiro ? ' inteiro' : '') + '">' +
+               (e.dia_inteiro ? ' inteiro' : '') + classeDe(e) + '"' + corDe(e) + '>' +
                '<div class="h">' + (e.dia_inteiro ? 'dia todo' : hhmm(e.inicio_ts)) + '</div>' +
                '<div class="t">' + escapar(e.titulo) + '</div>' +
              '</div>';

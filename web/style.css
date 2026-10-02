@@ -405,6 +405,7 @@ body { display: flex; flex-direction: column; }
 .lista > * + * { margin-top: 0.5vw; }
 
 .ev {
+  position: relative;
   flex: none;
   display: flex;
   align-items: center;
@@ -413,7 +414,37 @@ body { display: flex; flex-direction: column; }
   border-radius: 0.9vw;
   padding: 0.7vw 1vw;
   min-height: 0;
+  overflow: hidden;
 }
+
+/* A mesma barra de cor da tela cheia, na linha do cartão. Nove calendários de
+   três contas caem nesta lista: sem cor, "Casa" da conta do trabalho fica
+   indistinguível de "Design Sessions", e a pergunta que o painel responde de
+   longe é justamente "isso é meu ou do trabalho?". */
+.ev::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 0.25vw;
+  background: var(--cor-agenda, transparent);
+}
+
+/* Marcador de onde você está ("Casa", "Escritório") não é compromisso: o
+   Google o marca como livre. Fica, porque é contexto útil, mas recuado — não
+   exige nada de você, e não pode competir com o que exige. */
+.ev.livre, .compromisso.livre { opacity: 0.62; }
+.compromisso.livre::before { background: var(--fraco); }
+
+/* Reunião remota: um anel pequeno, não um rótulo. A diferença entre chamada e
+   presencial muda o que você faz nos cinco minutos antes, e isso cabe num
+   símbolo. */
+.ev.remoto .ev-titulo::after,
+.compromisso.remoto .t::after {
+  content: ' \25CE';
+  color: var(--cor-agenda, var(--ciano));
+  font-size: 0.85em;
+}
+.ev-remoto { margin-left: 0.5vw; color: var(--ciano); }
 /* Na horizontal a hora fica numa linha só, ao lado do título — sem a coluna
    estreita que obrigava "amanhã 00:31" a quebrar. */
 .ev-esq { width: 8.5vw; flex: none; }
@@ -764,12 +795,15 @@ body { display: flex; flex-direction: column; }
   border-radius: 0.6vw;
   overflow: hidden;
 }
+/* A barra usa a cor do calendário quando ela existe, e o destaque do tema
+   quando não — o caminho por adb não traz cor, e pintar tudo de uma cor
+   padrão fingiria uma informação que não temos. */
 .compromisso::before {
   content: '';
   position: absolute;
   left: 0; top: 0; bottom: 0;
   width: 0.25vw;
-  background: var(--ciano);
+  background: var(--cor-agenda, var(--ciano));
 }
 .compromisso .h { font-family: var(--mono); font-size: 0.85vw; color: var(--ciano); }
 .compromisso .t { font-size: 0.95vw; line-height: 1.3; }

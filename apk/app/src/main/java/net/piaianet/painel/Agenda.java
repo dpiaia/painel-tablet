@@ -42,6 +42,11 @@ class Agenda {
         CalendarContract.Instances.ALL_DAY,
         CalendarContract.Instances.EVENT_LOCATION,
         CalendarContract.Instances.SELF_ATTENDEE_STATUS,
+        // As três que faltavam, e que o provedor já entregava de graça:
+        CalendarContract.Instances.CALENDAR_COLOR,
+        CalendarContract.Instances.CALENDAR_DISPLAY_NAME,
+        CalendarContract.Instances.AVAILABILITY,
+        CalendarContract.Instances.DESCRIPTION,
     };
 
     /** Convite recusado não é compromisso: ocupa linha e não vai acontecer. */
@@ -88,6 +93,35 @@ class Agenda {
                 e.put("dia_inteiro", cur.getInt(3) == 1);
                 String local = cur.getString(4);
                 e.put("local", local == null ? "" : local.trim());
+
+                /* A COR DO CALENDÁRIO, convertida aqui para o mesmo "#rrggbb"
+                 * que o CSS entende. O Android guarda como inteiro com sinal, e
+                 * mandar o número cru obrigaria o painel a saber disso.
+                 *
+                 * Ela importa porque nove calendários de três contas caem numa
+                 * lista só: sem cor, "Casa" da conta do trabalho fica
+                 * indistinguível de "Design Sessions". A cor é a mesma que você
+                 * já conhece do Google Agenda, então não há nada para aprender. */
+                e.put("cor", String.format("#%06X", cur.getInt(6) & 0xFFFFFF));
+                String agenda = cur.getString(7);
+                e.put("agenda", agenda == null ? "" : agenda.trim());
+
+                /* OCUPADO OU LIVRE. "Casa" e "Escritório" são marcadores de
+                 * onde você está, não compromissos — o Google os marca como
+                 * livres. Tratá-los igual a uma reunião enche o cartão de
+                 * linhas que não exigem nada de você. */
+                e.put("ocupado",
+                      cur.getInt(8) == CalendarContract.Instances.AVAILABILITY_BUSY);
+
+                /* Chamada ou presencial. O link do Meet vem enterrado na
+                 * descrição; o painel não precisa dele (ele é vidro, não
+                 * abre nada), mas saber que a reunião é remota muda o que
+                 * você faz nos cinco minutos antes dela. */
+                String desc = cur.getString(9);
+                String onde = (desc == null ? "" : desc) + " " + (local == null ? "" : local);
+                e.put("remoto", onde.contains("meet.google.com")
+                             || onde.contains("zoom.us")
+                             || onde.contains("teams.microsoft.com"));
                 saida.put(e);
             }
         } finally {

@@ -104,6 +104,12 @@ def do_aparelho(itens):
         except (KeyError, TypeError, ValueError):
             continue
         if convertido:
+            # Os campos que só o app traz. Ficam de fora do _converter porque
+            # o caminho por adb não os tem — e inventar um valor ali faria o
+            # painel colorir tudo igual achando que sabe.
+            for extra in ("cor", "agenda", "ocupado", "remoto"):
+                if extra in i:
+                    convertido[extra] = i[extra]
             saida.append(convertido)
     saida.sort(key=lambda e: (e["inicio_ts"], e["titulo"]))
     return saida
