@@ -392,6 +392,7 @@ def diagnostico(cfg):
         # dizer de onde esconde justamente o que você precisa saber quando algo
         # está estranho — e esconde também que uma fonte melhor caiu.
         de_onde = {"ical": "pela URL iCal",
+                   "app": "pelo app do tablet",
                    "adb": "pelo adb no tablet",
                    "navegador": "pela extensão (as outras caíram)"}
         extra = ""
@@ -970,6 +971,14 @@ class Handler(BaseHTTPRequestHandler):
         # para a tela é o escolhido. Aceita um relatório ou uma lista deles —
         # o content script fala do próprio tocador, e o background manda de
         # uma vez os que estão com a aba fechada.
+        # A agenda que o APK do tablet manda. Chega em milissegundos, como o
+        # CalendarProvider entrega, e é convertida pelo mesmo código do caminho
+        # por adb — é a mesma fonte, lida de dentro em vez de por cima.
+        do_app = fontes.get("agenda_tablet")
+        if isinstance(do_app, list):
+            publicar(agenda_tablet={"itens": agenda.do_aparelho(do_app),
+                                    "atualizado_em": agora})
+
         crus = fontes.get("musica")
         if isinstance(crus, dict):
             crus = [crus]
@@ -1304,10 +1313,22 @@ def laco_agenda(_):
                 # então a queda não passa despercebida.
                 print("ical falhou: %s" % erro)
 
+        # O APK do tablet, que lê o calendário de dentro do aparelho. Vem
+        # ANTES do adb porque é a mesma fonte sem a parte frágil: não depende
+        # de `adb tcpip`, que morre em todo reinício. Com o app funcionando, o
+        # adb vira reserva — e um dia sai.
+        do_app = _estado.get("agenda_tablet") or {}
+        if time.time() - (do_app.get("atualizado_em") or 0) <= 600:
+            publicar(agenda={"itens": do_app.get("itens") or [],
+                             "atualizado_em": do_app.get("atualizado_em"),
+                             "origem": "app", "erro": None})
+            esperar(intervalo)
+            continue
+
         if not (adb and serial):
             publicar(agenda={"itens": ultimos, "atualizado_em": ultimo_ts,
                              "origem": "ical" if url else None,
-                             "erro": "sem iCal no ar e sem adb configurado"})
+                             "erro": "sem iCal no ar, sem app relatando e sem adb"})
             esperar(intervalo)
             continue
 

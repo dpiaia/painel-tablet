@@ -82,6 +82,33 @@ def _converter(c):
     }
 
 
+def do_aparelho(itens):
+    """Converte o que o APK manda no mesmo formato do caminho por adb.
+
+    O app lê o CalendarProvider — a MESMA fonte que o adb lê, só que de dentro
+    do aparelho em vez de por cima dele. Então os milissegundos chegam com a
+    mesma convenção (meia-noite UTC para dia inteiro), e a conversão é a mesma
+    que já existia. Reaproveitar aqui é o que garante que trocar de caminho não
+    mude um horário na tela.
+    """
+    saida = []
+    for i in itens or []:
+        try:
+            convertido = _converter({
+                "title": i.get("titulo"),
+                "begin": str(int(i["inicio_ms"])),
+                "end": str(int(i["fim_ms"])),
+                "allDay": "1" if i.get("dia_inteiro") else "0",
+                "eventLocation": i.get("local") or "",
+            })
+        except (KeyError, TypeError, ValueError):
+            continue
+        if convertido:
+            saida.append(convertido)
+    saida.sort(key=lambda e: (e["inicio_ts"], e["titulo"]))
+    return saida
+
+
 def eventos(adb, serial, dias=2, atras=0):
     """Instâncias de `atras` dias atrás até `dias` à frente, sem as recusadas.
 

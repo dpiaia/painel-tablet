@@ -1,12 +1,15 @@
 package net.piaianet.painel;
 
+import android.Manifest;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
 import android.text.InputType;
 import android.view.View;
 import android.view.WindowManager;
@@ -14,6 +17,7 @@ import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.EditText;
+import android.widget.LinearLayout;
 import android.widget.Toast;
 
 /**
@@ -40,9 +44,20 @@ public class PainelActivity extends Activity {
 
     private static final String PREFS = "painel";
     private static final String CHAVE_URL = "url";
+    private static final String CHAVE_TOKEN = "token";
     private static final String URL_PADRAO = "http://192.168.0.69:8766";
 
+    /** De quanto em quanto tempo a agenda do aparelho vai para o painel. */
+    private static final long AGENDA_CADA = 2 * 60 * 1000L;
+
+    /** A mesma janela que o coletor do Mac usava: a tela cheia precisa dos
+     *  dias passados para o modo "semana atual" não mentir "livre". */
+    private static final int DIAS_ATRAS = 6, DIAS_FRENTE = 7;
+
+    private static final int PEDIDO_AGENDA = 1;
+
     private WebView web;
+    private final Handler relogio = new Handler();
 
     @Override
     protected void onCreate(Bundle estado) {
@@ -85,7 +100,78 @@ public class PainelActivity extends Activity {
             @Override public boolean onLongClick(View v) { perguntarEndereco(); return true; }
         });
 
+        aplicarIntent(getIntent());
         web.loadUrl(endereco());
+        pedirAgenda();
+    }
+
+    /**
+     * Configuração por intent, para não ter que digitar um token de 32
+     * caracteres no teclado do tablet:
+     *
+     *   adb shell am start -n net.piaianet.painel/.PainelActivity \
+     *       -e url http://192.168.0.69:8766 -e token <token>
+     *
+     * Quem já tem adb no aparelho já pode instalar e desinstalar aplicativo —
+     * isto não abre porta nenhuma que não estivesse aberta, e torna possível
+     * preparar um tablet novo sem ninguém soletrar nada.
+     */
+    private void aplicarIntent(android.content.Intent i) {
+        if (i == null) return;
+        SharedPreferences.Editor e = prefs().edit();
+        boolean mudou = false;
+        String url = i.getStringExtra("url");
+        if (url != null && !url.trim().isEmpty()) { e.putString(CHAVE_URL, url.trim()); mudou = true; }
+        String token = i.getStringExtra("token");
+        if (token != null && !token.trim().isEmpty()) { e.putString(CHAVE_TOKEN, token.trim()); mudou = true; }
+        if (mudou) e.apply();
+    }
+
+    /* ----------------------------------------------------------- agenda
+     *
+     * A permissão é pedida UMA vez, na primeira abertura. Negada, o app segue
+     * mostrando o painel — ele continua sendo um navegador em tela cheia, e o
+     * painel continua pegando a agenda pelo adb como antes. Nada quebra por
+     * recusar; só deixa de melhorar.
+     */
+    private void pedirAgenda() {
+        if (checkSelfPermission(Manifest.permission.READ_CALENDAR)
+                == PackageManager.PERMISSION_GRANTED) {
+            iniciarAgenda();
+        } else {
+            requestPermissions(new String[]{Manifest.permission.READ_CALENDAR},
+                               PEDIDO_AGENDA);
+        }
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int pedido, String[] quais, int[] r) {
+        if (pedido == PEDIDO_AGENDA && r.length > 0
+                && r[0] == PackageManager.PERMISSION_GRANTED) {
+            iniciarAgenda();
+        }
+    }
+
+    private void iniciarAgenda() {
+        relogio.removeCallbacksAndMessages(null);
+        relogio.post(new Runnable() {
+            @Override public void run() {
+                enviarAgenda();
+                relogio.postDelayed(this, AGENDA_CADA);
+            }
+        });
+    }
+
+    private void enviarAgenda() {
+        String token = prefs().getString(CHAVE_TOKEN, "");
+        if (token.isEmpty()) return;        // sem token o /ingest recusa
+        try {
+            Envio.mandar(endereco(), token, "agenda_tablet",
+                         Agenda.ler(this, DIAS_ATRAS, DIAS_FRENTE), null);
+        } catch (Exception e) {
+            // Sem permissão, ou provider indisponível. O painel segue com o
+            // que tiver — e diz de qual fonte veio, então a troca não é muda.
+        }
     }
 
     private SharedPreferences prefs() {
@@ -97,20 +183,40 @@ public class PainelActivity extends Activity {
     }
 
     private void perguntarEndereco() {
-        final EditText campo = new EditText(this);
-        campo.setInputType(InputType.TYPE_TEXT_VARIATION_URI);
-        campo.setText(endereco());
+        final EditText url = new EditText(this);
+        url.setInputType(InputType.TYPE_TEXT_VARIATION_URI);
+        url.setHint("http://ip-do-servidor:8766");
+        url.setText(endereco());
+
+        // O token é o mesmo do painel (config.json, chave token_ingest). Sem
+        // ele o app mostra a tela mas não consegue MANDAR a agenda — o
+        // /ingest recusa, e é bom que recuse: senão qualquer um na rede
+        // escreveria na sua agenda.
+        final EditText token = new EditText(this);
+        token.setHint("token do painel (token_ingest)");
+        token.setText(prefs().getString(CHAVE_TOKEN, ""));
+
+        LinearLayout caixa = new LinearLayout(this);
+        caixa.setOrientation(LinearLayout.VERTICAL);
+        int p = (int) (16 * getResources().getDisplayMetrics().density);
+        caixa.setPadding(p, p, p, 0);
+        caixa.addView(url);
+        caixa.addView(token);
 
         new AlertDialog.Builder(this)
-            .setTitle("Endereço do painel")
-            .setMessage("Onde o servidor está rodando. Em breve o app acha sozinho.")
-            .setView(campo)
+            .setTitle("Painel")
+            .setMessage("Onde o servidor está e qual o token. Em breve o app acha sozinho.")
+            .setView(caixa)
             .setPositiveButton("Salvar", (d, b) -> {
-                String novo = campo.getText().toString().trim();
+                String novo = url.getText().toString().trim();
                 if (novo.isEmpty()) return;
-                prefs().edit().putString(CHAVE_URL, novo).apply();
+                prefs().edit()
+                       .putString(CHAVE_URL, novo)
+                       .putString(CHAVE_TOKEN, token.getText().toString().trim())
+                       .apply();
                 Toast.makeText(this, novo, Toast.LENGTH_SHORT).show();
                 web.loadUrl(novo);
+                pedirAgenda();
             })
             .setNegativeButton("Cancelar", null)
             .show();
