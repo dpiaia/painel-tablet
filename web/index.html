@@ -42,10 +42,10 @@
      configuração: assim dá para mover qualquer widget para qualquer posição de
      qualquer coluna sem tocar neste arquivo. Antes o layout era este HTML, e
      arrastar não teria onde gravar. -->
-<main class="painel">
-  <div class="coluna" id="col-esq"></div>
-  <div class="coluna" id="col-dir"></div>
-</main>
+<!-- As páginas são criadas pelo JS: quantas forem as telas do arranjo. Cada
+     uma tem os dois lados de sempre; o dedo desliza entre elas. -->
+<main class="painel" id="painel"></main>
+<div class="pontos-tela" id="pontos-tela" hidden></div>
 
 <!-- Estoque: todo widget que é um nó pronto mora aqui e é MOVIDO para a
      coluna. Nó movido preserva estado (o gif no meio da animação, a rolagem),

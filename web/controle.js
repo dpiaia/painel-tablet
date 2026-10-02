@@ -292,12 +292,32 @@ function divisoesPossiveis(faixa) {
   return [[2, 4], [3, 3], [4, 2]].filter(([x, y]) => x >= mA && y >= mB);
 }
 
+/* ================================================================ telas
+ *
+ * O painel deixou de ser uma tela só: o dedo desliza entre várias, cada uma um
+ * arranjo completo. A grade limita cada lado a 12 blocos e a soma dos mínimos
+ * de tudo dá 34 — numa tela só, escolher um widget é desistir de outro.
+ *
+ * UM WIDGET MORA EM UMA TELA SÓ. Relógio, clima, recado, agenda e mensagens
+ * são nós de verdade no HTML, movidos para o lugar, e um nó não existe em dois
+ * lugares ao mesmo tempo. Arrastar para outra tela tira da primeira — e a
+ * bandeja "fora da tela" mostra quem não está em nenhuma.
+ */
+let telaEditada = 0;
+
+function telasAtuais() {
+  const t = painel.telas;
+  const bom = Array.isArray(t) && t.length && t.every(x =>
+    ['esquerda', 'direita'].every(k => Array.isArray(x[k])));
+  if (bom) return JSON.parse(JSON.stringify(t));
+  return [Object.assign({ nome: 'Painel' },
+                        JSON.parse(JSON.stringify(LAYOUT_PADRAO)))];
+}
+
 function layoutAtual() {
-  const l = painel.layout;
-  const bom = l && ['esquerda', 'direita'].every(k =>
-    Array.isArray(l[k]) && l[k].every(f => Array.isArray(f.celulas)));
-  return bom ? JSON.parse(JSON.stringify(l))
-             : JSON.parse(JSON.stringify(LAYOUT_PADRAO));
+  const telas = telasAtuais();
+  if (telaEditada >= telas.length) telaEditada = 0;
+  return telas[telaEditada];
 }
 
 function linhasUsadas(lado) {
@@ -366,18 +386,36 @@ function retirar(l, id) {
   return l;
 }
 
+/* Tira o widget de todas as OUTRAS telas.
+ *
+ * Sem isto, arrastar o relógio para a tela 2 o deixaria nas duas no arranjo —
+ * e, como ele é um nó de verdade movido pelo app.js, ele apareceria só numa e
+ * sumiria da outra sem explicação. O editor diria uma coisa e a tela outra. */
+function tirarDasOutras(telas, id) {
+  telas.forEach((t, i) => { if (i !== telaEditada) retirar(t, id); });
+  return telas;
+}
+
 function salvarLayout(l) {
   normalizar(l);
-  painel.layout = l;
+  const telas = telasAtuais();
+  l.nome = telas[telaEditada] ? telas[telaEditada].nome : 'Painel';
+  telas[telaEditada] = l;
+  salvarTelas(telas);
+}
+
+function salvarTelas(telas) {
+  painel.telas = telas;
   // O liga/desliga continua existindo para o app.js, mas quem o define é a
-  // presença no arranjo. Escrever os dois mantém uma verdade só.
+  // presença em ALGUMA tela. Escrever os dois mantém uma verdade só.
   const dentro = {};
-  ['esquerda', 'direita'].forEach(n =>
-    l[n].forEach(f => f.celulas.forEach(c => c.ids.forEach(x => dentro[x] = 1))));
+  telas.forEach(t => ['esquerda', 'direita'].forEach(n =>
+    (t[n] || []).forEach(f => (f.celulas || []).forEach(
+      c => (c.ids || []).forEach(x => dentro[x] = 1)))));
   painel.cartoes = painel.cartoes || {};
   CATALOGO.forEach(w => { painel.cartoes[w.id] = !!dentro[w.id]; });
 
-  salvar('layout', null, l);
+  salvar('telas', null, telas);
   salvar('cartoes', null, painel.cartoes);
   desenharArranjo();
 }
@@ -446,7 +484,13 @@ function mexer(id, destino) {
     desenharArranjo();
     return;
   }
-  salvarLayout(l);
+  // O widget sai das outras telas no mesmo gravar, para o arranjo nunca ter
+  // o mesmo nó em dois lugares.
+  const telas = tirarDasOutras(telasAtuais(), id);
+  normalizar(l);
+  l.nome = telas[telaEditada] ? telas[telaEditada].nome : 'Painel';
+  telas[telaEditada] = l;
+  salvarTelas(telas);
 }
 
 function idsDentro(l) {
@@ -596,9 +640,76 @@ function desenharFaixa(f, lado, iF, livres) {
   return cx;
 }
 
+function desenharAbasTela(alvo) {
+  const telas = telasAtuais();
+  const barra = document.createElement('div');
+  barra.className = 'temas abas-tela';
+
+  telas.forEach((t, i) => {
+    const b = document.createElement('button');
+    b.className = 'tema' + (i === telaEditada ? ' ativo' : '');
+    b.textContent = t.nome || ('Tela ' + (i + 1));
+    b.onclick = () => {
+      if (i === telaEditada) {
+        // Clicar na que já está aberta renomeia: um campo a mais em cada aba
+        // encheria a barra para uma coisa que se faz uma vez.
+        const novo = prompt('Nome da tela', t.nome || '');
+        if (novo === null) return;
+        const todas = telasAtuais();
+        todas[i].nome = novo.trim() || ('Tela ' + (i + 1));
+        salvarTelas(todas);
+        return;
+      }
+      telaEditada = i;
+      desenharArranjo();
+    };
+    barra.appendChild(b);
+  });
+
+  const nova = document.createElement('button');
+  nova.className = 'tema';
+  nova.textContent = '+ nova tela';
+  nova.onclick = () => {
+    const todas = telasAtuais();
+    todas.push({ nome: 'Tela ' + (todas.length + 1), esquerda: [], direita: [] });
+    telaEditada = todas.length - 1;
+    salvarTelas(todas);
+  };
+  barra.appendChild(nova);
+
+  alvo.appendChild(barra);
+
+  const nota = document.createElement('p');
+  nota.className = 'sobre';
+  nota.textContent = telas.length > 1
+    ? 'No tablet, o dedo desliza entre elas. Clique na aba aberta para renomear. '
+      + 'Um widget mora em uma tela só: arrastar para cá tira da outra.'
+    : 'Uma tela só. Crie outra para ter um segundo arranjo — "o dia" e "o '
+      + 'trabalho", por exemplo — e deslizar entre eles no tablet.';
+  alvo.appendChild(nota);
+
+  if (telas.length > 1) {
+    const acoes = document.createElement('div');
+    acoes.className = 'acoes';
+    const apagar = document.createElement('button');
+    apagar.textContent = 'Remover "' + (telas[telaEditada].nome || 'esta tela') + '"';
+    apagar.onclick = () => {
+      const todas = telasAtuais();
+      // Os widgets dela voltam para a bandeja em vez de sumirem: apagar uma
+      // tela é desfazer um arranjo, não desligar os cartões.
+      todas.splice(telaEditada, 1);
+      telaEditada = Math.max(0, telaEditada - 1);
+      salvarTelas(todas);
+    };
+    acoes.appendChild(apagar);
+    alvo.appendChild(acoes);
+  }
+}
+
 function desenharArranjo() {
   const alvo = document.getElementById('cartoes');
   alvo.innerHTML = '';
+  desenharAbasTela(alvo);
   const l = layoutAtual();
 
   const grade = document.createElement('div');
@@ -638,9 +749,12 @@ function desenharArranjo() {
   alvo.appendChild(grade);
 
   // Bandeja do que está fora: arrastar para cá desliga, arrastar de volta liga.
+  // Fora da tela = fora de TODAS as telas. Um widget que está na tela 2 não
+  // pode aparecer na bandeja enquanto você edita a 1 — pareceria desligado.
   const dentro = {};
-  ['esquerda', 'direita'].forEach(n =>
-    l[n].forEach(f => f.celulas.forEach(c => c.ids.forEach(x => dentro[x] = 1))));
+  telasAtuais().forEach(t => ['esquerda', 'direita'].forEach(n =>
+    (t[n] || []).forEach(f => (f.celulas || []).forEach(
+      c => (c.ids || []).forEach(x => dentro[x] = 1)))));
   const fora = CATALOGO.map(w => w.id).filter(id => !dentro[id]);
 
   const bandeja = alvoSolta({ tipo: 'fora' }, 'bandeja');
@@ -661,7 +775,8 @@ function desenharArranjo() {
   const acoes = document.createElement('div');
   acoes.className = 'acoes';
   acoes.appendChild(botao('Voltar ao arranjo padrão',
-    () => salvarLayout(JSON.parse(JSON.stringify(LAYOUT_PADRAO)))));
+    () => salvarLayout(JSON.parse(JSON.stringify(LAYOUT_PADRAO))),
+    'só desta tela; as outras continuam como estão'));
   alvo.appendChild(acoes);
 }
 

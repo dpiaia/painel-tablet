@@ -98,15 +98,53 @@ body { display: flex; flex-direction: column; }
 .sist .baixa { color: var(--vermelho); }
 
 /* ================================================================== painel */
+/* O painel virou um palco de PÁGINAS. Cada tela é um arranjo completo e o
+   dedo desliza entre elas. */
 .painel {
   flex: 1;
   min-height: 0;
+  position: relative;
+  overflow: hidden;
+}
+
+/* As páginas ficam todas montadas e TRANSLADADAS, nunca escondidas.
+   Esconder com `display` tiraria os cartões do fluxo, e a conta de quantas
+   linhas cabem — que é MEDIDA, não estimada — daria zero para quem estivesse
+   fora da tela. Transladadas, todas têm tamanho de verdade o tempo todo.
+
+   Só transform, que é o que a Mali-400 do Tab E aguenta sem engasgar. */
+.pagina {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;    /* `inset` é Chrome 87; aqui é 64 */
   display: grid;
   grid-template-columns: 1fr 1fr;
   grid-gap: var(--gap);
   gap: var(--gap);
   padding: 0.4vw 2vw 2vw;
+  transition: transform 0.35s;
+  will-change: transform;
 }
+
+/* Os pontinhos de página. Discretos e fora do caminho: eles dizem onde você
+   está, não disputam atenção com o conteúdo. Somem quando só há uma tela —
+   uma tela só não é um conjunto de telas. */
+.pontos-tela {
+  position: fixed;
+  left: 0; right: 0; bottom: 0.5vw;
+  display: flex;
+  justify-content: center;
+  z-index: 20;
+  pointer-events: none;
+}
+.pontos-tela i {
+  width: 0.5vw; height: 0.5vw;
+  border-radius: 50%;
+  background: var(--fraco);
+  margin: 0 0.35vw;
+  opacity: 0.5;
+  transition: opacity 0.3s, background 0.3s;
+}
+.pontos-tela i.ativo { background: var(--ciano); opacity: 1; }
 
 /* Cada lado é uma grade de 6 unidades (3 blocos) por 4 linhas. A peça diz
    onde fica, em grid-column/grid-row escritos pelo montarLado — posição

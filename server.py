@@ -155,7 +155,7 @@ def _musica_escolhida():
 
     return max(vivas, key=ordem)
 PADRAO_PAINEL = ("cartoes", "tempos", "cores", "recado", "agenda", "ordem", "tema",
-                 "marca", "fundos", "layout")
+                 "marca", "fundos", "layout", "telas")
 
 # Chaves do topo do config que o painel de controle pode mudar. Lista fechada
 # de propósito: um POST não encosta em token, caminho de binário nem porta.
@@ -1518,6 +1518,19 @@ def main():
         painel = cfg["painel"]
         print("arranjo convertido para a grade de %dx%d" %
               (widgets.COLUNAS, widgets.LINHAS))
+
+    # O arranjo único vira a primeira de uma lista de telas. Mesma política da
+    # migração acima: uma vez, na partida, gravando por cima — assim o tablet
+    # só conhece o formato novo e o app.js não carrega duas leituras para
+    # sempre.
+    telas = widgets.migrar_telas(painel)
+    if telas:
+        with _trava_config:
+            cfg = carregar_config()
+            cfg.setdefault("painel", {})["telas"] = telas
+            gravar_config(cfg)
+        painel = cfg["painel"]
+        print("arranjo virou lista de telas (%d)" % len(telas))
 
     publicar(ajustes=painel)
     carregar_claude()

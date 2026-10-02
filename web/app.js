@@ -1321,13 +1321,34 @@ var LAYOUT_PADRAO = {
 
 var hostsSlide = [];        // {slider, ids} de cada cartão de slide na tela
 var layoutAtual = '';       // assinatura, para não remontar à toa
+var telaVisivel = 0;        // qual página o dedo deixou na frente
+
+/* O arranjo é uma LISTA DE TELAS, e o dedo desliza entre elas.
+ *
+ * Cada tela é um arranjo completo — os dois lados, com as faixas de sempre.
+ * A grade limita cada lado a 12 blocos e a soma dos mínimos de tudo dá 34:
+ * numa tela só, escolher um widget é desistir de outro. Com várias, "o dia",
+ * "o trabalho" e "a máquina" cabem ao mesmo tempo.
+ *
+ * Aceita o formato antigo (um arranjo solto) porque o servidor migra na
+ * partida, mas o tablet pode estar com uma página carregada de antes.
+ */
+function telasDe(cfg) {
+  if (cfg && Array.isArray(cfg.telas) && cfg.telas.length) return cfg.telas;
+  // Formatos anteriores, aceitos porque o tablet pode estar com uma página
+  // carregada de antes da migração: o arranjo solto dentro de `layout`, ou o
+  // próprio objeto sendo o arranjo.
+  if (cfg && cfg.layout && cfg.layout.esquerda) return [cfg.layout];
+  if (cfg && cfg.esquerda && cfg.direita) return [cfg];
+  return [LAYOUT_PADRAO];
+}
 
 function noDoWidget(id) {
   return document.querySelector('[data-widget="' + id + '"]');
 }
 
 function montarLayout(cfg) {
-  var l = cfg && cfg.esquerda && cfg.direita ? cfg : LAYOUT_PADRAO;
+  var l = telasDe(cfg);
   var assinatura = JSON.stringify(l);
   if (assinatura === layoutAtual) return;
   layoutAtual = assinatura;
@@ -1341,8 +1362,7 @@ function montarLayout(cfg) {
   }
   hostsSlide = [];
 
-  montarLado($('col-esq'), l.esquerda || []);
-  montarLado($('col-dir'), l.direita || []);
+  montarPaginas(l);
 
   // A conta de quantas linhas cabem só vale depois que a coluna inteira
   // existe: a altura de um cartão em flex depende dos irmãos, e medir no
@@ -1354,6 +1374,69 @@ function montarLayout(cfg) {
     }
     ajustarListas(sliderMsg.palco);
   }, 0);
+}
+
+function montarPaginas(telas) {
+  var palco = $('painel');
+  palco.innerHTML = '';
+
+  for (var t = 0; t < telas.length; t++) {
+    var pag = document.createElement('div');
+    pag.className = 'pagina';
+    var esq = document.createElement('div');
+    esq.className = 'coluna esq';
+    var dir = document.createElement('div');
+    dir.className = 'coluna dir';
+    pag.appendChild(esq);
+    pag.appendChild(dir);
+    palco.appendChild(pag);
+
+    montarLado(esq, (telas[t] || {}).esquerda || []);
+    montarLado(dir, (telas[t] || {}).direita || []);
+  }
+
+  if (telaVisivel >= telas.length) telaVisivel = 0;
+  mostrarTela(telaVisivel, true);
+  desenharPontosTela(telas.length);
+}
+
+/* Desliza para a página pedida.
+ *
+ * Translada todas de uma vez em vez de esconder as outras: esconder (display)
+ * tiraria os cartões do fluxo, e a conta de quantas linhas cabem — que é
+ * MEDIDA — daria zero para quem está fora da tela. Transladado, tudo tem
+ * tamanho de verdade o tempo todo.
+ */
+function mostrarTela(i, semAnimar) {
+  var pags = $('painel').children;
+  telaVisivel = Math.max(0, Math.min(i, pags.length - 1));
+  for (var k = 0; k < pags.length; k++) {
+    var p = pags[k];
+    p.style.transition = semAnimar ? 'none' : '';
+    p.style.transform = 'translateX(' + ((k - telaVisivel) * 100) + '%)';
+    // Só a da frente recebe toque: sem isto, um cartão da página vizinha
+    // responderia a um dedo que caiu na borda.
+    p.style.pointerEvents = (k === telaVisivel) ? '' : 'none';
+  }
+  if (semAnimar) {
+    // Devolve a transição no quadro seguinte, senão o primeiro deslize
+    // também sairia sem animação.
+    setTimeout(function () {
+      for (var k = 0; k < pags.length; k++) pags[k].style.transition = '';
+    }, 50);
+  }
+  desenharPontosTela(pags.length);
+}
+
+function desenharPontosTela(quantas) {
+  var pts = $('pontos-tela');
+  pts.hidden = quantas < 2;        // uma tela só não é um conjunto de telas
+  if (pts.hidden) return;
+  var html = '';
+  for (var k = 0; k < quantas; k++) {
+    html += '<i class="' + (k === telaVisivel ? 'ativo' : '') + '"></i>';
+  }
+  pts.innerHTML = html;
 }
 
 function montarLado(lado, faixas) {
@@ -2318,7 +2401,51 @@ function sairModoHora() {
   $('modo-hora').hidden = true;
 }
 
+/* ============================================== deslizar entre as telas
+ *
+ * EM JAVASCRIPT E NÃO NO APP, de propósito: o painel também roda no navegador
+ * do Mac, num iPad e em quem clonar o projeto. Gesto nativo só valeria no
+ * tablet com APK, e a mesma coisa teria duas implementações — uma delas sempre
+ * atrasada em relação à outra. O app fica com o que só ele pode fazer: botões
+ * físicos, boot, permissões e sensores.
+ *
+ * O limiar é 12% da largura, e o movimento tem que ser mais horizontal que
+ * vertical. Os dois juntos são o que separa "quis trocar de tela" de "encostei
+ * no vidro": sem o segundo, rolar uma lista de pull requests viraria troca de
+ * página.
+ */
+var toqueX = 0, toqueY = 0, arrastando = false, deslizou = false;
+
+document.addEventListener('touchstart', function (ev) {
+  if (ev.touches.length !== 1 || modoHora || telaAberta || menuAberto) return;
+  toqueX = ev.touches[0].clientX;
+  toqueY = ev.touches[0].clientY;
+  arrastando = true;
+  deslizou = false;
+}, { passive: true });
+
+document.addEventListener('touchend', function (ev) {
+  if (!arrastando) return;
+  arrastando = false;
+
+  var toque = ev.changedTouches[0];
+  var dx = toque.clientX - toqueX;
+  var dy = toque.clientY - toqueY;
+  if (Math.abs(dx) < window.innerWidth * 0.12) return;
+  if (Math.abs(dx) < Math.abs(dy) * 1.5) return;
+
+  var quantas = $('painel').children.length;
+  var alvo = telaVisivel + (dx < 0 ? 1 : -1);
+  if (alvo < 0 || alvo >= quantas) return;    // nas pontas, não dá a volta
+  deslizou = true;
+  mostrarTela(alvo);
+}, { passive: true });
+
 document.addEventListener('click', function (ev) {
+  /* Um deslize longo não deve abrir a tela de detalhe do cartão onde o dedo
+   * pousou. O navegador ainda dispara o clique depois do toque, então a marca
+   * é consumida aqui — uma vez, para o próximo clique de verdade funcionar. */
+  if (deslizou) { deslizou = false; return; }
   // O modo relógio vem antes de tudo: enquanto ele está ligado, o único
   // clique que importa é o que sai dele.
   if (modoHora) { sairModoHora(); return; }
@@ -2542,7 +2669,10 @@ function desenhar() {
   // O layout PRIMEIRO. aplicarAjustes pergunta onde cada cartão está (o clima
   // só encolhe se estiver dividindo a linha), e na carga inicial ele ainda
   // estava no estoque — dava um piscar do arranjo largo antes de assentar.
-  montarLayout((estado.ajustes || {}).layout);
+  // Os AJUSTES inteiros, não só `layout`: o arranjo virou uma lista de telas
+  // e mora em `ajustes.telas`. Passar `layout` deixava o painel montando
+  // sempre uma página só, e sem erro nenhum para explicar.
+  montarLayout(estado.ajustes || {});
   aplicarAjustes();
   desenharSistema();
   desenharClima();

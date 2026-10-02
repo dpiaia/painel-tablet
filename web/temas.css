@@ -165,7 +165,7 @@
    não é sempre o primeiro do DOM, e o Chrome 64 não tem :has() para
    descobrir. Então o montarLado marca a peça com `quina-td`, que é onde a
    posição é sabida. */
-[data-tema="orkut"] #col-dir > .quina-td {
+[data-tema="orkut"] .coluna.dir > .quina-td {
   border-top-right-radius: 1.9vw;
 }
 [data-tema="orkut"] .cartao h2 {

@@ -214,6 +214,11 @@ input:focus{outline:none;border-color:var(--ciano)}
                border-radius:7px;padding:6px 9px;margin-bottom:8px;
                font:11.5px var(--mono);color:var(--laranja)}
 
+/* As abas de tela ficam acima do editor e separadas por uma linha: elas
+   mudam O QUE você está editando, e confundi-las com os controles do arranjo
+   faria você mexer na tela errada sem perceber. */
+.abas-tela{padding-bottom:12px;border-bottom:1px solid var(--linha);margin-bottom:4px}
+
 .bandeja{background:#0a0c11;border:1px dashed var(--linha);border-radius:10px;
          padding:10px;margin-bottom:14px}
 .bandeja.sobre{border-color:var(--laranja);background:rgba(245,158,11,.08)}

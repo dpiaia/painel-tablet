@@ -179,3 +179,34 @@ def _encaixar(faixas):
         alvo["alt"] += 1
         usado += 1
     return cabe
+
+
+# ----------------------------------------------------------------- telas
+#
+# O painel deixou de ser uma tela só. Cada TELA é um arranjo completo — os dois
+# lados, com as faixas e as células de sempre — e o dedo desliza entre elas,
+# como as telas de início de um celular.
+#
+# Por que isto cabe: a grade já limita cada lado a 12 blocos, e a soma dos
+# mínimos de tudo dá 34. Numa tela só, escolher um widget é desistir de outro.
+# Com três telas, "agenda do dia", "trabalho" e "máquina" podem existir ao mesmo
+# tempo sem disputar o mesmo espaço.
+#
+# UM WIDGET MORA EM UMA TELA SÓ, e isso não é preguiça: relógio, clima, recado,
+# agenda e mensagens são nós de verdade no HTML, movidos para o lugar — e um nó
+# não existe em dois lugares ao mesmo tempo. Duplicá-los exigiria redesenhá-los
+# a cada ciclo, que é justamente o que eles não fazem. O editor respeita isso:
+# arrastar para outra tela tira da primeira.
+
+def migrar_telas(painel):
+    """`layout` (uma tela) -> `telas` (lista). None se já está migrado."""
+    if not isinstance(painel, dict):
+        return None
+    if isinstance(painel.get("telas"), list) and painel["telas"]:
+        return None
+    layout = painel.get("layout")
+    if not isinstance(layout, dict):
+        return None
+    return [{"nome": "Painel",
+             "esquerda": layout.get("esquerda") or [],
+             "direita": layout.get("direita") or []}]
